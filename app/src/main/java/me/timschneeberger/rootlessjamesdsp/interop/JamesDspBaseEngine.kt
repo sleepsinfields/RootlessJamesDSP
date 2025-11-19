@@ -275,6 +275,85 @@ if (advConv.size == 6) {
 
         return setConvolverInternal(true, imp, info[0], info[1], info[2])
     }
+fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode: Int, waveEditStr: String): Boolean
+    {
+        val path = FileLibraryPreference.createFullPathCompat(context, impulseResponsePath)
+
+        // Handle disabled state before everything else
+        if (!enable || !File(path).exists() || File(path).isDirectory) {
+            setConvolverInternal(false, FloatArray(0), 0, 0, 0)
+            return true
+        }
+
+        val advConv = waveEditStr.split(";")
+        val advSetting = IntArray(6)
+        advSetting.fill(0)
+        advSetting[0] = -80
+        advSetting[1] = -100
+
+        try {
+            if (advConv.size == 6) {
+                for (i in advConv.indices) {
+                    val token = advConv[i].trim()
+                    if (token.isEmpty()) continue
+
+                    advSetting[i] = when (i) {
+                        // 0, 1 = dB thresholds (scaled if needed)
+                        0, 1 -> {
+                            val db = token.toDouble()
+                            (db * ADV_DB_SCALE).toInt()
+                        }
+
+                        // 2..5 = fractional sample shifts
+                        2, 3, 4, 5 -> {
+                            val shiftSamples = token.toDouble()      // can be 3.141592...
+                            (shiftSamples * SHIFT_SCALE).toInt()     // store as fixed-point
+                        }
+
+                        else -> token.toInt()
+                    }
+                }
+            } else {
+                Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
+                callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+            }
+        } catch (ex: NumberFormatException) {
+            Timber.e(ex, "setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
+            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+        }
+
+        val info = IntArray(4)
+        val imp = JdspImpResToolbox.ReadImpulseResponseToFloat(
+            path,
+            sampleRate.toInt(),
+            info,
+            optimizationMode,
+            advSetting
+        )
+
+        if (imp == null) {
+            Timber.e("setConvolver: Failed to read IR")
+            setConvolverInternal(false, FloatArray(0), 0, 0, 0)
+            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.Corrupted)
+            return false
+        }
+
+        // check frame count
+        if (info[1] == 0) {
+            Timber.e("setConvolver: IR has no frames")
+            setConvolverInternal(false, FloatArray(0), 0, 0, 0)
+            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.NoFrames)
+            return false
+        }
+
+        // check if advSetting was invalid
+        if (info[3] == 0) {
+            Timber.w("setConvolver: advSetting was invalid")
+            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+        }
+
+        return setConvolverInternal(true, imp, info[0], info[1], info[2])
+    }
 
     fun setGraphicEq(enable: Boolean, bands: String): Boolean
     {
