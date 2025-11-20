@@ -13,8 +13,8 @@ class GraphicEqNodeList : ObservableArrayList<GraphicEqNode>() {
     private val dfGain = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH))
 
     init {
-        dfFreq.maximumFractionDigits = 2
-        dfGain.maximumFractionDigits = 6
+        dfFreq.maximumFractionDigits = 3
+        dfGain.maximumFractionDigits = 9
     }
 
     fun serialize(): String {
