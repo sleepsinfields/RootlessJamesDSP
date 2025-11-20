@@ -19,24 +19,38 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileReader
 
-abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspWrapper.JamesDspCallbacks? = null) : AutoCloseable {
+abstract class JamesDspBaseEngine(
+    val context: Context,
+    val callbacks: JamesDspWrapper.JamesDspCallbacks? = null
+) : AutoCloseable {
+
     abstract var enabled: Boolean
+
     open var sampleRate: Float = 0.0f
         set(value) {
             field = value
             reportSampleRate(value)
         }
-    private const val ADV_DB_SCALE   = 1000.0      // if you used this earlier for dB
-    private const val SHIFT_SCALE    = 1000.0      // for fractional sample shifts
+
     private val syncScope = CoroutineScope(Dispatchers.IO)
     private val syncMutex = Mutex()
     protected val cache = PreferenceCache(context)
+
+    companion object {
+        // Scaling constants for advanced convolver parameters
+        private const val ADV_DB_SCALE = 1000.0    // dB -> fixed-point
+        private const val SHIFT_SCALE = 1000.0     // samples -> fixed-point
+    }
+
+    // ---- Lifecycle ----
 
     override fun close() {
         Timber.d("Closing engine")
         reportSampleRate(0f)
         syncScope.cancel()
     }
+
+    // ---- Preference sync ----
 
     open fun syncWithPreferences(forceUpdateNamespaces: Array<String>? = null) {
         syncScope.launch {
@@ -55,7 +69,10 @@ abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspW
     }
 
     private suspend fun syncWithPreferencesAsync(forceUpdateNamespaces: Array<String>? = null) {
-        Timber.d("Synchronizing with preferences... (forced: %s)", forceUpdateNamespaces?.joinToString(";") { it })
+        Timber.d(
+            "Synchronizing with preferences... (forced: %s)",
+            forceUpdateNamespaces?.joinToString(";") { it }
+        )
 
         syncMutex.withLock {
             cache.select(Constants.PREF_OUTPUT)
@@ -68,7 +85,10 @@ abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspW
             val compTimeConst = cache.get(R.string.key_compander_timeconstant, 0.22f)
             val compGranularity = cache.get(R.string.key_compander_granularity, 2f).toInt()
             val compTfTransforms = cache.get(R.string.key_compander_tftransforms, "0").toInt()
-            val compResponse = cache.get(R.string.key_compander_response, "95.0;200.0;400.0;800.0;1600.0;3400.0;7500.0;0;0;0;0;0;0;0")
+            val compResponse = cache.get(
+                R.string.key_compander_response,
+                "95.0;200.0;400.0;800.0;1600.0;3400.0;7500.0;0;0;0;0;0;0;0"
+            )
 
             cache.select(Constants.PREF_BASS)
             val bassEnabled = cache.get(R.string.key_bass_enable, false)
@@ -111,7 +131,10 @@ abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspW
             cache.select(Constants.PREF_CONVOLVER)
             val convolverEnabled = cache.get(R.string.key_convolver_enable, false)
             val convolverFile = cache.get(R.string.key_convolver_file, "")
-            val convolverAdvImp = cache.get(R.string.key_convolver_adv_imp, Constants.DEFAULT_CONVOLVER_ADVIMP)
+            val convolverAdvImp = cache.get(
+                R.string.key_convolver_adv_imp,
+                Constants.DEFAULT_CONVOLVER_ADVIMP
+            )
             val convolverMode = cache.get(R.string.key_convolver_mode, "0").toInt()
 
             val targets = cache.changedNamespaces.toTypedArray() + (forceUpdateNamespaces ?: arrayOf())
@@ -119,10 +142,28 @@ abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspW
                 Timber.i("Committing new changes in namespace '$it'")
 
                 val result = when (it) {
-                    Constants.PREF_OUTPUT -> setOutputControl(limiterThreshold, limiterRelease, outputPostGain)
-                    Constants.PREF_COMPANDER -> setCompander(compEnabled, compTimeConst, compGranularity, compTfTransforms, compResponse)
+                    Constants.PREF_OUTPUT -> setOutputControl(
+                        limiterThreshold,
+                        limiterRelease,
+                        outputPostGain
+                    )
+
+                    Constants.PREF_COMPANDER -> setCompander(
+                        compEnabled,
+                        compTimeConst,
+                        compGranularity,
+                        compTfTransforms,
+                        compResponse
+                    )
+
                     Constants.PREF_BASS -> setBassBoost(bassEnabled, bassMaxGain)
-                    Constants.PREF_EQ -> setMultiEqualizer(eqEnabled, eqFilterType, eqInterpolationMode, eqBands)
+                    Constants.PREF_EQ -> setMultiEqualizer(
+                        eqEnabled,
+                        eqFilterType,
+                        eqInterpolationMode,
+                        eqBands
+                    )
+
                     Constants.PREF_GEQ -> setGraphicEq(geqEnabled, geqBands)
                     Constants.PREF_REVERB -> setReverb(reverbEnabled, reverbPreset)
                     Constants.PREF_STEREOWIDE -> setStereoEnhancement(swEnabled, swMode)
@@ -130,11 +171,17 @@ abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspW
                     Constants.PREF_TUBE -> setVacuumTube(tubeEnabled, tubeDrive)
                     Constants.PREF_DDC -> setVdc(ddcEnabled, ddcFile)
                     Constants.PREF_LIVEPROG -> setLiveprog(liveProgEnabled, liveprogFile)
-                    Constants.PREF_CONVOLVER -> setConvolver(convolverEnabled, convolverFile, convolverMode, convolverAdvImp)
+                    Constants.PREF_CONVOLVER -> setConvolver(
+                        convolverEnabled,
+                        convolverFile,
+                        convolverMode,
+                        convolverAdvImp
+                    )
+
                     else -> true
                 }
 
-                if(!result) {
+                if (!result) {
                     Timber.e("Failed to apply $it")
                 }
             }
@@ -144,48 +191,54 @@ abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspW
         }
     }
 
-    fun setMultiEqualizer(enable: Boolean, filterType: Int, interpolationMode: Int, bands: String): Boolean
-    {
+    // ---- Public setters that parse strings and delegate to internal methods ----
+
+    fun setMultiEqualizer(
+        enable: Boolean,
+        filterType: Int,
+        interpolationMode: Int,
+        bands: String
+    ): Boolean {
         val doubleArray = DoubleArray(30)
         val array = bands.split(";")
-        for((i, str) in array.withIndex())
-        {
+        for ((i, str) in array.withIndex()) {
             val number = str.toDoubleOrNull()
-            if(number == null) {
+            if (number == null) {
                 Timber.e("setFirEqualizer: malformed EQ string")
                 return false
             }
             doubleArray[i] = number
         }
-
         return setMultiEqualizerInternal(enable, filterType, interpolationMode, doubleArray)
     }
 
-    fun setCompander(enable: Boolean, timeConstant: Float, granularity: Int, tfTransforms: Int, bands: String): Boolean
-    {
+    fun setCompander(
+        enable: Boolean,
+        timeConstant: Float,
+        granularity: Int,
+        tfTransforms: Int,
+        bands: String
+    ): Boolean {
         val doubleArray = DoubleArray(14)
         val array = bands.split(";")
-        for((i, str) in array.withIndex())
-        {
+        for ((i, str) in array.withIndex()) {
             val number = str.toDoubleOrNull()
-            if(number == null) {
+            if (number == null) {
                 Timber.e("setCompander: malformed string")
                 return false
             }
             doubleArray[i] = number
         }
-
         return setCompanderInternal(enable, timeConstant, granularity, tfTransforms, doubleArray)
     }
 
-    fun setVdc(enable: Boolean, vdcPath: String): Boolean
-    {
+    fun setVdc(enable: Boolean, vdcPath: String): Boolean {
         val fullPath = FileLibraryPreference.createFullPathCompat(context, vdcPath)
 
-        if(!File(fullPath).exists() || File(fullPath).isDirectory) {
+        if (!File(fullPath).exists() || File(fullPath).isDirectory) {
             Timber.w("setVdc: file does not exist")
             setVdcInternal(false, "")
-            return true /* non-critical */
+            return true // non-critical
         }
 
         return safeFileReader(fullPath)?.use {
@@ -193,90 +246,12 @@ abstract class JamesDspBaseEngine(val context: Context, val callbacks: JamesDspW
         } ?: false
     }
 
-    fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode: Int, waveEditStr: String): Boolean
-    {
-        val path = FileLibraryPreference.createFullPathCompat(context, impulseResponsePath)
-
-        // Handle disabled state before everything else
-        if(!enable || !File(path).exists() || File(path).isDirectory) {
-            setConvolverInternal(false, FloatArray(0), 0, 0, 0)
-            return true
-        }
-
-        val advConv = waveEditStr.split(";")
-        val advSetting = IntArray(6)
-        advSetting.fill(0)
-        advSetting[0] = -80
-        advSetting[1] = -100
-        try
-        {
-if (advConv.size == 6) {
-    for (i in advConv.indices) {
-        val token = advConv[i].trim()
-        if (token.isEmpty()) continue
-
-        advSetting[i] = when (i) {
-            // 0, 1 = dB thresholds (if you already scaled those; keep or adjust)
-            0, 1 -> {
-                val db = token.toDouble()
-                (db * ADV_DB_SCALE).toInt()
-            }
-
-            // 2..5 = fractional sample shifts
-            2, 3, 4, 5 -> {
-                val shiftSamples = token.toDouble()          // can be 3.141592...
-                (shiftSamples * SHIFT_SCALE).toInt()         // store as fixed-point
-            }
-
-            else -> token.toInt()
-        }
-    }
-}
-}
-            else {
-                Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
-                callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
-            }
-        }
-        catch(ex: NumberFormatException) {
-            Timber.e("setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
-            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
-        }
-
-        val info = IntArray(4)
-        val imp = JdspImpResToolbox.ReadImpulseResponseToFloat(
-            path,
-            sampleRate.toInt(),
-            info,
-            optimizationMode,
-            advSetting
-        )
-
-        if(imp == null) {
-            Timber.e("setConvolver: Failed to read IR")
-            setConvolverInternal(false, FloatArray(0), 0, 0, 0)
-            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.Corrupted)
-            return false
-        }
-
-        // check frame count
-        if(info[1] == 0) {
-            Timber.e("setConvolver: IR has no frames")
-            setConvolverInternal(false, FloatArray(0), 0, 0, 0)
-            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.NoFrames)
-            return false
-        }
-
-        // check if advSetting was invalid
-        if(info[3] == 0) {
-            Timber.w("setConvolver: advSetting was invalid")
-            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
-        }
-
-        return setConvolverInternal(true, imp, info[0], info[1], info[2])
-    }
-fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode: Int, waveEditStr: String): Boolean
-    {
+    fun setConvolver(
+        enable: Boolean,
+        impulseResponsePath: String,
+        optimizationMode: Int,
+        waveEditStr: String
+    ): Boolean {
         val path = FileLibraryPreference.createFullPathCompat(context, impulseResponsePath)
 
         // Handle disabled state before everything else
@@ -298,7 +273,7 @@ fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode:
                     if (token.isEmpty()) continue
 
                     advSetting[i] = when (i) {
-                        // 0, 1 = dB thresholds (scaled if needed)
+                        // 0, 1 = dB thresholds (scaled)
                         0, 1 -> {
                             val db = token.toDouble()
                             (db * ADV_DB_SCALE).toInt()
@@ -306,20 +281,29 @@ fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode:
 
                         // 2..5 = fractional sample shifts
                         2, 3, 4, 5 -> {
-                            val shiftSamples = token.toDouble()      // can be 3.141592...
-                            (shiftSamples * SHIFT_SCALE).toInt()     // store as fixed-point
+                            val shiftSamples = token.toDouble()
+                            (shiftSamples * SHIFT_SCALE).toInt()
                         }
 
                         else -> token.toInt()
                     }
                 }
             } else {
-                Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
-                callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+                Timber.w(
+                    "setConvolver: AdvImp setting has the wrong size (${advConv.size})"
+                )
+                callbacks?.onConvolverParseError(
+                    ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid
+                )
             }
         } catch (ex: NumberFormatException) {
-            Timber.e(ex, "setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
-            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+            Timber.e(
+                ex,
+                "setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults."
+            )
+            callbacks?.onConvolverParseError(
+                ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid
+            )
         }
 
         val info = IntArray(4)
@@ -349,29 +333,28 @@ fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode:
         // check if advSetting was invalid
         if (info[3] == 0) {
             Timber.w("setConvolver: advSetting was invalid")
-            callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+            callbacks?.onConvolverParseError(
+                ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid
+            )
         }
 
         return setConvolverInternal(true, imp, info[0], info[1], info[2])
     }
 
-    fun setGraphicEq(enable: Boolean, bands: String): Boolean
-    {
+    fun setGraphicEq(enable: Boolean, bands: String): Boolean {
         // Sanity check
-        if(!bands.contains("GraphicEQ:", true)) {
+        if (!bands.contains("GraphicEQ:", ignoreCase = true)) {
             Timber.e("setGraphicEq: malformed string")
             setGraphicEqInternal(false, "")
             return false
         }
-
         return setGraphicEqInternal(enable, bands)
     }
 
-    fun setLiveprog(enable: Boolean, path: String): Boolean
-    {
+    fun setLiveprog(enable: Boolean, path: String): Boolean {
         val fullPath = FileLibraryPreference.createFullPathCompat(context, path)
 
-        if(!File(fullPath).exists() || File(fullPath).isDirectory) {
+        if (!File(fullPath).exists() || File(fullPath).isDirectory) {
             Timber.w("setLiveprog: file does not exist")
             return setLiveprogInternal(false, "", "")
         }
@@ -383,15 +366,17 @@ fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode:
     }
 
     private fun safeFileReader(path: String) =
-        try { FileReader(path) }
-        catch (ex: FileNotFoundException) {
+        try {
+            FileReader(path)
+        } catch (ex: FileNotFoundException) {
             /* Exception may occur when old presets created with version <1.4.3 are swapped
                between root, rootless, debug, or release builds due to path name differences. */
             Timber.w(ex)
             null
         }
 
-    // Effect config
+    // ---- Effect config (abstract) ----
+
     abstract fun setOutputControl(threshold: Float, release: Float, postGain: Float): Boolean
     abstract fun setReverb(enable: Boolean, preset: Int): Boolean
     abstract fun setCrossfeed(enable: Boolean, mode: Int): Boolean
@@ -400,27 +385,62 @@ fun setConvolver(enable: Boolean, impulseResponsePath: String, optimizationMode:
     abstract fun setStereoEnhancement(enable: Boolean, level: Float): Boolean
     abstract fun setVacuumTube(enable: Boolean, level: Float): Boolean
 
-    protected abstract fun setMultiEqualizerInternal(enable: Boolean, filterType: Int, interpolationMode: Int, bands: DoubleArray): Boolean
-    protected abstract fun setCompanderInternal(enable: Boolean, timeConstant: Float, granularity: Int, tfTransforms: Int, bands: DoubleArray): Boolean
-    protected abstract fun setVdcInternal(enable: Boolean, vdc: String): Boolean
-    protected abstract fun setConvolverInternal(enable: Boolean, impulseResponse: FloatArray, irChannels: Int, irFrames: Int, irCrc: Int): Boolean
-    protected abstract fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean
-    protected abstract fun setLiveprogInternal(enable: Boolean, name: String, script: String): Boolean
+    protected abstract fun setMultiEqualizerInternal(
+        enable: Boolean,
+        filterType: Int,
+        interpolationMode: Int,
+        bands: DoubleArray
+    ): Boolean
 
-    // Feature support
+    protected abstract fun setCompanderInternal(
+        enable: Boolean,
+        timeConstant: Float,
+        granularity: Int,
+        tfTransforms: Int,
+        bands: DoubleArray
+    ): Boolean
+
+    protected abstract fun setVdcInternal(enable: Boolean, vdc: String): Boolean
+
+    protected abstract fun setConvolverInternal(
+        enable: Boolean,
+        impulseResponse: FloatArray,
+        irChannels: Int,
+        irFrames: Int,
+        irCrc: Int
+    ): Boolean
+
+    protected abstract fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean
+
+    protected abstract fun setLiveprogInternal(
+        enable: Boolean,
+        name: String,
+        script: String
+    ): Boolean
+
+    // ---- Feature support ----
+
     abstract fun supportsEelVmAccess(): Boolean
     abstract fun supportsCustomCrossfeed(): Boolean
 
-    // EEL VM utilities
+    // ---- EEL VM utilities ----
+
     abstract fun enumerateEelVariables(): ArrayList<EelVmVariable>
     abstract fun manipulateEelVariable(name: String, value: Float): Boolean
     abstract fun freezeLiveprogExecution(freeze: Boolean)
 
-    protected inner class DummyCallbacks : JamesDspWrapper.JamesDspCallbacks
-    {
+    // ---- Dummy callbacks ----
+
+    protected inner class DummyCallbacks : JamesDspWrapper.JamesDspCallbacks {
         override fun onLiveprogOutput(message: String) {}
         override fun onLiveprogExec(id: String) {}
-        override fun onLiveprogResult(resultCode: Int, id: String, errorMessage: String?) {}
+        override fun onLiveprogResult(
+            resultCode: Int,
+            id: String,
+            errorMessage: String?
+        ) {
+        }
+
         override fun onVdcParseError() {}
         override fun onConvolverParseError(errorCode: ProcessorMessage.ConvolverErrorCode) {}
     }
