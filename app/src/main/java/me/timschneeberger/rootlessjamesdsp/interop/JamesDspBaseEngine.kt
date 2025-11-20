@@ -1,4 +1,4 @@
-73.6package me.timschneeberger.rootlessjamesdsp.interop
+package me.timschneeberger.rootlessjamesdsp.interop
 
 import android.content.Context
 import android.content.Intent
