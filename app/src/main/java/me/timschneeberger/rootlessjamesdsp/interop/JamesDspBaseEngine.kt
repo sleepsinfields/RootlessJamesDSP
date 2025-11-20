@@ -1,4 +1,4 @@
-package me.timschneeberger.rootlessjamesdsp.interop
+73.6package me.timschneeberger.rootlessjamesdsp.interop
 
 import android.content.Context
 import android.content.Intent
@@ -280,7 +280,7 @@ abstract class JamesDspBaseEngine(
                     if (token.isEmpty()) continue
 
                    advSetting[i] = when (i) {
-    0, 1 -> {
+    0, 1, 2, 3, 4, 5 -> {
         val db = token.toDouble()
         (db * ADV_DB_SCALE).toInt()
     }
