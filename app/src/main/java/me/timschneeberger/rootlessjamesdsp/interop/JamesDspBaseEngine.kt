@@ -25,7 +25,14 @@ abstract class JamesDspBaseEngine(
 ) : AutoCloseable {
 
     abstract var enabled: Boolean
+    
+    // Runtime toggle for advanced fractional shift mode
+    var isAdvancedShiftEnabled: Boolean = false
+        private set
 
+    fun setAdvancedShiftEnabled(enabled: Boolean) {
+        isAdvancedShiftEnabled = enabled
+    }
     open var sampleRate: Float = 0.0f
         set(value) {
             field = value
@@ -272,21 +279,21 @@ abstract class JamesDspBaseEngine(
                     val token = advConv[i].trim()
                     if (token.isEmpty()) continue
 
-                    advSetting[i] = when (i) {
-                        // 0, 1 = dB thresholds (scaled)
-                        0, 1 -> {
-                            val db = token.toDouble()
-                            (db * ADV_DB_SCALE).toInt()
-                        }
+                   advSetting[i] = when (i) {
+    0, 1 -> {
+        val db = token.toDouble()
+        (db * ADV_DB_SCALE).toInt()
+    }
 
-                        // 2..5 = fractional sample shifts
-                        2, 3, 4, 5 -> {
-                            val shiftSamples = token.toDouble()
-                            (shiftSamples * SHIFT_SCALE).toInt()
-                        }
+    2, 3, 4, 5 -> if (isAdvancedShiftEnabled) {
+        val shiftSamples = token.toDouble()
+        (shiftSamples * SHIFT_SCALE).toInt()
+    } else {
+        token.toInt()   // or 0, depending on which behavior you prefer
+    }
 
-                        else -> token.toInt()
-                    }
+    else -> token.toInt()
+}
                 }
             } else {
                 Timber.w(
