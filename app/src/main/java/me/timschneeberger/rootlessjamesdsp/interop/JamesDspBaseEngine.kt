@@ -273,45 +273,28 @@ abstract class JamesDspBaseEngine(
         advSetting[0] = -80
         advSetting[1] = -100
 
-        try {
-            if (advConv.size == 6) {
-                for (i in advConv.indices) {
-                    val token = advConv[i].trim()
-                    if (token.isEmpty()) continue
+    try {
+    if (advConv.size == 6) {
+        for (i in advConv.indices) {
+            val token = advConv[i].trim()
+            if (token.isEmpty()) continue
 
-                   advSetting[i] = when (i) {
-    0, 1, 2, 3, 4, 5 -> {
-        val db = token.toDouble()
-        (db * ADV_DB_SCALE).toInt()
-    }
-
-    2, 3, 4, 5 -> if (isAdvancedShiftEnabled) {
-        val shiftSamples = token.toDouble()
-        (shiftSamples * SHIFT_SCALE).toInt()
-    } else {
-        token.toInt()   // or 0, depending on which behavior you prefer
-    }
-
-    else -> token.toInt()
-}
+            advSetting[i] = when (i) {
+                0, 1, 2, 3, 4, 5 -> {
+                    val db = token.toDouble()
+                    (db * ADV_DB_SCALE).toInt()
                 }
-            } else {
-                Timber.w(
-                    "setConvolver: AdvImp setting has the wrong size (${advConv.size})"
-                )
-                callbacks?.onConvolverParseError(
-                    ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid
-                )
+                else -> token.toInt()
             }
-        } catch (ex: NumberFormatException) {
-            Timber.e(
-                ex,
-                "setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults."
-            )
-            callbacks?.onConvolverParseError(
-                ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid
-            )
         }
+    } else {
+        Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
+        callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+    }
+} catch (ex: NumberFormatException) {
+    Timber.e(ex, "setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
+    callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+}
 
         val info = IntArray(4)
         val imp = JdspImpResToolbox.ReadImpulseResponseToFloat(
