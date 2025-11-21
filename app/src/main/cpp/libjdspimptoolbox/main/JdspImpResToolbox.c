@@ -506,14 +506,14 @@ JNIEXPORT jfloatArray JNICALL Java_me_timschneeberger_rootlessjamesdsp_interop_J
     }
 
     int isAdvSetValid = validateAdvImpParameter(frameCount, convMode, javaAdvSetPtr, javaAdvSetSize);
-    if(!isAdvSetValid) {
-        javaAdvSetPtr[0] = (jint)(-80.0f  * ADV_DB_SCALE);  // -80.000 dB
-        javaAdvSetPtr[1] = (jint)(-100.0f * ADV_DB_SCALE);  // -100.000 dB
-        javaAdvSetPtr[2] = 0;   // sample offset ch0
-        javaAdvSetPtr[3] = 0;   // sample offset ch1
-        javaAdvSetPtr[4] = 0;   // sample offset ch2
-        javaAdvSetPtr[5] = 0;   // sample offset ch3
-    }
+    if (!isAdvSetValid) {
+    javaAdvSetPtr[0] = -80;
+    javaAdvSetPtr[1] = -100;
+    javaAdvSetPtr[2] = 0;
+    javaAdvSetPtr[3] = 0;
+    javaAdvSetPtr[4] = 0;
+    javaAdvSetPtr[5] = 0;
+}
 
 
 	int i;
@@ -539,8 +539,9 @@ JNIEXPORT jfloatArray JNICALL Java_me_timschneeberger_rootlessjamesdsp_interop_J
     free(pFrameBuffer);
 
     int range[2];
-    float startCutdB = ((float)javaAdvSetPtr[0]) / ADV_DB_SCALE;
-    float endCutdB   = ((float)javaAdvSetPtr[1]) / ADV_DB_SCALE;
+    // REMOVE use of ADV_DB_SCALE here:
+float startCutdB = javaAdvSetPtr[0];
+float endCutdB   = javaAdvSetPtr[1];
 
     float *outPtr[4];
     int xLen;
