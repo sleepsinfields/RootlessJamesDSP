@@ -267,32 +267,29 @@ abstract class JamesDspBaseEngine(
             return true
         }
 
-        val advConv = waveEditStr.split(";")
-        val advSetting = IntArray(6)
-        advSetting.fill(0)
-        advSetting[0] = -80
-        advSetting[1] = -100
+      val advConv = waveEditStr.split(";")
+val advSetting = IntArray(6)
+advSetting.fill(0)
+advSetting[0] = -80
+advSetting[1] = -100
 
-    try {
+try {
     if (advConv.size == 6) {
-        for (i in advConv.indices) {
-            val token = advConv[i].trim()
-            if (token.isEmpty()) continue
-
-            advSetting[i] = when (i) {
-                0, 1, 2, 3, 4, 5 -> {
-                    val db = token.toDouble()
-                    (db * ADV_DB_SCALE).toInt()
-                }
-                else -> token.toInt()
+        for ((i, str) in advConv.withIndex()) {
+            val number = str.toIntOrNull()
+            if (number == null) {
+                Timber.e("setConvolver: malformed AdvImp string")
+                callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+                return false
             }
+            advSetting[i] = number
         }
     } else {
         Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
         callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
     }
 } catch (ex: NumberFormatException) {
-    Timber.e(ex, "setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
+    Timber.e("setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
     callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
 }
 
