@@ -532,16 +532,16 @@ JNIEXPORT jfloatArray JNICALL Java_me_timschneeberger_rootlessjamesdsp_interop_J
 			splittedBuffer[i] = (float*)malloc(frameCount * sizeof(float));
 	}
 	channel_splitFloat(pFrameBuffer, frameCount, splittedBuffer, channels);
-    int32_t crc32;
-    
-    if (convMode > 0)
-    {
+int32_t crc32;
+
+if (convMode > 0)
+{
     free(pFrameBuffer);
 
     int range[2];
-    // REMOVE use of ADV_DB_SCALE here:
-float startCutdB = javaAdvSetPtr[0];
-float endCutdB   = javaAdvSetPtr[1];
+    // BACK TO ORIGINAL BEHAVIOR: thresholds are raw ints, not scaled
+    float startCutdB = (float)javaAdvSetPtr[0];
+    float endCutdB   = (float)javaAdvSetPtr[1];
 
     float *outPtr[4];
     int xLen;
@@ -555,10 +555,11 @@ float endCutdB   = javaAdvSetPtr[1];
 
         for (i = 0; i < channels; i++)
         {
-            // This channel?s trimmed IR region
+            // This channel’s trimmed IR region
             float *chanBuf = &splittedBuffer[i][range[0]];
             outPtr[i] = chanBuf;
 
+            // Fractional shift based on advSetPtr[i + 2]
             float shiftSamples = ((float)javaAdvSetPtr[i + 2]) / SHIFT_SCALE;
 
             float *temp = (float*)malloc(sizeof(float) * (size_t)xLen);
@@ -593,11 +594,11 @@ float endCutdB   = javaAdvSetPtr[1];
 
             for (i = 0; i < spawnNthread; i++)
             {
-                th[i].rangeMin = (i + 1) * taskPerThread;
-                th[i].rangeMax = (i == spawnNthread - 1) ? channels : th[i].rangeMin + taskPerThread;
-                th[i].fd        = &fd;
-                th[i].x         = splittedBuffer;
-                th[i].y         = splittedBuffer;
+                th[i].rangeMin   = (i + 1) * taskPerThread;
+                th[i].rangeMax   = (i == spawnNthread - 1) ? channels : th[i].rangeMin + taskPerThread;
+                th[i].fd         = &fd;
+                th[i].x          = splittedBuffer;
+                th[i].y          = splittedBuffer;
                 th[i].sampleShift = range[0];
             }
 
@@ -642,22 +643,23 @@ float endCutdB   = javaAdvSetPtr[1];
         }
     }
 
-    // Join channels back and compute CRC
+    // Join channels back and compute CRC for convMode > 0
     unsigned int totalFrames = xLen * channels;
     frameCount = xLen;
     pFrameBuffer = (float*)malloc(totalFrames * sizeof(float));
     crc32 = channel_joinFloat_crc(outPtr, channels, pFrameBuffer, xLen);
 }
-
-	{
-		for (i = 0; i < channels; i++)
-		{
-			circshift(splittedBuffer[i], frameCount, javaAdvSetPtr[i + 2]);
-			for (int j = 0; j < javaAdvSetPtr[i + 2] - 1; j++)
-				splittedBuffer[i][j] = 0.0f;
-		}
-        crc32 = channel_joinFloat_crc(splittedBuffer, channels, pFrameBuffer, frameCount);
-	}
+else
+{
+    // This block should ONLY run for convMode == 0 (original behavior)
+    for (i = 0; i < channels; i++)
+    {
+        circshift(splittedBuffer[i], frameCount, javaAdvSetPtr[i + 2]);
+        for (int j = 0; j < javaAdvSetPtr[i + 2] - 1; j++)
+            splittedBuffer[i][j] = 0.0f;
+    }
+    crc32 = channel_joinFloat_crc(splittedBuffer, channels, pFrameBuffer, frameCount);
+}
 	for (i = 0; i < channels; i++)
 		free(splittedBuffer[i]);
 	(*env)->ReleaseIntArrayElements(env, jadvParam, javaAdvSetPtr, 0);
