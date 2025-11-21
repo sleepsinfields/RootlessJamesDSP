@@ -7,7 +7,7 @@
 #include <jdsp_header.h>
 
 #define SHIFT_SCALE 1000.0f
-#define ADV_DB_SCALE 1000.0f
+#define ADV_DB_SCALE 100000.0f  // must match Kotlin
 
 // optional:
 static const float PI = 3.14159265358979f;
@@ -507,12 +507,12 @@ JNIEXPORT jfloatArray JNICALL Java_me_timschneeberger_rootlessjamesdsp_interop_J
 
     int isAdvSetValid = validateAdvImpParameter(frameCount, convMode, javaAdvSetPtr, javaAdvSetSize);
     if (!isAdvSetValid) {
-    javaAdvSetPtr[0] = -80;
-    javaAdvSetPtr[1] = -100;
-    javaAdvSetPtr[2] = 0;
-    javaAdvSetPtr[3] = 0;
-    javaAdvSetPtr[4] = 0;
-    javaAdvSetPtr[5] = 0;
+    javaAdvSetPtr[0] = (jint)(-80.0f  * ADV_DB_SCALE);  // -80 dB
+    javaAdvSetPtr[1] = (jint)(-100.0f * ADV_DB_SCALE);  // -100 dB
+    javaAdvSetPtr[2] = 0;   // sample offset ch0
+    javaAdvSetPtr[3] = 0;   // sample offset ch1
+    javaAdvSetPtr[4] = 0;   // sample offset ch2
+    javaAdvSetPtr[5] = 0;   // sample offset ch3
 }
 
 
@@ -539,9 +539,8 @@ if (convMode > 0)
     free(pFrameBuffer);
 
     int range[2];
-    // BACK TO ORIGINAL BEHAVIOR: thresholds are raw ints, not scaled
-    float startCutdB = (float)javaAdvSetPtr[0];
-    float endCutdB   = (float)javaAdvSetPtr[1];
+    float startCutdB = ((float)javaAdvSetPtr[0]) / ADV_DB_SCALE;
+float endCutdB   = ((float)javaAdvSetPtr[1]) / ADV_DB_SCALE;
 
     float *outPtr[4];
     int xLen;
