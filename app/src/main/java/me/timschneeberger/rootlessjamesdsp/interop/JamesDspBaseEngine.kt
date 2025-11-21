@@ -270,50 +270,50 @@ abstract class JamesDspBaseEngine(
       val advConv = waveEditStr.split(";")
 val advSetting = IntArray(6)
 advSetting.fill(0)
-advSetting[0] = -80
-advSetting[1] = -100
+
+// Defaults for thresholds (same as before, just scaled)
+advSetting[0] = (-80.0 * ADV_DB_SCALE).toInt()
+advSetting[1] = (-100.0 * ADV_DB_SCALE).toInt()
 
 try {
     if (advConv.size == 6) {
-    for ((i, str) in advConv.withIndex()) {
-        val token = str.trim()
-        if (token.isEmpty()) {
-            // fallback to current value or default
-            continue
-        }
+        for ((i, raw) in advConv.withIndex()) {
+            val token = raw.trim()
+            if (token.isEmpty()) continue
 
-        when (i) {
-            0, 1 -> {
-                // High-precision dB thresholds for start/end
-                val db = token.toDoubleOrNull()
-                if (db == null) {
-                    Timber.e("setConvolver: malformed dB value in AdvImp for index $i")
-                    callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
-                    return false
+            when (i) {
+                // 0,1: high precision dB thresholds
+                0, 1 -> {
+                    val db = token.toDoubleOrNull()
+                    if (db == null) {
+                        Timber.e("setConvolver: malformed dB value in AdvImp at index $i: '$token'")
+                        callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+                        return false
+                    }
+                    advSetting[i] = (db * ADV_DB_SCALE).toInt()
                 }
-                // store as scaled int: dB * 100000
-                advSetting[i] = (db * ADV_DB_SCALE).toInt()
-            }
 
-            else -> {
-                // Offsets for channels 0..3: keep original integer semantics
-                val number = token.toIntOrNull()
-                if (number == null) {
-                    Timber.e("setConvolver: malformed offset in AdvImp for index $i")
-                    callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
-                    return false
+                // 2..5: shift in *samples*, allow decimals
+                else -> {
+                    val shiftSamples = token.toDoubleOrNull()
+                    if (shiftSamples == null) {
+                        Timber.e("setConvolver: malformed shift value in AdvImp at index $i: '$token'")
+                        callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+                        return false
+                    }
+                    // store as fixed-point: samples * SHIFT_SCALE
+                    advSetting[i] = (shiftSamples * SHIFT_SCALE).toInt()
                 }
-                advSetting[i] = number
             }
         }
+    } else {
+        Timber.w("setConvolver: AdvImp setting has wrong size (${advConv.size})")
+        callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
     }
-} else {
-    Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
-    callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
-}
 } catch (ex: NumberFormatException) {
-    Timber.e("setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
+    Timber.e(ex, "setConvolver: NumberFormatException while parsing AdvImp setting")
     callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+    return false
 }
 
         val info = IntArray(4)
