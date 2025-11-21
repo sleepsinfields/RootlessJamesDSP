@@ -427,10 +427,14 @@ float* loadAudioFile(const char *filename, double targetFs, unsigned int *channe
 }
 
 int validateAdvImpParameter(int frameCount, int convMode, jint* advSetPtr, jsize advSetSize) {
-	int frameCountGE8 = frameCount < 8 ? 8 : frameCount;
-    int splittedBufferSize = convMode == 2 ? (2 * frameCountGE8) : frameCount;
-    for(int i = 2; i < advSetSize; i++) {
-        if(advSetPtr[i] >= splittedBufferSize || advSetPtr[i] < 0)
+    int frameCountGE8 = frameCount < 8 ? 8 : frameCount;
+    int splittedBufferSize = (convMode == 2) ? (2 * frameCountGE8) : frameCount;
+
+    for (int i = 2; i < advSetSize; i++) {
+        float shiftSamples = ((float)advSetPtr[i]) / SHIFT_SCALE;
+
+        // Allow 0 <= shift < splittedBufferSize
+        if (shiftSamples < 0.0f || shiftSamples >= (float)splittedBufferSize)
             return 0;
     }
     return 1;
