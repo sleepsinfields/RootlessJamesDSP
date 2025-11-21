@@ -45,7 +45,7 @@ abstract class JamesDspBaseEngine(
 
     companion object {
         // Scaling constants for advanced convolver parameters
-        private const val ADV_DB_SCALE = 1000.0    // dB -> fixed-point
+        private const val ADV_DB_SCALE = 100000.0   // 0.00001 dB steps for thresholds
         private const val SHIFT_SCALE = 1000.0     // samples -> fixed-point
     }
 
@@ -275,19 +275,42 @@ advSetting[1] = -100
 
 try {
     if (advConv.size == 6) {
-        for ((i, str) in advConv.withIndex()) {
-            val number = str.toIntOrNull()
-            if (number == null) {
-                Timber.e("setConvolver: malformed AdvImp string")
-                callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
-                return false
-            }
-            advSetting[i] = number
+    for ((i, str) in advConv.withIndex()) {
+        val token = str.trim()
+        if (token.isEmpty()) {
+            // fallback to current value or default
+            continue
         }
-    } else {
-        Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
-        callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+
+        when (i) {
+            0, 1 -> {
+                // High-precision dB thresholds for start/end
+                val db = token.toDoubleOrNull()
+                if (db == null) {
+                    Timber.e("setConvolver: malformed dB value in AdvImp for index $i")
+                    callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+                    return false
+                }
+                // store as scaled int: dB * 100000
+                advSetting[i] = (db * ADV_DB_SCALE).toInt()
+            }
+
+            else -> {
+                // Offsets for channels 0..3: keep original integer semantics
+                val number = token.toIntOrNull()
+                if (number == null) {
+                    Timber.e("setConvolver: malformed offset in AdvImp for index $i")
+                    callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+                    return false
+                }
+                advSetting[i] = number
+            }
+        }
     }
+} else {
+    Timber.w("setConvolver: AdvImp setting has the wrong size (${advConv.size})")
+    callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
+}
 } catch (ex: NumberFormatException) {
     Timber.e("setConvolver: NumberFormatException while parsing AdvImp setting. Using defaults.")
     callbacks?.onConvolverParseError(ProcessorMessage.ConvolverErrorCode.AdvParamsInvalid)
