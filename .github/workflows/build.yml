@@ -5,10 +5,12 @@ on:
   pull_request:
     branches:
       - master
+      - Shift
   push:
     branches:
       - master
       - Test
+      - Shift
     tags:
       - v*
 
