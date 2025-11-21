@@ -7,7 +7,7 @@
 #include <jdsp_header.h>
 
 #define SHIFT_SCALE 1000.0f
-#define ADV_DB_SCALE 100000.0f  // must match Kotlin
+#define ADV_DB_SCALE 1000.0f  // must match Kotlin
 
 // optional:
 static const float PI = 3.14159265358979f;
