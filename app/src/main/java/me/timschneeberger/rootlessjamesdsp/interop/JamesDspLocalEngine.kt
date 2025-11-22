@@ -158,6 +158,22 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
         return JamesDspWrapper.setGraphicEq(handle, enable, bands)
     }
 
+fun setStereoArbEqFlags(
+    global: Boolean,
+    master: Boolean,
+    left: Boolean,
+    right: Boolean
+) {
+    // Mirrors the pattern above: call straight into the wrapper
+    JamesDspWrapper.setArbEqStereoFlags(
+        handle,
+        global,
+        master,
+        left,
+        right
+    )
+}
+
     override fun setLiveprogInternal(enable: Boolean, name: String, script: String): Boolean {
         return JamesDspWrapper.setLiveprog(handle, enable, name, script)
     }
