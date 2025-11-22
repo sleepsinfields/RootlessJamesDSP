@@ -154,17 +154,16 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
         return JamesDspWrapper.setConvolver(handle, enable, impulseResponse, irChannels, irFrames)
     }
 
-    override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
-        return JamesDspWrapper.setGraphicEq(handle, enable, bands)
-    }
+   override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
+    return JamesDspWrapper.setGraphicEq(handle, enable, bands)
+}
 
-fun setStereoArbEqFlags(
+override fun setStereoArbEqFlagsInternal(
     global: Boolean,
     master: Boolean,
     left: Boolean,
     right: Boolean
 ) {
-    // Mirrors the pattern above: call straight into the wrapper
     JamesDspWrapper.setArbEqStereoFlags(
         handle,
         global,
