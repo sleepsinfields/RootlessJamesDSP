@@ -6,11 +6,14 @@ on:
     branches:
       - master
       - Shift
+      - Test
+      - StereoEQ
   push:
     branches:
       - master
       - Test
       - Shift
+      - StereoEQ
     tags:
       - v*
 
