@@ -236,6 +236,17 @@ class JamesDspRemoteEngine(
         val prevCrc = this.graphicEqHash
         val currentCrc = bands.crc()
 
+// new
+override fun setStereoArbEqFlagsInternal(
+    global: Boolean,
+    master: Boolean,
+    left: Boolean,
+    right: Boolean
+) {
+    // TODO: implement for remote engine if needed
+}
+// end new
+
         Timber.i("GraphicEQ hash before: $prevCrc, current: $currentCrc")
         if (prevCrc != currentCrc && enable) {
             effect.setParameterCharBuffer(12001, 10006, bands)
