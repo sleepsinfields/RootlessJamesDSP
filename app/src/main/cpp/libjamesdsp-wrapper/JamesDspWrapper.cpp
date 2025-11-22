@@ -499,17 +499,19 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setConvolver(JN
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(JNIEnv *env, jobject obj, jlong self,
-                                                                             jboolean enable, jstring graphicEq)
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(
+        JNIEnv *env, jobject obj, jlong self,
+        jboolean enable, jstring graphicEq)
 {
     DECLARE_DSP_B
-    if(graphicEq == nullptr || env->GetStringUTFLength(graphicEq) <= 0)
+
+    if (graphicEq == nullptr || env->GetStringUTFLength(graphicEq) <= 0)
     {
         LOGE("JamesDspWrapper::setGraphicEq: graphicEq is empty or NULL. Disabling graphic eq.");
         enable = false;
     }
 
-    if(enable)
+    if (enable)
     {
         const char *nativeString = env->GetStringUTFChars(graphicEq, nullptr);
         ArbitraryResponseEqualizerStringParser(dsp, (char*)nativeString);
@@ -518,9 +520,32 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(JN
         ArbitraryResponseEqualizerEnable(dsp, 1);
     }
     else
+    {
         ArbitraryResponseEqualizerDisable(dsp);
+    }
 
     return true;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setArbEqStereoFlags(
+        JNIEnv *env, jobject obj, jlong self,
+        jboolean globalEnable,
+        jboolean masterEnable,
+        jboolean leftEnable,
+        jboolean rightEnable)
+{
+    (void)env;
+    (void)obj;
+
+    JamesDSPLib *dsp = reinterpret_cast<JamesDSPLib *>(self);
+    if (!dsp)
+        return;
+
+    ArbitraryResponseEqualizerSetGlobalEnabled(dsp,  globalEnable  ? 1 : 0);
+    ArbitraryResponseEqualizerSetMasterEnabled(dsp,  masterEnable  ? 1 : 0);
+    ArbitraryResponseEqualizerSetLeftEnabled(dsp,    leftEnable    ? 1 : 0);
+    ArbitraryResponseEqualizerSetRightEnabled(dsp,   rightEnable   ? 1 : 0);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
