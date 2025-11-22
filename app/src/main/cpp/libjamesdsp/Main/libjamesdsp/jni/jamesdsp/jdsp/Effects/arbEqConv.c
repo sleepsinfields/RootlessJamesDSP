@@ -4,6 +4,33 @@
 #include <math.h>
 #include <float.h>
 #include "../jdsp_header.h"
+
+// ============================================================================
+// [RJDSP-LR-EQ] Arbitrary Response EQ – multi-curve subsystem (Master / L / R)
+// ============================================================================
+
+// For now this is just a flag layer. Later we can attach separate
+// convolution/filter state per curve if we want full independent IRs.
+typedef struct {
+    char enabled;    // audio on/off for this curve
+} ArbEqCurveFlags;
+
+typedef struct {
+    char enabled;        // global subsystem on/off
+    ArbEqCurveFlags master;  // stereo-linked base curve (L+R)
+    ArbEqCurveFlags left;    // extra left-only curve
+    ArbEqCurveFlags right;   // extra right-only curve
+} ArbEqSubsystemFlags;
+
+// Single instance with defaults: subsystem on, master on, L/R extra off.
+static ArbEqSubsystemFlags g_arbEq = {
+    .enabled = 1,
+    .master = { .enabled = 1 },
+    .left   = { .enabled = 0 },
+    .right  = { .enabled = 0 },
+};
+// end new section
+
 void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
 {
 	jdsp->arbMag.instance.filterLen = InitArbitraryEq(&jdsp->arbMag.instance.coeffGen, 0);
