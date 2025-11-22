@@ -65,6 +65,18 @@ external fun setCrossfeed(
     customFeed: Int
 ): Boolean
 
+//new
+fun updateStereoArbEq(
+    self: JamesDspHandle,
+    global: Boolean,
+    master: Boolean,
+    left: Boolean,
+    right: Boolean
+) {
+    setArbEqStereoFlags(self, global, master, left, right)
+}
+//end new
+
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
     external fun setVacuumTube(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
