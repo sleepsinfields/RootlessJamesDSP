@@ -361,6 +361,18 @@ try {
         return setGraphicEqInternal(enable, bands)
     }
 
+// new
+fun setStereoArbEqFlags(
+    global: Boolean,
+    master: Boolean,
+    left: Boolean,
+    right: Boolean
+) {
+    // You can add whatever guards you want here (e.g. isConnected).
+    setStereoArbEqFlagsInternal(global, master, left, right)
+}
+// end new
+
     fun setLiveprog(enable: Boolean, path: String): Boolean {
         val fullPath = FileLibraryPreference.createFullPathCompat(context, path)
 
