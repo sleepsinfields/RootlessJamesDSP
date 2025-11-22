@@ -5,8 +5,8 @@ on:
   pull_request:
     branches:
       - master
-      - Shift
       - Test
+      - Shift
       - StereoEQ
   push:
     branches:
