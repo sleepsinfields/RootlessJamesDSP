@@ -71,11 +71,33 @@ void ArbitraryResponseEqualizerEnable(JamesDSPLib *jdsp, char enable)
 	if (enable)
 		jdsp->arbitraryMagEnabled = 1;
 }
+// 
 void ArbitraryResponseEqualizerDisable(JamesDSPLib *jdsp)
 {
-	jdsp->arbitraryMagEnabled = 0;
+    jdsp->arbitraryMagEnabled = 0;
 }
+ ----------------------------------------------------------------------------
+// [RJDSP-LR-EQ] Multi-curve processing hook (placeholder)
+// ----------------------------------------------------------------------------
+static void ArbEqProcessSubsystem(JamesDSPLib *jdsp, size_t n)
+{
+    // This is intentionally a no-op right now. In later steps we will:
+    //  - use g_arbEq.master/left/right.enabled to decide which curves run
+    //  - apply extra left-only / right-only convolvers after the master.
+    (void)jdsp;
+    (void)n;
+}
+
 void ArbitraryResponseEqualizerProcess(JamesDSPLib *jdsp, size_t n)
 {
-	FFTConvolver2x2Process(&jdsp->arbMag.conv, jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], (unsigned int)n);
+    // Existing master arbitrary response EQ (unchanged behavior).
+    FFTConvolver2x2Process(&jdsp->arbMag.conv,
+                           jdsp->tmpBuffer[0],
+                           jdsp->tmpBuffer[1],
+                           jdsp->tmpBuffer[0],
+                           jdsp->tmpBuffer[1],
+                           (unsigned int)n);
+
+    // Hook for extra Left/Right-only curves (currently a no-op).
+    ArbEqProcessSubsystem(jdsp, n);
 }
