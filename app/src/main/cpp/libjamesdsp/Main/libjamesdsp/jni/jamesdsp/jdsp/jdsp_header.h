@@ -658,6 +658,11 @@ extern void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stri
 extern void ArbitraryResponseEqualizerEnable(JamesDSPLib *jdsp, char enable);
 extern void ArbitraryResponseEqualizerDisable(JamesDSPLib *jdsp);
 extern void ArbitraryResponseEqualizerProcess(JamesDSPLib *jdsp, size_t n);
+// LR-EQ: control flags for global / master / left / right
+void ArbitraryResponseEqualizerSetGlobalEnabled(JamesDSPLib *jdsp, char enable);
+void ArbitraryResponseEqualizerSetMasterEnabled(JamesDSPLib *jdsp, char enable);
+void ArbitraryResponseEqualizerSetLeftEnabled(JamesDSPLib *jdsp, char enable);
+void ArbitraryResponseEqualizerSetRightEnabled(JamesDSPLib *jdsp, char enable);
 // FIR Equalizer
 extern void MultimodalEqualizerConstructor(JamesDSPLib *jdsp);
 extern void MultimodalEqualizerDestructor(JamesDSPLib *jdsp);
