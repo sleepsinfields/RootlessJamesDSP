@@ -121,6 +121,38 @@ void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stringEq)
     // and load their own IRs into g_arbLeftConv / g_arbRightConv.
 }
 
+// ----------------------------------------------------------------------------
+// [RJDSP-LR-EQ] Flag control helpers for Master / Left / Right
+// ----------------------------------------------------------------------------
+
+// Global subsystem on/off (all three curves)
+void ArbitraryResponseEqualizerSetGlobalEnabled(JamesDSPLib *jdsp, char enable)
+{
+    (void)jdsp; // not used yet, but kept for symmetry / future
+    g_arbEq.enabled = enable ? 1 : 0;
+}
+
+// Master (L+R) curve on/off
+void ArbitraryResponseEqualizerSetMasterEnabled(JamesDSPLib *jdsp, char enable)
+{
+    (void)jdsp;
+    g_arbEq.master.enabled = enable ? 1 : 0;
+}
+
+// Left-only curve on/off
+void ArbitraryResponseEqualizerSetLeftEnabled(JamesDSPLib *jdsp, char enable)
+{
+    (void)jdsp;
+    g_arbEq.left.enabled = enable ? 1 : 0;
+}
+
+// Right-only curve on/off
+void ArbitraryResponseEqualizerSetRightEnabled(JamesDSPLib *jdsp, char enable)
+{
+    (void)jdsp;
+    g_arbEq.right.enabled = enable ? 1 : 0;
+}
+
 void ArbitraryResponseEqualizerEnable(JamesDSPLib *jdsp, char enable)
 {
     if (jdsp->arbMagForceRefresh)
