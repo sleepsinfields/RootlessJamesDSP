@@ -422,6 +422,14 @@ try {
 
     protected abstract fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean
 
+// new
+protected abstract fun setStereoArbEqFlagsInternal(
+    global: Boolean,
+    master: Boolean,
+    left: Boolean,
+    right: Boolean
+)
+// end new
     protected abstract fun setLiveprogInternal(
         enable: Boolean,
         name: String,
