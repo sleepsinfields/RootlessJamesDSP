@@ -246,7 +246,83 @@
                     android:text="@string/geq_preview"
                     android:textAppearance="?attr/textAppearanceTitleMedium" />
 
-                <me.timschneeberger.rootlessjamesdsp.view.GraphicEqualizerSurface
+                <!-- 🔽🔽🔽 PASTE THIS BLOCK HERE 🔽🔽🔽 -->
+        <LinearLayout
+            android:id="@+id/layoutStereoArbEq"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/textStereoArbEqTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stereo Arbitrary EQ"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:paddingBottom="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="2dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Master (L+R)" />
+
+                <Switch
+                    android:id="@+id/switchArbEqMaster"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="2dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Left channel only" />
+
+                <Switch
+                    android:id="@+id/switchArbEqLeft"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Right channel only" />
+
+                <Switch
+                    android:id="@+id/switchArbEqRight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+        </LinearLayout>
+        <!-- 🔼🔼🔼 END OF NEW BLOCK 🔼🔼🔼 -->
+ <me.timschneeberger.rootlessjamesdsp.view.GraphicEqualizerSurface
                     android:id="@+id/equalizer_surface"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"/>
