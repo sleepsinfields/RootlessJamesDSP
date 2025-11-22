@@ -33,9 +33,38 @@ object JamesDspWrapper {
     external fun setVdc(self: JamesDspHandle, enable: Boolean, vdcContents: String): Boolean
     external fun setCompander(self: JamesDspHandle, enable: Boolean, timeConstant: Float, granularity: Int, tfResolution: Int, bands: DoubleArray): Boolean
     external fun setReverb(self: JamesDspHandle, enable: Boolean, preset: Int): Boolean
-    external fun setConvolver(self: JamesDspHandle, enable: Boolean, impulseResponse: FloatArray, irChannels: Int, irFrames: Int): Boolean
-    external fun setGraphicEq(self: JamesDspHandle, enable: Boolean, graphicEq: String): Boolean
-    external fun setCrossfeed(self: JamesDspHandle, enable: Boolean, mode: Int, customFcut: Int, customFeed: Int): Boolean
+    
+external fun setConvolver(
+    self: JamesDspHandle,
+    enable: Boolean,
+    impulseResponse: FloatArray,
+    irChannels: Int,
+    irFrames: Int
+): Boolean
+
+external fun setGraphicEq(
+    self: JamesDspHandle,
+    enable: Boolean,
+    graphicEq: String
+): Boolean
+
+// new
+external fun setArbEqStereoFlags(
+    self: JamesDspHandle,
+    globalEnable: Boolean,
+    masterEnable: Boolean,
+    leftEnable: Boolean,
+    rightEnable: Boolean
+)
+
+external fun setCrossfeed(
+    self: JamesDspHandle,
+    enable: Boolean,
+    mode: Int,
+    customFcut: Int,
+    customFeed: Int
+): Boolean
+
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
     external fun setVacuumTube(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
