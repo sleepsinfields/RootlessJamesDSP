@@ -233,28 +233,32 @@ class JamesDspRemoteEngine(
     }
 
     override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
-        val prevCrc = this.graphicEqHash
-        val currentCrc = bands.crc()
+    val prevCrc = this.graphicEqHash
+    val currentCrc = bands.crc()
 
-// new
+    Timber.i("GraphicEQ hash before: $prevCrc, current: $currentCrc")
+    if (prevCrc != currentCrc && enable) {
+        effect.setParameterCharBuffer(12001, 10006, bands)
+        effect.setParameter(25000, currentCrc) // Commit hash
+        // keep this line if it existed in the original:
+        // this.graphicEqHash = currentCrc
+    }
+
+    return effect.setParameter(1210, enable.toShort()) == AudioEffect.SUCCESS
+}
+
+// Put this *outside* of setGraphicEqInternal, but still inside the class:
+
 override fun setStereoArbEqFlagsInternal(
     global: Boolean,
     master: Boolean,
     left: Boolean,
     right: Boolean
 ) {
-    // TODO: implement for remote engine if needed
+    // Remote engine currently doesn’t support per-channel stereo EQ,
+    // so no-op is fine for now.
+    // You can later map this to effect.setParameter(...) if/when needed.
 }
-// end new
-
-        Timber.i("GraphicEQ hash before: $prevCrc, current: $currentCrc")
-        if (prevCrc != currentCrc && enable) {
-            effect.setParameterCharBuffer(12001, 10006, bands)
-            effect.setParameter(25000, currentCrc) // Commit hash
-        }
-
-        return effect.setParameter(1210, enable.toShort()) == AudioEffect.SUCCESS
-    }
 
     override fun setLiveprogInternal(enable: Boolean, name: String, script: String): Boolean {
         val prevCrc = this.liveprogHash
