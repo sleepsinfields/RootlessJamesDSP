@@ -1,19 +1,12 @@
 name: Build signed app
 
 on:
-  workflow_dispatch:
   pull_request:
     branches:
       - master
-      - Test
-      - Shift
-      - StereoEQ
   push:
     branches:
-      - master
-      - Test
-      - Shift
-      - StereoEQ
+      - '**'    # all branches
     tags:
       - v*
 
