@@ -101,18 +101,40 @@ void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stringEq)
             (float)jdsp->fs
         );
 
-    // Refresh main conv state and runtime convolver
-    FFTConvolver2x2RefreshImpulseResponse(
-    &jdsp->arbMag.instance.convState,
-    &jdsp->arbMag.masterConv,
-    eqFil, eqFil,
-    jdsp->arbMag.instance.filterLen
-);
+    // Build a delta (identity) impulse for the "unaffected" channel
+    float *kDelta = (float*)malloc(
+        jdsp->arbMag.instance.filterLen * sizeof(float));
+    memset(kDelta, 0,
+           jdsp->arbMag.instance.filterLen * sizeof(float));
+    kDelta[0] = 1.0f;
 
-// NOTE:
-// For now, the extra L/R convolvers keep their identity IRs.
-// Later, we will add separate parsers / strings for L/R curves
-// and load their own IRs into jdsp->arbMag.leftConv / rightConv.
+    // Master: same EQ on both channels
+    FFTConvolver2x2RefreshImpulseResponse(
+        &jdsp->arbMag.instance.convState,
+        &jdsp->arbMag.masterConv,
+        eqFil, eqFil,
+        jdsp->arbMag.instance.filterLen
+    );
+
+    // Left-only: EQ on L, identity on R
+    FFTConvolver2x2RefreshImpulseResponse(
+        &jdsp->arbMag.instance.convState,
+        &jdsp->arbMag.leftConv,
+        eqFil,      /* left IR */
+        kDelta,     /* right stays identity */
+        jdsp->arbMag.instance.filterLen
+    );
+
+    // Right-only: identity on L, EQ on R
+    FFTConvolver2x2RefreshImpulseResponse(
+        &jdsp->arbMag.instance.convState,
+        &jdsp->arbMag.rightConv,
+        kDelta,     /* left stays identity */
+        eqFil,      /* right IR */
+        jdsp->arbMag.instance.filterLen
+    );
+
+    free(kDelta);
 }
 
 // ----------------------------------------------------------------------------
@@ -150,37 +172,64 @@ void ArbitraryResponseEqualizerSetRightEnabled(JamesDSPLib *jdsp, char enable)
 void ArbitraryResponseEqualizerEnable(JamesDSPLib *jdsp, char enable)
 {
     if (jdsp->arbMagForceRefresh)
-{
-    float *eqFil =
-        jdsp->arbMag.instance.coeffGen.GetFilter(
-            &jdsp->arbMag.instance.coeffGen,
-            (float)jdsp->fs
+    {
+        float *eqFil =
+            jdsp->arbMag.instance.coeffGen.GetFilter(
+                &jdsp->arbMag.instance.coeffGen,
+                (float)jdsp->fs
+            );
+
+        float *kDelta = (float*)malloc(
+            jdsp->arbMag.instance.filterLen * sizeof(float));
+        memset(kDelta, 0,
+               jdsp->arbMag.instance.filterLen * sizeof(float));
+        kDelta[0] = 1.0f;
+
+        jdsp_lock(jdsp);
+
+        FFTConvolver2x2Free(&jdsp->arbMag.instance.convState);
+        FFTConvolver2x2Free(&jdsp->arbMag.masterConv);
+        FFTConvolver2x2Free(&jdsp->arbMag.leftConv);
+        FFTConvolver2x2Free(&jdsp->arbMag.rightConv);
+
+        FFTConvolver2x2LoadImpulseResponse(
+            &jdsp->arbMag.instance.convState,
+            (unsigned int)jdsp->blockSize,
+            eqFil, eqFil,
+            jdsp->arbMag.instance.filterLen
         );
 
-    jdsp_lock(jdsp);
+        // Master: EQ on both channels
+        FFTConvolver2x2LoadImpulseResponse(
+            &jdsp->arbMag.masterConv,
+            (unsigned int)jdsp->blockSize,
+            eqFil, eqFil,
+            jdsp->arbMag.instance.filterLen
+        );
 
-    FFTConvolver2x2Free(&jdsp->arbMag.instance.convState);
-    FFTConvolver2x2Free(&jdsp->arbMag.masterConv);
+        // Left-only: EQ on L, identity on R
+        FFTConvolver2x2LoadImpulseResponse(
+            &jdsp->arbMag.leftConv,
+            (unsigned int)jdsp->blockSize,
+            eqFil,
+            kDelta,
+            jdsp->arbMag.instance.filterLen
+        );
 
-    FFTConvolver2x2LoadImpulseResponse(
-        &jdsp->arbMag.instance.convState,
-        (unsigned int)jdsp->blockSize,
-        eqFil, eqFil,
-        jdsp->arbMag.instance.filterLen
-    );
+        // Right-only: identity on L, EQ on R
+        FFTConvolver2x2LoadImpulseResponse(
+            &jdsp->arbMag.rightConv,
+            (unsigned int)jdsp->blockSize,
+            kDelta,
+            eqFil,
+            jdsp->arbMag.instance.filterLen
+        );
 
-    FFTConvolver2x2LoadImpulseResponse(
-        &jdsp->arbMag.masterConv,
-        (unsigned int)jdsp->blockSize,
-        eqFil, eqFil,
-        jdsp->arbMag.instance.filterLen
-    );
+        jdsp_unlock(jdsp);
+        free(kDelta);
 
-    // L/R convolvers remain as identity for now.
-
-    jdsp_unlock(jdsp);
-    jdsp->arbMagForceRefresh = 0;
-}
+        jdsp->arbMagForceRefresh = 0;
+    }
 
     if (enable)
         jdsp->arbitraryMagEnabled = 1;
@@ -198,14 +247,42 @@ void ArbitraryResponseEqualizerProcess(JamesDSPLib *jdsp, size_t n)
     if (!jdsp->arbitraryMagEnabled)
         return;
 
-    // 1) Master curve (current behavior)
-    if (g_arbEq.enabled && g_arbEq.master.enabled)
-{
-    FFTConvolver2x2Process(
-        &jdsp->arbMag.masterConv,
-        jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
-        jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
-        (unsigned int)n
-    );
-}
+    if (!g_arbEq.enabled)
+        return;
+
+    float *left  = jdsp->tmpBuffer[0];
+    float *right = jdsp->tmpBuffer[1];
+
+    // 1) Master curve (stereo)
+    if (g_arbEq.master.enabled)
+    {
+        FFTConvolver2x2Process(
+            &jdsp->arbMag.masterConv,
+            left, right,
+            left, right,
+            (unsigned int)n
+        );
+    }
+
+    // 2) Left-only curve
+    if (g_arbEq.left.enabled)
+    {
+        FFTConvolver2x2Process(
+            &jdsp->arbMag.leftConv,
+            left, right,
+            left, right,
+            (unsigned int)n
+        );
+    }
+
+    // 3) Right-only curve
+    if (g_arbEq.right.enabled)
+    {
+        FFTConvolver2x2Process(
+            &jdsp->arbMag.rightConv,
+            left, right,
+            left, right,
+            (unsigned int)n
+        );
+    }
 }
