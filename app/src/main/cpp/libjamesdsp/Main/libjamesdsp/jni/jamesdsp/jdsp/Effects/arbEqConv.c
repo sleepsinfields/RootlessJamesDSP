@@ -148,11 +148,11 @@ void ArbitraryResponseEqualizerSetGlobalEnabled(JamesDSPLib *jdsp, char enable)
     g_arbEq.enabled = enable ? 1 : 0;
 }
 
-// Master (L+R) curve on/off
 void ArbitraryResponseEqualizerSetMasterEnabled(JamesDSPLib *jdsp, char enable)
 {
     (void)jdsp;
     g_arbEq.master.enabled = enable ? 1 : 0;
+    LOGE("StereoEQ: Master flag set to %d", g_arbEq.master.enabled);
 }
 
 // Left-only curve on/off
@@ -160,6 +160,7 @@ void ArbitraryResponseEqualizerSetLeftEnabled(JamesDSPLib *jdsp, char enable)
 {
     (void)jdsp;
     g_arbEq.left.enabled = enable ? 1 : 0;
+    LOGE("StereoEQ: Left flag set to %d", g_arbEq.left.enabled);
 }
 
 // Right-only curve on/off
@@ -167,6 +168,7 @@ void ArbitraryResponseEqualizerSetRightEnabled(JamesDSPLib *jdsp, char enable)
 {
     (void)jdsp;
     g_arbEq.right.enabled = enable ? 1 : 0;
+    LOGE("StereoEQ: Right flag set to %d", g_arbEq.right.enabled);
 }
 
 void ArbitraryResponseEqualizerEnable(JamesDSPLib *jdsp, char enable)
