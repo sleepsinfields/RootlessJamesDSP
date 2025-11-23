@@ -165,6 +165,15 @@ class GraphicEqualizerFragment : Fragment() {
             autoEqSelectorLauncher.launch(0)
         }
 
+// leave all your existing code untouched above
+
+// Just keep this part as pure UI state for now
+binding.apply {
+    switchArbEqMaster.isChecked = true
+    switchArbEqLeft.isChecked   = false
+    switchArbEqRight.isChecked  = false
+}
+
         // Load node data
         binding.nodeList.layoutManager = LinearLayoutManager(requireContext())
         loadNodes(savedInstanceState)
