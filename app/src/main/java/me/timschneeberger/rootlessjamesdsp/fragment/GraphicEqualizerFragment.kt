@@ -29,6 +29,7 @@ import me.timschneeberger.rootlessjamesdsp.utils.extensions.ContextExtensions.sh
 import me.timschneeberger.rootlessjamesdsp.utils.extensions.ContextExtensions.unregisterLocalReceiver
 import timber.log.Timber
 import java.util.UUID
+import android.util.Log
 
 class GraphicEqualizerFragment : Fragment() {
     private lateinit var binding: FragmentGraphicEqBinding
@@ -87,6 +88,7 @@ class GraphicEqualizerFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
+        Log.e("StereoEQ", "GraphicEqFragment created")
         binding = FragmentGraphicEqBinding.inflate(layoutInflater, container, false)
 
         binding.previewCard.setOnClickListener {
