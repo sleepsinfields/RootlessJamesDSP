@@ -490,8 +490,10 @@ typedef struct
 extern unsigned int HSHOSVF(double fs, double fc, unsigned int filterOrder, double gain, double overallGainDb, float *c1, float *c2, float *d0, float *d1, float *overallGain);
 typedef struct
 {
-	ArbEqConv instance;
-	FFTConvolver2x2 conv;
+    ArbEqConv instance;
+    FFTConvolver2x2 masterConv;
+    FFTConvolver2x2 leftConv;
+    FFTConvolver2x2 rightConv;
 } arbitraryMagnitude;
 typedef struct
 {
