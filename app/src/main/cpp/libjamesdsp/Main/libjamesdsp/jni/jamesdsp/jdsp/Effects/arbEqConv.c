@@ -42,42 +42,42 @@ void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
         InitArbitraryEq(&jdsp->arbMag.instance.coeffGen, 0);
 
     FFTConvolver2x2Init(&jdsp->arbMag.instance.convState);
-    FFTConvolver2x2Init(&jdsp->arbMag.conv);
 
-    // Init extra L/R convolvers
-    FFTConvolver2x2Init(&g_arbLeftConv);
-    FFTConvolver2x2Init(&g_arbRightConv);
+    // New: three convolvers
+    FFTConvolver2x2Init(&jdsp->arbMag.masterConv);
+    FFTConvolver2x2Init(&jdsp->arbMag.leftConv);
+    FFTConvolver2x2Init(&jdsp->arbMag.rightConv);
 
-    float *kDelta = (float*)malloc(jdsp->arbMag.instance.filterLen * sizeof(float));
-    if (!kDelta)
-        return; // allocation failure: safest to bail, rest of engine will likely handle
-
-    memset(kDelta, 0, jdsp->arbMag.instance.filterLen * sizeof(float));
+    float *kDelta = (float*)malloc(
+        jdsp->arbMag.instance.filterLen * sizeof(float));
+    memset(kDelta, 0,
+           jdsp->arbMag.instance.filterLen * sizeof(float));
     kDelta[0] = 1.0f;
 
-    // Identity IR for main arbitrary EQ
     FFTConvolver2x2LoadImpulseResponse(
         &jdsp->arbMag.instance.convState,
         (unsigned int)jdsp->blockSize,
         kDelta, kDelta,
         jdsp->arbMag.instance.filterLen
     );
+
+    // Identity IR into all three for now
     FFTConvolver2x2LoadImpulseResponse(
-        &jdsp->arbMag.conv,
+        &jdsp->arbMag.masterConv,
         (unsigned int)jdsp->blockSize,
         kDelta, kDelta,
         jdsp->arbMag.instance.filterLen
     );
 
-    // Identity IRs for L/R extra curves as well
     FFTConvolver2x2LoadImpulseResponse(
-        &g_arbLeftConv,
+        &jdsp->arbMag.leftConv,
         (unsigned int)jdsp->blockSize,
         kDelta, kDelta,
         jdsp->arbMag.instance.filterLen
     );
+
     FFTConvolver2x2LoadImpulseResponse(
-        &g_arbRightConv,
+        &jdsp->arbMag.rightConv,
         (unsigned int)jdsp->blockSize,
         kDelta, kDelta,
         jdsp->arbMag.instance.filterLen
@@ -90,11 +90,10 @@ void ArbitraryResponseEqualizerDestructor(JamesDSPLib *jdsp)
 {
     EqNodesFree(&jdsp->arbMag.instance.coeffGen);
     FFTConvolver2x2Free(&jdsp->arbMag.instance.convState);
-    FFTConvolver2x2Free(&jdsp->arbMag.conv);
 
-    // Free extra convolvers
-    FFTConvolver2x2Free(&g_arbLeftConv);
-    FFTConvolver2x2Free(&g_arbRightConv);
+    FFTConvolver2x2Free(&jdsp->arbMag.masterConv);
+    FFTConvolver2x2Free(&jdsp->arbMag.leftConv);
+    FFTConvolver2x2Free(&jdsp->arbMag.rightConv);
 }
 
 void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stringEq)
