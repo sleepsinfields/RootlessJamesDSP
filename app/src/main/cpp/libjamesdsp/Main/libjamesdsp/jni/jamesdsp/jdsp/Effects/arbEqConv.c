@@ -1,17 +1,11 @@
-#define STEREOEQ_DEBUG 1   // turn this off when done debugging
-
-#if STEREOEQ_DEBUG
-#define TAG "ArbEqConv"
 #include <android/log.h>
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,  TAG, __VA_ARGS__)
-#else
-#define LOGI(...) ((void)0)
-#define LOGE(...) ((void)0)
-#define LOGW(...) ((void)0)
-#endif
 
+#define STEREOEQ_TAG "StereoEQ"
+
+// Always-on logging for Stereo EQ
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  STEREOEQ_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, STEREOEQ_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,  STEREOEQ_TAG, __VA_ARGS__)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +44,7 @@ void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
 {
     jdsp->arbMag.instance.filterLen =
         InitArbitraryEq(&jdsp->arbMag.instance.coeffGen, 0);
+    LOGE("Constructor called");
 
     FFTConvolver2x2Init(&jdsp->arbMag.instance.convState);
 
@@ -167,25 +162,22 @@ void ArbitraryResponseEqualizerSetMasterEnabled(JamesDSPLib *jdsp, char enable)
 {
     (void)jdsp;
     g_arbEq.master.enabled = enable ? 1 : 0;
-    LOGE("StereoEQ: Master flag set to %d", g_arbEq.master.enabled);
+    LOGE("Master flag set to %d", g_arbEq.master.enabled);
 }
 
-// Left-only curve on/off
 void ArbitraryResponseEqualizerSetLeftEnabled(JamesDSPLib *jdsp, char enable)
 {
     (void)jdsp;
     g_arbEq.left.enabled = enable ? 1 : 0;
-    LOGE("StereoEQ: Left flag set to %d", g_arbEq.left.enabled);
+    LOGE("Left flag set to %d", g_arbEq.left.enabled);
 }
 
-// Right-only curve on/off
 void ArbitraryResponseEqualizerSetRightEnabled(JamesDSPLib *jdsp, char enable)
 {
     (void)jdsp;
     g_arbEq.right.enabled = enable ? 1 : 0;
-    LOGE("StereoEQ: Right flag set to %d", g_arbEq.right.enabled);
+    LOGE("Right flag set to %d", g_arbEq.right.enabled);
 }
-
 void ArbitraryResponseEqualizerEnable(JamesDSPLib *jdsp, char enable)
 {
     if (jdsp->arbMagForceRefresh)
