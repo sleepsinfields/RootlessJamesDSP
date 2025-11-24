@@ -240,10 +240,14 @@ class GraphicEqualizerFragment : Fragment() {
         binding.emptyView.isVisible = empty
         binding.nodeList.isVisible = !empty && !editorActive
         binding.nodeEdit.isVisible = editorActive
-        binding.nodeDetailContextButtons.visibility = if(editorActive) View.VISIBLE else View.INVISIBLE
-        binding.editCardTitle.text = getString(if(editorActive) R.string.geq_node_editor else R.string.geq_node_list)
+        binding.nodeDetailContextButtons.visibility =
+            if (editorActive) View.VISIBLE else View.INVISIBLE
+        binding.editCardTitle.text = getString(
+            if (editorActive) R.string.geq_node_editor else R.string.geq_node_list
+        )
     }
-private fun updateStereoArbEqFlags() {
+
+    private fun updateStereoArbEqFlags() {
         val master = binding.switchArbEqMaster.isChecked
         val left   = binding.switchArbEqLeft.isChecked
         val right  = binding.switchArbEqRight.isChecked
@@ -255,15 +259,18 @@ private fun updateStereoArbEqFlags() {
             "UI switches changed global=$global master=$master left=$left right=$right"
         )
 
-        // Later: call engine.setStereoArbEqFlags(global, master, left, right)
-        // For now we're just logging to confirm the UI wiring.
+        try {
+            JdspNative.setStereoArbEqFlags(global, master, left, right)
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e("StereoEQ", "Failed to call setStereoArbEqFlags JNI", e)
+        }
     }
+
     override fun onStop() {
-        if(editorActive) {
+        if (editorActive) {
             Timber.d("onStop: discarding unsaved changes")
             editorDiscard()
         }
-
         super.onStop()
     }
 
