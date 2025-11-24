@@ -170,17 +170,15 @@ override fun setStereoArbEqFlagsInternal(
     master: Boolean,
     left: Boolean,
     right: Boolean
-): Boolean {
+) {
     JamesDspWrapper.setArbEqStereoFlags(
         handle,
-        globalEnable = global,
-        masterEnable = master,
-        leftEnable = left,
-        rightEnable = right
+        global,
+        master,
+        left,
+        right
     )
-    return true
 }
-
     override fun setLiveprogInternal(enable: Boolean, name: String, script: String): Boolean {
         return JamesDspWrapper.setLiveprog(handle, enable, name, script)
     }
