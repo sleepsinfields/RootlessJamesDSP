@@ -526,7 +526,56 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(
 
     return true;
 }
+// new
+extern "C" JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphicEq(
+        JNIEnv *env, jobject obj, jlong self,
+        jboolean enable,
+        jstring masterEq,
+        jstring leftEq,
+        jstring rightEq)
+{
+    DECLARE_DSP_B
 
+    // Basic validation: if master is empty/null, disable everything
+    if (masterEq == nullptr || env->GetStringUTFLength(masterEq) <= 0)
+    {
+        LOGE("JamesDspWrapper::setStereoGraphicEq: masterEq is empty or NULL. Disabling graphic eq.");
+        enable = false;
+    }
+
+    if (enable)
+    {
+        // Fallback behavior: if left/right are null, reuse master
+        if (leftEq == nullptr)
+            leftEq = masterEq;
+        if (rightEq == nullptr)
+            rightEq = masterEq;
+
+        const char *masterStr = env->GetStringUTFChars(masterEq, nullptr);
+        const char *leftStr   = env->GetStringUTFChars(leftEq,   nullptr);
+        const char *rightStr  = env->GetStringUTFChars(rightEq,  nullptr);
+
+        ArbitraryResponseEqualizerStringParserStereo(
+            dsp,
+            masterStr,
+            leftStr,
+            rightStr
+        );
+
+        env->ReleaseStringUTFChars(masterEq, masterStr);
+        env->ReleaseStringUTFChars(leftEq,   leftStr);
+        env->ReleaseStringUTFChars(rightEq,  rightStr);
+
+        ArbitraryResponseEqualizerEnable(dsp, 1);
+    }
+    else
+    {
+        ArbitraryResponseEqualizerDisable(dsp);
+    }
+
+    return true;
+}
 extern "C" JNIEXPORT void JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setArbEqStereoFlags(
         JNIEnv *env, jobject obj, jlong self,
