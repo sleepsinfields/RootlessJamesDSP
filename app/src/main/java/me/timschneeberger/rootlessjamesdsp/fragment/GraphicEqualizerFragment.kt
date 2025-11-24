@@ -30,6 +30,7 @@ import me.timschneeberger.rootlessjamesdsp.utils.extensions.ContextExtensions.un
 import timber.log.Timber
 import java.util.UUID
 import android.util.Log
+import me.timschneeberger.rootlessjamesdsp.JdspNative
 
 class GraphicEqualizerFragment : Fragment() {
     private lateinit var binding: FragmentGraphicEqBinding
