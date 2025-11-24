@@ -657,6 +657,12 @@ extern int Convolver1DLoadImpulseResponse(JamesDSPLib *jdsp, float *tempImpulseF
 extern void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp);
 extern void ArbitraryResponseEqualizerDestructor(JamesDSPLib *jdsp);
 extern void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stringEq);
+extern void ArbitraryResponseEqualizerStringParserStereo(
+    JamesDSPLib *jdsp,
+    const char *masterStr,
+    const char *leftStr,
+    const char *rightStr
+);
 extern void ArbitraryResponseEqualizerEnable(JamesDSPLib *jdsp, char enable);
 extern void ArbitraryResponseEqualizerDisable(JamesDSPLib *jdsp);
 extern void ArbitraryResponseEqualizerProcess(JamesDSPLib *jdsp, size_t n);
