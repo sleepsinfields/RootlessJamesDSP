@@ -48,7 +48,14 @@ external fun setGraphicEq(
     graphicEq: String
 ): Boolean
 
-// new
+external fun setStereoGraphicEq(
+    self: JamesDspHandle,
+    enable: Boolean,
+    masterEq: String,
+    leftEq: String,
+    rightEq: String
+): Boolean
+
 external fun setArbEqStereoFlags(
     self: JamesDspHandle,
     globalEnable: Boolean,
@@ -75,7 +82,25 @@ fun updateStereoArbEq(
 ) {
     setArbEqStereoFlags(self, global, master, left, right)
 }
-//end new
+
+fun updateStereoGraphicEq(
+    self: JamesDspHandle,
+    enable: Boolean,
+    master: String,
+    left: String?,
+    right: String?
+) {
+    val leftSafe = left ?: master
+    val rightSafe = right ?: master
+
+    setStereoGraphicEq(
+        self,
+        enable,
+        master,
+        leftSafe,
+        rightSafe
+    )
+}
 
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
