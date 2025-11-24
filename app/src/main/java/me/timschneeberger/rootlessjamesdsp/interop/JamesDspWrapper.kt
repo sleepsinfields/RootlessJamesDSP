@@ -89,11 +89,11 @@ fun updateStereoGraphicEq(
     master: String,
     left: String?,
     right: String?
-) {
+): Boolean {
     val leftSafe = left ?: master
     val rightSafe = right ?: master
 
-    setStereoGraphicEq(
+    return setStereoGraphicEq(
         self,
         enable,
         master,
