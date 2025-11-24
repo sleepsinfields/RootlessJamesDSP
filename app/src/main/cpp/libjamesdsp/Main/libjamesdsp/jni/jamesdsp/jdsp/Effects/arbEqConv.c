@@ -15,29 +15,7 @@
 #include "../jdsp_header.h"
 #include <jni.h>  // if not already included
 
-JNIEXPORT void JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqFlags(
-        JNIEnv *env,
-        jclass clazz,
-        jboolean global,
-        jboolean master,
-        jboolean left,
-        jboolean right)
-{
-    (void)env;
-    (void)clazz;
 
-    g_arbEq.enabled        = (global == JNI_TRUE) ? 1 : 0;
-    g_arbEq.master.enabled = (master == JNI_TRUE) ? 1 : 0;
-    g_arbEq.left.enabled   = (left   == JNI_TRUE) ? 1 : 0;
-    g_arbEq.right.enabled  = (right  == JNI_TRUE) ? 1 : 0;
-
-    LOGE("JNI setStereoArbEqFlags: global=%d master=%d left=%d right=%d",
-         g_arbEq.enabled,
-         g_arbEq.master.enabled,
-         g_arbEq.left.enabled,
-         g_arbEq.right.enabled);
-}
 
 // ============================================================================
 // [RJDSP-LR-EQ] Arbitrary Response EQ – multi-curve subsystem (Master / L / R)
@@ -64,6 +42,29 @@ static ArbEqSubsystemFlags g_arbEq = {
     .right  = { .enabled = 0 },
 };
 
+JNIEXPORT void JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqFlags(
+        JNIEnv *env,
+        jclass clazz,
+        jboolean global,
+        jboolean master,
+        jboolean left,
+        jboolean right)
+{
+    (void)env;
+    (void)clazz;
+
+    g_arbEq.enabled        = (global == JNI_TRUE) ? 1 : 0;
+    g_arbEq.master.enabled = (master == JNI_TRUE) ? 1 : 0;
+    g_arbEq.left.enabled   = (left   == JNI_TRUE) ? 1 : 0;
+    g_arbEq.right.enabled  = (right  == JNI_TRUE) ? 1 : 0;
+
+    LOGE("JNI setStereoArbEqFlags: global=%d master=%d left=%d right=%d",
+         g_arbEq.enabled,
+         g_arbEq.master.enabled,
+         g_arbEq.left.enabled,
+         g_arbEq.right.enabled);
+}
 
 void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
 {
