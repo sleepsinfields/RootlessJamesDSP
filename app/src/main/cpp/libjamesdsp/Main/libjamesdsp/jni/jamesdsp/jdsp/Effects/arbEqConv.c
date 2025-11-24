@@ -127,50 +127,113 @@ void ArbitraryResponseEqualizerDestructor(JamesDSPLib *jdsp)
     FFTConvolver2x2Free(&jdsp->arbMag.rightConv);
 }
 
-void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stringEq)
+// ============================================================================
+// [RJDSP-LR-EQ] Per-curve setters for Master / Left / Right
+// ============================================================================
+
+static void ArbitraryResponseEqualizerSetMasterCurve(
+    JamesDSPLib *jdsp,
+    const char *stringEq)
 {
-    // Parse and design the main arbitrary EQ FIR
-    ArbitraryEqString2SortedNodes(&jdsp->arbMag.instance.coeffGen, stringEq);
+    // Parse nodes + design FIR using the existing coeffGen
+    ArbitraryEqString2SortedNodes(&jdsp->arbMag.instance.coeffGen, (char *)stringEq);
+
     float *eqFil =
         jdsp->arbMag.instance.coeffGen.GetFilter(
             &jdsp->arbMag.instance.coeffGen,
             (float)jdsp->fs
         );
 
-    // Build a delta (identity) impulse for the "unaffected" channel
-    float *kDelta = (float*)malloc(
-        jdsp->arbMag.instance.filterLen * sizeof(float));
-    memset(kDelta, 0,
-           jdsp->arbMag.instance.filterLen * sizeof(float));
-    kDelta[0] = 1.0f;
-
-    // Master: same EQ on both channels
+    // Master: EQ on both channels
     FFTConvolver2x2RefreshImpulseResponse(
         &jdsp->arbMag.instance.convState,
         &jdsp->arbMag.masterConv,
         eqFil, eqFil,
         jdsp->arbMag.instance.filterLen
     );
+}
 
-    // Left-only: EQ on L, identity on R
+static void ArbitraryResponseEqualizerSetLeftCurve(
+    JamesDSPLib *jdsp,
+    const char *stringEq)
+{
+    ArbitraryEqString2SortedNodes(&jdsp->arbMag.instance.coeffGen, (char *)stringEq);
+
+    float *eqFil =
+        jdsp->arbMag.instance.coeffGen.GetFilter(
+            &jdsp->arbMag.instance.coeffGen,
+            (float)jdsp->fs
+        );
+
+    float *kDelta = (float*)malloc(
+        jdsp->arbMag.instance.filterLen * sizeof(float));
+    memset(kDelta, 0,
+           jdsp->arbMag.instance.filterLen * sizeof(float));
+    kDelta[0] = 1.0f;
+
+    // Left-only: L = eqFil, R = identity
     FFTConvolver2x2RefreshImpulseResponse(
         &jdsp->arbMag.instance.convState,
         &jdsp->arbMag.leftConv,
-        eqFil,      /* left IR */
-        kDelta,     /* right stays identity */
-        jdsp->arbMag.instance.filterLen
-    );
-
-    // Right-only: identity on L, EQ on R
-    FFTConvolver2x2RefreshImpulseResponse(
-        &jdsp->arbMag.instance.convState,
-        &jdsp->arbMag.rightConv,
-        kDelta,     /* left stays identity */
-        eqFil,      /* right IR */
+        eqFil,  /* L */
+        kDelta, /* R */
         jdsp->arbMag.instance.filterLen
     );
 
     free(kDelta);
+}
+
+static void ArbitraryResponseEqualizerSetRightCurve(
+    JamesDSPLib *jdsp,
+    const char *stringEq)
+{
+    ArbitraryEqString2SortedNodes(&jdsp->arbMag.instance.coeffGen, (char *)stringEq);
+
+    float *eqFil =
+        jdsp->arbMag.instance.coeffGen.GetFilter(
+            &jdsp->arbMag.instance.coeffGen,
+            (float)jdsp->fs
+        );
+
+    float *kDelta = (float*)malloc(
+        jdsp->arbMag.instance.filterLen * sizeof(float));
+    memset(kDelta, 0,
+           jdsp->arbMag.instance.filterLen * sizeof(float));
+    kDelta[0] = 1.0f;
+
+    // Right-only: L = identity, R = eqFil
+    FFTConvolver2x2RefreshImpulseResponse(
+        &jdsp->arbMag.instance.convState,
+        &jdsp->arbMag.rightConv,
+        kDelta, /* L */
+        eqFil,  /* R */
+        jdsp->arbMag.instance.filterLen
+    );
+
+    free(kDelta);
+}
+
+// Stereo-aware wrapper: 3 separate strings
+void ArbitraryResponseEqualizerStringParserStereo(
+    JamesDSPLib *jdsp,
+    const char *masterStr,
+    const char *leftStr,
+    const char *rightStr)
+{
+    ArbitraryResponseEqualizerSetMasterCurve(jdsp, masterStr);
+    ArbitraryResponseEqualizerSetLeftCurve(jdsp, leftStr);
+    ArbitraryResponseEqualizerSetRightCurve(jdsp, rightStr);
+}
+
+// Backwards-compatible single-string parser: same curve to all three
+void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stringEq)
+{
+    ArbitraryResponseEqualizerStringParserStereo(
+        jdsp,
+        stringEq,  // master curve
+        stringEq,  // left curve
+        stringEq   // right curve
+    );
 }
 
 // ----------------------------------------------------------------------------
