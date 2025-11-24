@@ -167,14 +167,22 @@ class GraphicEqualizerFragment : Fragment() {
             autoEqSelectorLauncher.launch(0)
         }
 
-// leave all your existing code untouched above
+        // --- Stereo arbitrary EQ switches: default state + listeners ---
+        binding.apply {
+            switchArbEqMaster.isChecked = true
+            switchArbEqLeft.isChecked   = false
+            switchArbEqRight.isChecked  = false
+        }
 
-// Just keep this part as pure UI state for now
-binding.apply {
-    switchArbEqMaster.isChecked = true
-    switchArbEqLeft.isChecked   = false
-    switchArbEqRight.isChecked  = false
-}
+        binding.switchArbEqMaster.setOnCheckedChangeListener { _, _ ->
+            updateStereoArbEqFlags()
+        }
+        binding.switchArbEqLeft.setOnCheckedChangeListener { _, _ ->
+            updateStereoArbEqFlags()
+        }
+        binding.switchArbEqRight.setOnCheckedChangeListener { _, _ ->
+            updateStereoArbEqFlags()
+        }
 
         // Load node data
         binding.nodeList.layoutManager = LinearLayoutManager(requireContext())
@@ -235,7 +243,21 @@ binding.apply {
         binding.nodeDetailContextButtons.visibility = if(editorActive) View.VISIBLE else View.INVISIBLE
         binding.editCardTitle.text = getString(if(editorActive) R.string.geq_node_editor else R.string.geq_node_list)
     }
+private fun updateStereoArbEqFlags() {
+        val master = binding.switchArbEqMaster.isChecked
+        val left   = binding.switchArbEqLeft.isChecked
+        val right  = binding.switchArbEqRight.isChecked
 
+        val global = master || left || right
+
+        Log.e(
+            "StereoEQ",
+            "UI switches changed global=$global master=$master left=$left right=$right"
+        )
+
+        // Later: call engine.setStereoArbEqFlags(global, master, left, right)
+        // For now we're just logging to confirm the UI wiring.
+    }
     override fun onStop() {
         if(editorActive) {
             Timber.d("onStop: discarding unsaved changes")
