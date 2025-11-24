@@ -526,6 +526,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(
 
     return true;
 }
+
 // new
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphicEq(
@@ -535,18 +536,19 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphi
         jstring leftEq,
         jstring rightEq)
 {
+    // This macro gives you: JamesDSPLib *dsp = ...
     DECLARE_DSP_B
 
-    // Basic validation: if master is empty/null, disable everything
+    // Require master string to exist
     if (masterEq == nullptr || env->GetStringUTFLength(masterEq) <= 0)
     {
-        LOGE("JamesDspWrapper::setStereoGraphicEq: masterEq is empty or NULL. Disabling graphic eq.");
+        LOGE("JamesDspWrapper::setStereoGraphicEq: masterEq is empty. Disabling.");
         enable = false;
     }
 
     if (enable)
     {
-        // Fallback behavior: if left/right are null, reuse master
+        // Safety: if left/right are null, reuse master curve
         if (leftEq == nullptr)
             leftEq = masterEq;
         if (rightEq == nullptr)
@@ -556,6 +558,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphi
         const char *leftStr   = env->GetStringUTFChars(leftEq,   nullptr);
         const char *rightStr  = env->GetStringUTFChars(rightEq,  nullptr);
 
+        // 🔥 your new stereo-aware DSP parser
         ArbitraryResponseEqualizerStringParserStereo(
             dsp,
             masterStr,
