@@ -65,7 +65,7 @@ external fun setCrossfeed(
     customFeed: Int
 ): Boolean
 
-//new
+// new possibly unused wrapper
 fun updateStereoArbEq(
     self: JamesDspHandle,
     global: Boolean,
