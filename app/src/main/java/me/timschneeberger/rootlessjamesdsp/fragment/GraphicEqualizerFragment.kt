@@ -439,28 +439,44 @@ private fun switchBank(target: CurveBank) {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    private fun editorSave() {
-        if(!editorCanSave()) {
-            requireContext().showYesNoAlert(
-                R.string.geq_discard_changes_title,
-                R.string.geq_discard_changes) {
-                if(it) {
-                    editorDiscard()
-                }
+private fun editorSave() {
+    if(!editorCanSave()) {
+        requireContext().showYesNoAlert(
+            R.string.geq_discard_changes_title,
+            R.string.geq_discard_changes) {
+            if(it) {
+                editorDiscard()
             }
-            return
         }
-
-        Timber.d("editorSave: confirming changes to node $editorNodeUuid")
-        editorNodeBackup = null
-        editorNodeUuid = null
-        editorActive = false
-
-        adapter.nodes.sortBy { it.freq }
-        adapter.notifyDataSetChanged()
-
-        updateViewState()
+        return
     }
+
+    Timber.d("editorSave: confirming changes to node $editorNodeUuid")
+    editorNodeBackup = null
+    editorNodeUuid = null
+    editorActive = false
+
+    adapter.nodes.sortBy { it.freq }
+    adapter.notifyDataSetChanged()
+
+    // NEW: sync into the active bank
+    when (currentBank) {
+        CurveBank.MASTER -> {
+            masterNodes.clear()
+            masterNodes.addAll(adapter.nodes)
+        }
+        CurveBank.LEFT -> {
+            leftNodes.clear()
+            leftNodes.addAll(adapter.nodes)
+        }
+        CurveBank.RIGHT -> {
+            rightNodes.clear()
+            rightNodes.addAll(adapter.nodes)
+        }
+    }
+
+    updateViewState()
+}
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         if(newConfig.orientation == ORIENTATION_LANDSCAPE) {
