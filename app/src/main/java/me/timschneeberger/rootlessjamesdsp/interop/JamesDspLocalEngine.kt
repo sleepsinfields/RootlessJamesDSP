@@ -209,23 +209,6 @@ companion object {
 
     val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
 
-    // MASTER: try dedicated master key, fall back to the legacy single-curve string
-    val master = prefs.getString(
-        context.getString(R.string.key_geq_nodes_master),
-        null
-    ) ?: fallbackBands
-
-    // LEFT / RIGHT: may be null; updateStereoGraphicEq will fall back to master when they're null
-    val left = prefs.getString(
-        context.getString(R.string.key_geq_nodes_left),
-        null
-    )
-
-    val right = prefs.getString(
-        context.getString(R.string.key_geq_nodes_right),
-        null
-    )
-
     return JamesDspWrapper.updateStereoGraphicEq(
         self = handle,
         enable = true,
