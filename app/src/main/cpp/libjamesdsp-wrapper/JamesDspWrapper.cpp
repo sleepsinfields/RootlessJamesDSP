@@ -530,54 +530,86 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(
 // new
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphicEq(
-        JNIEnv *env, jobject obj, jlong self,
+        JNIEnv *env,
+        jobject /*obj*/,
+        jlong self,
         jboolean enable,
         jstring masterEq,
         jstring leftEq,
         jstring rightEq)
 {
-    // This macro gives you: JamesDSPLib *dsp = ...
+    // Gives you: JamesDSPLib *dsp = ...
     DECLARE_DSP_B
 
-    // Require master string to exist
-    if (masterEq == nullptr || env->GetStringUTFLength(masterEq) <= 0)
+    // If explicitly disabled, just turn off the EQ and return.
+    if (!enable)
     {
-        LOGE("JamesDspWrapper::setStereoGraphicEq: masterEq is empty. Disabling.");
-        enable = false;
+        LOGE("JamesDspWrapper::setStereoGraphicEq: enable == false, disabling EQ.");
+        ArbitraryResponseEqualizerDisable(dsp);
+        return JNI_TRUE;
     }
 
-    if (enable)
+    // Require a master curve string
+    if (masterEq == nullptr || env->GetStringUTFLength(masterEq) <= 0)
     {
-        // Safety: if left/right are null, reuse master curve
-        if (leftEq == nullptr)
-            leftEq = masterEq;
-        if (rightEq == nullptr)
-            rightEq = masterEq;
+        LOGE("JamesDspWrapper::setStereoGraphicEq: masterEq is empty or null. Disabling EQ.");
+        ArbitraryResponseEqualizerDisable(dsp);
+        return JNI_TRUE;
+    }
 
-        const char *masterStr = env->GetStringUTFChars(masterEq, nullptr);
-        const char *leftStr   = env->GetStringUTFChars(leftEq,   nullptr);
-        const char *rightStr  = env->GetStringUTFChars(rightEq,  nullptr);
+    // Get master chars
+    const char *masterStr = env->GetStringUTFChars(masterEq, nullptr);
 
-        // 🔥 your new stereo-aware DSP parser
-        ArbitraryResponseEqualizerStringParserStereo(
-            dsp,
-            masterStr,
-            leftStr,
-            rightStr
-        );
+    // Decide what to use for left/right:
+    //  - if leftEq/rightEq are non-null and non-empty, use them
+    //  - otherwise, fall back to masterStr
+    const char *leftStr  = nullptr;
+    const char *rightStr = nullptr;
 
-        env->ReleaseStringUTFChars(masterEq, masterStr);
-        env->ReleaseStringUTFChars(leftEq,   leftStr);
-        env->ReleaseStringUTFChars(rightEq,  rightStr);
+    bool leftIsMaster  = false;
+    bool rightIsMaster = false;
 
-        ArbitraryResponseEqualizerEnable(dsp, 1);
+    if (leftEq != nullptr && env->GetStringUTFLength(leftEq) > 0)
+    {
+        leftStr = env->GetStringUTFChars(leftEq, nullptr);
     }
     else
     {
-        ArbitraryResponseEqualizerDisable(dsp);
+        leftStr = masterStr;
+        leftIsMaster = true;
     }
 
-    return true;
+    if (rightEq != nullptr && env->GetStringUTFLength(rightEq) > 0)
+    {
+        rightStr = env->GetStringUTFChars(rightEq, nullptr);
+    }
+    else
+    {
+        rightStr = masterStr;
+        rightIsMaster = true;
+    }
+
+    // 🔥 Feed all three curves into your stereo-aware parser
+    ArbitraryResponseEqualizerStringParserStereo(
+        dsp,
+        masterStr,
+        leftStr,
+        rightStr
+    );
+
+    // Clean up JNI strings:
+    if (!rightIsMaster && rightEq != nullptr)
+        env->ReleaseStringUTFChars(rightEq, rightStr);
+
+    if (!leftIsMaster && leftEq != nullptr)
+        env->ReleaseStringUTFChars(leftEq, leftStr);
+
+    env->ReleaseStringUTFChars(masterEq, masterStr);
+
+    // Make sure EQ is active
+    ArbitraryResponseEqualizerEnable(dsp, 1);
+
+    return JNI_TRUE;
 }
 extern "C" JNIEXPORT void JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setArbEqStereoFlags(
