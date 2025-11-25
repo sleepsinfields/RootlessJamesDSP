@@ -328,8 +328,6 @@ return binding.root
         binding.equalizerSurface.setNodes(adapter.nodes)
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    
 @SuppressLint("NotifyDataSetChanged")
 private fun switchBank(target: CurveBank) {
     if (target == currentBank) return  // No-op if already on this bank
