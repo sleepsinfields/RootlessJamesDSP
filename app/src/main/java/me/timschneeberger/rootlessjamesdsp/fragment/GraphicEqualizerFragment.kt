@@ -348,27 +348,30 @@ class GraphicEqualizerFragment : Fragment() {
         }
     }
 
-    private fun updateViewState() {
-        val empty = adapter.nodes.isEmpty()
-        binding.emptyView.isVisible = empty
-        binding.nodeList.isVisible = !empty && !editorActive
-        binding.nodeEdit.isVisible = editorActive
+  private fun updateViewState() {
+    val empty = adapter.nodes.isEmpty()
+    binding.emptyView.isVisible = empty
+    binding.nodeList.isVisible = !empty && !editorActive
+    binding.nodeEdit.isVisible = editorActive
 
-        binding.nodeDetailContextButtons.visibility =
-            if (editorActive) View.VISIBLE else View.INVISIBLE
+    binding.nodeDetailContextButtons.visibility =
+        if (editorActive) View.VISIBLE else View.INVISIBLE
 
-        if (editorActive) {
-            val baseTitle = getString(R.string.geq_node_editor)
-            val suffix = when (currentBank) {
-                CurveBank.MASTER -> " (Master)"
-                CurveBank.LEFT   -> " (Left)"
-                CurveBank.RIGHT  -> " (Right)"
-            }
-            binding.editCardTitle.text = baseTitle + suffix
-        } else {
-            binding.editCardTitle.text = getString(R.string.geq_node_list)
-        }
+    // Always show which bank we’re on in the title
+    val bankSuffix = when (currentBank) {
+        CurveBank.MASTER -> " (Master)"
+        CurveBank.LEFT   -> " (Left)"
+        CurveBank.RIGHT  -> " (Right)"
     }
+
+    val baseTitle = if (editorActive) {
+        getString(R.string.geq_node_editor)
+    } else {
+        getString(R.string.geq_node_list)
+    }
+
+    binding.editCardTitle.text = baseTitle + bankSuffix
+}
 
     private fun updateStereoArbEqFlags() {
         val master = binding.switchArbEqMaster.isChecked
