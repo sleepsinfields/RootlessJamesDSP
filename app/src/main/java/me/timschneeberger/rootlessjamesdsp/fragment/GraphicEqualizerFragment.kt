@@ -38,13 +38,13 @@ class GraphicEqualizerFragment : Fragment() {
     private val adapter: GraphicEqNodeAdapter
         get() = binding.nodeList.adapter as GraphicEqNodeAdapter
 
-// --- Stereo M/L/R node banks ---
-    private var masterNodes = GraphicEqNodeList()
-    private var leftNodes   = GraphicEqNodeList()
-    private var rightNodes  = GraphicEqNodeList()
+// --- Stereo M/L/R bank state, stored as serialized curves ---
+private var masterCurve: String? = null
+private var leftCurve:   String? = null
+private var rightCurve:  String? = null
 
-    private enum class CurveBank { MASTER, LEFT, RIGHT }
-    private var currentBank: CurveBank = CurveBank.MASTER
+private enum class CurveBank { MASTER, LEFT, RIGHT }
+private var currentBank: CurveBank = CurveBank.MASTER
 
     /** editorNodeBackup contains a backup of the node loaded in the editor.
     Is null when the editor is closed or while a node is added. */
@@ -206,6 +206,7 @@ class GraphicEqualizerFragment : Fragment() {
             switchBank(CurveBank.RIGHT)
             true
         }
+
         // Load node data
         binding.nodeList.layoutManager = LinearLayoutManager(requireContext())
         loadNodes(savedInstanceState)
@@ -229,14 +230,16 @@ class GraphicEqualizerFragment : Fragment() {
 
 // new
 private fun initStereoBanksFromCurrent() {
-        val base = GraphicEqNodeList().apply { addAll(adapter.nodes) }
+    // Take whatever is currently loaded into adapter.nodes and use it
+    // as the starting curve for all three banks.
+    val baseString = adapter.nodes.serialize()
 
-        masterNodes = GraphicEqNodeList().apply { addAll(base) }
-        leftNodes   = GraphicEqNodeList().apply { addAll(base) }
-        rightNodes  = GraphicEqNodeList().apply { addAll(base) }
+    masterCurve = baseString
+    leftCurve   = baseString
+    rightCurve  = baseString
 
-        currentBank = CurveBank.MASTER
-    }
+    currentBank = CurveBank.MASTER
+}
 
 @SuppressLint("NotifyDataSetChanged")
 private fun switchBank(target: CurveBank) {
@@ -245,41 +248,44 @@ private fun switchBank(target: CurveBank) {
         editorSave()
     }
 
-    // Save current adapter state into the bank we’re leaving
-    when (currentBank) {
-        CurveBank.MASTER -> {
-            masterNodes.clear()
-            masterNodes.addAll(adapter.nodes)
-        }
-        CurveBank.LEFT -> {
-            leftNodes.clear()
-            leftNodes.addAll(adapter.nodes)
-        }
-        CurveBank.RIGHT -> {
-            rightNodes.clear()
-            rightNodes.addAll(adapter.nodes)
-        }
-    }
+    // 1) Store current adapter nodes into the current bank’s curve string
+    storeCurrentBankCurve()
 
+    // 2) Switch bank
     currentBank = target
 
-    // Load the selected bank into the adapter
-    val src = when (target) {
-        CurveBank.MASTER -> masterNodes
-        CurveBank.LEFT   -> leftNodes
-        CurveBank.RIGHT  -> rightNodes
-    }
+    // 3) Load that bank’s curve back into adapter.nodes
+    loadBankCurve(target)
 
-    adapter.nodes.clear()
-    adapter.nodes.addAll(src)
-    adapter.nodes.sortBy { it.freq }
-    adapter.notifyDataSetChanged()
-
-    binding.equalizerSurface.setNodes(adapter.nodes)
     updateViewState()
 }
 
 //end new
+private fun storeCurrentBankCurve() {
+        val serialized = adapter.nodes.serialize()
+
+        when (currentBank) {
+            CurveBank.MASTER -> masterCurve = serialized
+            CurveBank.LEFT   -> leftCurve   = serialized
+            CurveBank.RIGHT  -> rightCurve  = serialized
+        }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun loadBankCurve(target: CurveBank) {
+        val serialized = when (target) {
+            CurveBank.MASTER -> masterCurve
+            CurveBank.LEFT   -> leftCurve
+            CurveBank.RIGHT  -> rightCurve
+        }
+
+        if (serialized != null) {
+            adapter.nodes.deserialize(serialized)
+            adapter.nodes.sortBy { it.freq }
+            adapter.notifyDataSetChanged()
+            binding.equalizerSurface.setNodes(adapter.nodes)
+        }
+    }
 
     private fun loadNodes(savedInstanceState: Bundle?) {
         val nodes = GraphicEqNodeList()
@@ -297,23 +303,7 @@ private fun switchBank(target: CurveBank) {
 
         binding.nodeList.adapter = GraphicEqNodeAdapter(nodes).apply {
             onItemsChanged = {
-                // Keep the currently selected bank in sync with adapter.nodes
-                when (currentBank) {
-                    CurveBank.MASTER -> {
-                        masterNodes.clear()
-                        masterNodes.addAll(it.nodes)
-                    }
-                    CurveBank.LEFT -> {
-                        leftNodes.clear()
-                        leftNodes.addAll(it.nodes)
-                    }
-                    CurveBank.RIGHT -> {
-                        rightNodes.clear()
-                        rightNodes.addAll(it.nodes)
-                    }
-                }
-
-                binding.equalizerSurface.setNodes(it.nodes)
+              binding.equalizerSurface.setNodes(it.nodes)
                 updateViewState()
                 save()
             }
@@ -459,21 +449,8 @@ private fun editorSave() {
     adapter.nodes.sortBy { it.freq }
     adapter.notifyDataSetChanged()
 
-    // NEW: sync into the active bank
-    when (currentBank) {
-        CurveBank.MASTER -> {
-            masterNodes.clear()
-            masterNodes.addAll(adapter.nodes)
-        }
-        CurveBank.LEFT -> {
-            leftNodes.clear()
-            leftNodes.addAll(adapter.nodes)
-        }
-        CurveBank.RIGHT -> {
-            rightNodes.clear()
-            rightNodes.addAll(adapter.nodes)
-        }
-    }
+    // NEW: make sure this bank’s serialized curve stays in sync
+    storeCurrentBankCurve()
 
     updateViewState()
 }
