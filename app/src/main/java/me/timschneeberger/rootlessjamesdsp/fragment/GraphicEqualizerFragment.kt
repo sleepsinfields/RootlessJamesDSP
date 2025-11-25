@@ -111,150 +111,147 @@ class GraphicEqualizerFragment : Fragment() {
         super.onDestroy()
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
-        Log.e("StereoEQ", "GraphicEqFragment created")
-        binding = FragmentGraphicEqBinding.inflate(layoutInflater, container, false)
+override fun onCreateView(
+inflater: LayoutInflater,
+container: ViewGroup?,
+savedInstanceState: Bundle?,
+): View {
+Log.e("StereoEQ", "GraphicEqFragment created")
+binding = FragmentGraphicEqBinding.inflate(layoutInflater, container, false)
 
-// Restore saved switch states
-val prefs = requireContext().getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
+// Restore saved switch states  
+val prefs = requireContext().getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)  
 
-val savedMaster = prefs.getBoolean(KEY_MASTER, true)
-val savedLeft   = prefs.getBoolean(KEY_LEFT, false)
-val savedRight  = prefs.getBoolean(KEY_RIGHT, false)
+val savedMaster = prefs.getBoolean(KEY_MASTER, true)  
+val savedLeft   = prefs.getBoolean(KEY_LEFT, false)  
+val savedRight  = prefs.getBoolean(KEY_RIGHT, false)  
 
-// Push restored UI state to switches
-binding.switchArbEqMaster.isChecked = savedMaster
-binding.switchArbEqLeft.isChecked   = savedLeft
-binding.switchArbEqRight.isChecked  = savedRight
+// Push restored UI state to switches  
+binding.switchArbEqMaster.isChecked = savedMaster  
+binding.switchArbEqLeft.isChecked   = savedLeft  
+binding.switchArbEqRight.isChecked  = savedRight  
 
-// Push restored values to DSP
-val global = savedMaster || savedLeft || savedRight
-try {
-    JdspNative.setStereoArbEqFlags(global, savedMaster, savedLeft, savedRight)
-} catch (e: Throwable) {
-    Log.e("StereoEQ", "Could not restore stereo flags", e)
+// Push restored values to DSP  
+val global = savedMaster || savedLeft || savedRight  
+try {  
+    JdspNative.setStereoArbEqFlags(global, savedMaster, savedLeft, savedRight)  
+} catch (e: Throwable) {  
+    Log.e("StereoEQ", "Could not restore stereo flags", e)  
+}  
+
+// Preview card collapse / expand  
+binding.previewCard.setOnClickListener {  
+    if (resources.configuration.orientation != ORIENTATION_LANDSCAPE) {  
+        val newState = !binding.equalizerSurface.isVisible  
+        collapsePreview(newState)  
+    }  
+}  
+
+  
+    // Reset button  
+    binding.reset.setOnClickListener {  
+        requireContext().showYesNoAlert(  
+            R.string.geq_reset_confirm_title,  
+            R.string.geq_reset_confirm,  
+        ) { yes ->  
+            if (yes) {  
+                adapter.nodes.deserialize(Constants.DEFAULT_GEQ)  
+                adapter.nodes.sortBy { node -> node.freq }  
+                binding.equalizerSurface.setNodes(adapter.nodes)  
+                editorDiscard()  
+                save()  
+                updateViewState()  
+            }  
+        }  
+    }  
+
+    // Edit-as-string  
+    binding.editString.setOnClickListener {  
+        requireContext().showInputAlert(  
+            layoutInflater,  
+            R.string.geq_edit_as_string,  
+            R.string.geq_edit_hint,  
+            adapter.nodes.serialize(),  
+            false,  
+            null  
+        ) { text ->  
+            text?.let {  
+                adapter.nodes.deserialize(it)  
+                adapter.nodes.sortBy { node -> node.freq }  
+                binding.equalizerSurface.setNodes(adapter.nodes)  
+            }  
+            save()  
+        }  
+    }  
+
+    // Add node  
+    binding.add.setOnClickListener {  
+        if (editorActive) return@setOnClickListener  
+
+        editorNodeBackup = null  
+        editorNodeUuid = null  
+        editorActive = true  
+
+        binding.freqInput.value = 100f  
+        binding.gainInput.value = 0f  
+        updateViewState()  
+    }  
+
+    binding.freqInput.setOnValueChangedListener { editorApply() }  
+    binding.gainInput.setOnValueChangedListener { editorApply() }  
+
+    binding.freqInput.customStepScale = { value: Float, _: Boolean ->  
+        when (value) {  
+            in 0f..400f -> 10f  
+            in 400f..600f -> 20f  
+            in 600f..1000f -> 50f  
+            in 1000f..5000f -> 100f  
+            in 5000f..Float.MAX_VALUE -> 500f  
+            else -> 10f  
+        }  
+    }  
+
+    binding.confirm.setOnClickListener { editorSave() }  
+    binding.cancel.setOnClickListener { editorDiscard() }  
+
+    binding.autoeq.setOnClickListener {  
+        editorDiscard()  
+        autoEqSelectorLauncher.launch(0)  
+    }  
+
+// --- Stereo arbitrary EQ switches: listeners only ---  
+binding.switchArbEqMaster.setOnCheckedChangeListener { _, _ ->  
+    updateStereoArbEqFlags()  
+}  
+binding.switchArbEqLeft.setOnCheckedChangeListener { _, _ ->  
+    updateStereoArbEqFlags()  
+}  
+binding.switchArbEqRight.setOnCheckedChangeListener { _, _ ->  
+    updateStereoArbEqFlags()  
+}  
+
+// Long-press to choose which bank is being edited  
+binding.switchArbEqMaster.setOnLongClickListener {  
+    switchBank(CurveBank.MASTER)  
+    true  
+}  
+binding.switchArbEqLeft.setOnLongClickListener {  
+    switchBank(CurveBank.LEFT)  
+    true  
+}  
+binding.switchArbEqRight.setOnLongClickListener {  
+    switchBank(CurveBank.RIGHT)  
+    true  
+}  
+
+// Node list setup + load  
+binding.nodeList.layoutManager = LinearLayoutManager(requireContext())  
+loadNodes(savedInstanceState)  
+
+updateViewState()  
+return binding.root
+
 }
-        // Preview card collapse / expand
-        binding.previewCard.setOnClickListener {
-            if (resources.configuration.orientation != ORIENTATION_LANDSCAPE) {
-                val newState = !binding.equalizerSurface.isVisible
-                collapsePreview(newState)
-            }
-        }
-
-        // Reset button
-        binding.reset.setOnClickListener {
-            requireContext().showYesNoAlert(
-                R.string.geq_reset_confirm_title,
-                R.string.geq_reset_confirm,
-            ) { yes ->
-                if (yes) {
-                    adapter.nodes.deserialize(Constants.DEFAULT_GEQ)
-                    adapter.nodes.sortBy { node -> node.freq }
-                    binding.equalizerSurface.setNodes(adapter.nodes)
-                    editorDiscard()
-                    save()
-                    updateViewState()
-                }
-            }
-        }
-
-        // Edit-as-string
-        binding.editString.setOnClickListener {
-            requireContext().showInputAlert(
-                layoutInflater,
-                R.string.geq_edit_as_string,
-                R.string.geq_edit_hint,
-                adapter.nodes.serialize(),
-                false,
-                null
-            ) { text ->
-                text?.let {
-                    adapter.nodes.deserialize(it)
-                    adapter.nodes.sortBy { node -> node.freq }
-                    binding.equalizerSurface.setNodes(adapter.nodes)
-                }
-                save()
-            }
-        }
-
-        // Add node
-        binding.add.setOnClickListener {
-            if (editorActive) return@setOnClickListener
-
-            editorNodeBackup = null
-            editorNodeUuid = null
-            editorActive = true
-
-            binding.freqInput.value = 100f
-            binding.gainInput.value = 0f
-            updateViewState()
-        }
-
-        binding.freqInput.setOnValueChangedListener { editorApply() }
-        binding.gainInput.setOnValueChangedListener { editorApply() }
-
-        binding.freqInput.customStepScale = { value: Float, _: Boolean ->
-            when (value) {
-                in 0f..400f -> 10f
-                in 400f..600f -> 20f
-                in 600f..1000f -> 50f
-                in 1000f..5000f -> 100f
-                in 5000f..Float.MAX_VALUE -> 500f
-                else -> 10f
-            }
-        }
-
-        binding.confirm.setOnClickListener { editorSave() }
-        binding.cancel.setOnClickListener { editorDiscard() }
-
-        binding.autoeq.setOnClickListener {
-            editorDiscard()
-            autoEqSelectorLauncher.launch(0)
-        }
-
-        // --- Stereo arbitrary EQ switches: default state + listeners ---
-        binding.apply {
-            switchArbEqMaster.isChecked = true
-            switchArbEqLeft.isChecked   = false
-            switchArbEqRight.isChecked  = false
-        }
-
-        binding.switchArbEqMaster.setOnCheckedChangeListener { _, _ ->
-            updateStereoArbEqFlags()
-        }
-        binding.switchArbEqLeft.setOnCheckedChangeListener { _, _ ->
-            updateStereoArbEqFlags()
-        }
-        binding.switchArbEqRight.setOnCheckedChangeListener { _, _ ->
-            updateStereoArbEqFlags()
-        }
-
-        // Long-press to choose which bank is being edited
-        binding.switchArbEqMaster.setOnLongClickListener {
-            switchBank(CurveBank.MASTER)
-            true
-        }
-        binding.switchArbEqLeft.setOnLongClickListener {
-            switchBank(CurveBank.LEFT)
-            true
-        }
-        binding.switchArbEqRight.setOnLongClickListener {
-            switchBank(CurveBank.RIGHT)
-            true
-        }
-
-        // Node list setup + load
-        binding.nodeList.layoutManager = LinearLayoutManager(requireContext())
-        loadNodes(savedInstanceState)
-
-        updateViewState()
-        return binding.root
-    }
 
     // ------------------------------------------------------------------------
     // Stereo bank helpers
@@ -427,14 +424,14 @@ try {
         binding.editCardTitle.text = baseTitle + bankSuffix
     }
 
-private fun updateStereoArbEqFlags() {
+  private fun updateStereoArbEqFlags() {
     val master = binding.switchArbEqMaster.isChecked
     val left   = binding.switchArbEqLeft.isChecked
     val right  = binding.switchArbEqRight.isChecked
 
     val global = master || left || right
 
-    // Save these switch states
+    // 1) Persist to SharedPreferences
     val prefs = requireContext().getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
     prefs.edit()
         .putBoolean(KEY_MASTER, master)
@@ -442,17 +439,19 @@ private fun updateStereoArbEqFlags() {
         .putBoolean(KEY_RIGHT, right)
         .apply()
 
-    Log.e("StereoEQ",
+    // 2) Log for sanity
+    Log.e(
+        "StereoEQ",
         "UI switches changed global=$global master=$master left=$left right=$right"
     )
 
+    // 3) Push to DSP
     try {
         JdspNative.setStereoArbEqFlags(global, master, left, right)
     } catch (e: UnsatisfiedLinkError) {
         Log.e("StereoEQ", "Failed to call setStereoArbEqFlags JNI", e)
     }
 }
-   
 
     // ------------------------------------------------------------------------
     // Editor logic
