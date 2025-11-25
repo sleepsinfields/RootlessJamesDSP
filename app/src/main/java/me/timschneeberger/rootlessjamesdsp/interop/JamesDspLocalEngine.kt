@@ -156,7 +156,7 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
     }
 
    override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
-    // Option B: read all 3 banks (Master/Left/Right) from SharedPreferences
+    // Read all 3 banks (Master/Left/Right) from SharedPreferences
     // and push them to the native stereo graphic EQ.
     return pushStereoGraphicEqToDsp(enable, bands)
 }
@@ -172,6 +172,40 @@ private fun pushStereoGraphicEqToDsp(enable: Boolean, fallbackBands: String): Bo
             ""
         )
     }
+
+    val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+
+    // MASTER: try dedicated master key, fall back to the legacy single-curve string
+    val master = prefs.getString(
+        PREF_GEQ_NODES_MASTER,
+        null
+    ) ?: fallbackBands
+
+    // LEFT / RIGHT: may be null; updateStereoGraphicEq will fall back to master when they're null
+    val left = prefs.getString(
+        PREF_GEQ_NODES_LEFT,
+        null
+    )
+
+    val right = prefs.getString(
+        PREF_GEQ_NODES_RIGHT,
+        null
+    )
+
+    return JamesDspWrapper.updateStereoGraphicEq(
+        self = handle,
+        enable = true,
+        master = master,
+        left = left,
+        right = right
+    )
+}
+
+companion object {
+    private const val PREF_GEQ_NODES_MASTER = "geq_nodes_master"
+    private const val PREF_GEQ_NODES_LEFT   = "geq_nodes_left"
+    private const val PREF_GEQ_NODES_RIGHT  = "geq_nodes_right"
+}
 
     val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
 
