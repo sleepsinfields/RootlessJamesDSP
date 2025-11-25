@@ -259,30 +259,42 @@ class GraphicEqualizerFragment : Fragment() {
         binding.equalizerSurface.setNodes(adapter.nodes)
     }
 
-    private fun storeCurrentBankNodes() {
-        when (currentBank) {
-            CurveBank.MASTER -> {
-                masterNodes.clear()
-                masterNodes.addAll(adapter.nodes)
-            }
-            CurveBank.LEFT -> {
-                leftNodes.clear()
-                leftNodes.addAll(adapter.nodes)
-            }
-            CurveBank.RIGHT -> {
-                rightNodes.clear()
-                rightNodes.addAll(adapter.nodes)
-            }
+  private fun storeCurrentBankNodes() {
+    when (currentBank) {
+        CurveBank.MASTER -> {
+            masterNodes.clear()
+            masterNodes.addAll(adapter.nodes)
+            Log.e("StereoEQ", "storeCurrentBankNodes: MASTER size=${masterNodes.size}")
+        }
+        CurveBank.LEFT -> {
+            leftNodes.clear()
+            leftNodes.addAll(adapter.nodes)
+            Log.e("StereoEQ", "storeCurrentBankNodes: LEFT size=${leftNodes.size}")
+        }
+        CurveBank.RIGHT -> {
+            rightNodes.clear()
+            rightNodes.addAll(adapter.nodes)
+            Log.e("StereoEQ", "storeCurrentBankNodes: RIGHT size=${rightNodes.size}")
         }
     }
+}
 
     @SuppressLint("NotifyDataSetChanged")
     private fun loadBankNodes(target: CurveBank) {
         val src = when (target) {
-            CurveBank.MASTER -> masterNodes
-            CurveBank.LEFT   -> leftNodes
-            CurveBank.RIGHT  -> rightNodes
-        }
+    CurveBank.MASTER -> {
+        Log.e("StereoEQ", "loadBankNodes: MASTER size=${masterNodes.size}")
+        masterNodes
+    }
+    CurveBank.LEFT   -> {
+        Log.e("StereoEQ", "loadBankNodes: LEFT size=${leftNodes.size}")
+        leftNodes
+    }
+    CurveBank.RIGHT  -> {
+        Log.e("StereoEQ", "loadBankNodes: RIGHT size=${rightNodes.size}")
+        rightNodes
+    }
+}
 
         adapter.nodes.clear()
         adapter.nodes.addAll(src)
