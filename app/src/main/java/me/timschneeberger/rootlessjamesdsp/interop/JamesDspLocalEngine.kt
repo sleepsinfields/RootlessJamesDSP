@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import me.timschneeberger.rootlessjamesdsp.interop.structure.EelVmVariable
 import me.timschneeberger.rootlessjamesdsp.utils.Constants
+import me.timschneeberger.rootlessjamesdsp.R
 import me.timschneeberger.rootlessjamesdsp.utils.extensions.ContextExtensions.sendLocalBroadcast
 import timber.log.Timber
 import java.util.Timer
@@ -155,12 +156,48 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
     }
 
    override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
+    // Option B: read all 3 banks (Master/Left/Right) from SharedPreferences
+    // and push them to the native stereo graphic EQ.
+    return pushStereoGraphicEqToDsp(enable, bands)
+}
+
+private fun pushStereoGraphicEqToDsp(enable: Boolean, fallbackBands: String): Boolean {
+    // If disabled, tell DSP to turn off the stereo GEQ.
+    if (!enable) {
+        return JamesDspWrapper.setStereoGraphicEq(
+            handle,
+            false,
+            "",
+            "",
+            ""
+        )
+    }
+
+    val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+
+    // MASTER: try dedicated master key, fall back to the legacy single-curve string
+    val master = prefs.getString(
+        context.getString(R.string.key_geq_nodes_master),
+        null
+    ) ?: fallbackBands
+
+    // LEFT / RIGHT: may be null; updateStereoGraphicEq will fall back to master when they're null
+    val left = prefs.getString(
+        context.getString(R.string.key_geq_nodes_left),
+        null
+    )
+
+    val right = prefs.getString(
+        context.getString(R.string.key_geq_nodes_right),
+        null
+    )
+
     return JamesDspWrapper.updateStereoGraphicEq(
         self = handle,
-        enable = enable,
-        master = bands,
-        left = null,
-        right = null
+        enable = true,
+        master = master,
+        left = left,
+        right = right
     )
 }
 
