@@ -63,16 +63,6 @@ external fun setArbEqStereoFlags(
     leftEnable: Boolean,
     rightEnable: Boolean
 )
-
-external fun setCrossfeed(
-    self: JamesDspHandle,
-    enable: Boolean,
-    mode: Int,
-    customFcut: Int,
-    customFeed: Int
-): Boolean
-
-// new possibly unused wrapper
 fun updateStereoArbEq(
     self: JamesDspHandle,
     global: Boolean,
@@ -101,6 +91,14 @@ fun updateStereoGraphicEq(
         rightSafe
     )
 }
+
+external fun setCrossfeed(
+    self: JamesDspHandle,
+    enable: Boolean,
+    mode: Int,
+    customFcut: Int,
+    customFeed: Int
+): Boolean
 
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
