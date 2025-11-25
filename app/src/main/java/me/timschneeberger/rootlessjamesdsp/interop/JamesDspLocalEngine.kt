@@ -155,14 +155,14 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
     }
 
    override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
-    // For now we send the same curve to all three (M/L/R).
-    return JamesDspWrapper.updateStereoGraphicEq(
+    JamesDspWrapper.updateStereoGraphicEq(
         self = handle,
-        global = enable,
+        enable = enable,      // ✅ correct name
         master = bands,
         left = null,
         right = null
     )
+    return true               // ✅ satisfy Boolean return type
 }
 
 override fun setStereoArbEqFlagsInternal(
