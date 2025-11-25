@@ -239,40 +239,45 @@ private fun initStereoBanksFromCurrent() {
     }
 
 @SuppressLint("NotifyDataSetChanged")
-    private fun switchBank(target: CurveBank) {
-        // Save current adapter state into the bank we’re leaving
-        when (currentBank) {
-            CurveBank.MASTER -> {
-                masterNodes.clear()
-                masterNodes.addAll(adapter.nodes)
-            }
-            CurveBank.LEFT -> {
-                leftNodes.clear()
-                leftNodes.addAll(adapter.nodes)
-            }
-            CurveBank.RIGHT -> {
-                rightNodes.clear()
-                rightNodes.addAll(adapter.nodes)
-            }
-        }
-
-        currentBank = target
-
-        // Load the selected bank into the adapter
-        val src = when (target) {
-            CurveBank.MASTER -> masterNodes
-            CurveBank.LEFT   -> leftNodes
-            CurveBank.RIGHT  -> rightNodes
-        }
-
-        adapter.nodes.clear()
-        adapter.nodes.addAll(src)
-        adapter.nodes.sortBy { it.freq }
-        adapter.notifyDataSetChanged()
-
-        binding.equalizerSurface.setNodes(adapter.nodes)
-        updateViewState()
+private fun switchBank(target: CurveBank) {
+    // If we're in the middle of editing a node, commit it first
+    if (editorActive) {
+        editorSave()
     }
+
+    // Save current adapter state into the bank we’re leaving
+    when (currentBank) {
+        CurveBank.MASTER -> {
+            masterNodes.clear()
+            masterNodes.addAll(adapter.nodes)
+        }
+        CurveBank.LEFT -> {
+            leftNodes.clear()
+            leftNodes.addAll(adapter.nodes)
+        }
+        CurveBank.RIGHT -> {
+            rightNodes.clear()
+            rightNodes.addAll(adapter.nodes)
+        }
+    }
+
+    currentBank = target
+
+    // Load the selected bank into the adapter
+    val src = when (target) {
+        CurveBank.MASTER -> masterNodes
+        CurveBank.LEFT   -> leftNodes
+        CurveBank.RIGHT  -> rightNodes
+    }
+
+    adapter.nodes.clear()
+    adapter.nodes.addAll(src)
+    adapter.nodes.sortBy { it.freq }
+    adapter.notifyDataSetChanged()
+
+    binding.equalizerSurface.setNodes(adapter.nodes)
+    updateViewState()
+}
 
 //end new
 
@@ -325,27 +330,30 @@ private fun initStereoBanksFromCurrent() {
         }
     }
 
-    private fun updateViewState() {
-        val empty = adapter.nodes.isEmpty()
-        binding.emptyView.isVisible = empty
-        binding.nodeList.isVisible = !empty && !editorActive
-        binding.nodeEdit.isVisible = editorActive
+  private fun updateViewState() {
+    val empty = adapter.nodes.isEmpty()
+    binding.emptyView.isVisible = empty
+    binding.nodeList.isVisible = !empty && !editorActive
+    binding.nodeEdit.isVisible = editorActive
 
-        binding.nodeDetailContextButtons.visibility =
-            if (editorActive) View.VISIBLE else View.INVISIBLE
+    binding.nodeDetailContextButtons.visibility =
+        if (editorActive) View.VISIBLE else View.INVISIBLE
 
-        if (editorActive) {
-            val baseTitle = getString(R.string.geq_node_editor)
-            val suffix = when (currentBank) {
-                CurveBank.MASTER -> " (Master)"
-                CurveBank.LEFT   -> " (Left)"
-                CurveBank.RIGHT  -> " (Right)"
-            }
-            binding.editCardTitle.text = baseTitle + suffix
-        } else {
-            binding.editCardTitle.text = getString(R.string.geq_node_list)
-        }
+    val baseTitleRes = if (editorActive) {
+        R.string.geq_node_editor
+    } else {
+        R.string.geq_node_list
     }
+
+    val baseTitle = getString(baseTitleRes)
+    val suffix = when (currentBank) {
+        CurveBank.MASTER -> " (Master)"
+        CurveBank.LEFT   -> " (Left)"
+        CurveBank.RIGHT  -> " (Right)"
+    }
+
+    binding.editCardTitle.text = baseTitle + suffix
+}
 
     private fun updateStereoArbEqFlags() {
         val master = binding.switchArbEqMaster.isChecked
