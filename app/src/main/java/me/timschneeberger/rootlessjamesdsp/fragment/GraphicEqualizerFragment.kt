@@ -47,8 +47,7 @@ class GraphicEqualizerFragment : Fragment() {
     private enum class CurveBank { MASTER, LEFT, RIGHT }
     private var currentBank: CurveBank = CurveBank.MASTER
 
-    /** editorNodeBackup contains a backup of the node loaded in the editor.
-     *  Is null when the editor is closed or while a node is added. */
+    /** editorNodeBackup contains a backup of the node loaded in the editor. */
     private var editorNodeBackup: GraphicEqNode? = null
 
     /** editorNodeUuid contains the UUID of the node loaded in the editor. */
@@ -191,13 +190,8 @@ class GraphicEqualizerFragment : Fragment() {
             }
         }
 
-        binding.confirm.setOnClickListener {
-            editorSave()
-        }
-
-        binding.cancel.setOnClickListener {
-            editorDiscard()
-        }
+        binding.confirm.setOnClickListener { editorSave() }
+        binding.cancel.setOnClickListener { editorDiscard() }
 
         // AutoEQ selector
         binding.autoeq.setOnClickListener {
@@ -240,17 +234,17 @@ class GraphicEqualizerFragment : Fragment() {
         binding.nodeList.layoutManager = LinearLayoutManager(requireContext())
         loadNodes(savedInstanceState)
 
-        // Initialize M/L/R banks from the loaded curve
-        initStereoBanksFromCurrent()
-
         updateViewState()
         return binding.root
     }
 
     // --- Bank initialization & switching helpers ---
 
+    /**
+     * Called only in the legacy single-curve case.
+     * Takes adapter.nodes and clones them into M/L/R banks.
+     */
     private fun initStereoBanksFromCurrent() {
-        // Whatever is currently in adapter.nodes becomes the base curve
         val base = GraphicEqNodeList().apply { addAll(adapter.nodes) }
 
         masterNodes = GraphicEqNodeList().apply { addAll(base) }
@@ -259,7 +253,6 @@ class GraphicEqualizerFragment : Fragment() {
 
         currentBank = CurveBank.MASTER
 
-        // Ensure UI shows master
         adapter.nodes.clear()
         adapter.nodes.addAll(masterNodes)
         adapter.nodes.sortBy { it.freq }
@@ -320,41 +313,111 @@ class GraphicEqualizerFragment : Fragment() {
     // --- Load initial nodes from prefs / saved state ---
 
     private fun loadNodes(savedInstanceState: Bundle?) {
+        val prefs = requireContext()
+            .getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+
+        // Try new per-bank storage first
+        val masterString = prefs.getString(PREF_KEY_GEQ_MASTER, null)
+        val leftString   = prefs.getString(PREF_KEY_GEQ_LEFT, null)
+        val rightString  = prefs.getString(PREF_KEY_GEQ_RIGHT, null)
+
         val nodes = GraphicEqNodeList()
-        val dataSaved = savedInstanceState?.getBundle(STATE_NODES)
-        if (dataSaved != null) {
-            nodes.fromBundle(dataSaved)
-        } else {
-            val nodeString = requireContext()
-                .getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
-                ?.getString(getString(R.string.key_geq_nodes), Constants.DEFAULT_GEQ)!!
-            nodes.deserialize(nodeString)
+
+        if (savedInstanceState != null) {
+            // (State restore is still effectively disabled in upstream; keep behavior)
+            val dataSaved = savedInstanceState.getBundle(STATE_NODES)
+            if (dataSaved != null) {
+                nodes.fromBundle(dataSaved)
+            } else {
+                val singleString = prefs.getString(
+                    getString(R.string.key_geq_nodes),
+                    Constants.DEFAULT_GEQ
+                )!!
+                nodes.deserialize(singleString)
+            }
+
+            nodes.sortBy { it.freq }
+            binding.equalizerSurface.setNodes(nodes)
+
+            binding.nodeList.adapter = GraphicEqNodeAdapter(nodes).apply {
+                configureAdapterCallbacks(this)
+            }
+
+            // Legacy-style init
+            initStereoBanksFromCurrent()
+            return
         }
-        nodes.sortBy { it.freq }
-        binding.equalizerSurface.setNodes(nodes)
 
-        binding.nodeList.adapter = GraphicEqNodeAdapter(nodes).apply {
-            onItemsChanged = {
-                // Keep equalizer surface in sync
-                binding.equalizerSurface.setNodes(it.nodes)
+        if (masterString != null || leftString != null || rightString != null) {
+            // --- New per-bank format present ---
+            val baseString = masterString
+                ?: leftString
+                ?: rightString
+                ?: prefs.getString(
+                    getString(R.string.key_geq_nodes),
+                    Constants.DEFAULT_GEQ
+                )!!
 
-                // Sync into current bank
-                adapter.nodes.sortBy { node -> node.freq }
-                storeCurrentBankNodes()
-
-                updateViewState()
-                save()
+            masterNodes = GraphicEqNodeList().apply {
+                deserialize(masterString ?: baseString)
+            }
+            leftNodes = GraphicEqNodeList().apply {
+                deserialize(leftString ?: baseString)
+            }
+            rightNodes = GraphicEqNodeList().apply {
+                deserialize(rightString ?: baseString)
             }
 
-            onItemClicked = { node: GraphicEqNode, _: Int ->
-                editorNodeBackup = node
-                editorNodeUuid = node.uuid
-                editorActive = true
+            nodes.addAll(masterNodes) // show master by default
+            nodes.sortBy { it.freq }
+            binding.equalizerSurface.setNodes(nodes)
 
-                binding.freqInput.value = node.freq.toFloat()
-                binding.gainInput.value = node.gain.toFloat()
-                updateViewState()
+            binding.nodeList.adapter = GraphicEqNodeAdapter(nodes).apply {
+                configureAdapterCallbacks(this)
             }
+
+            currentBank = CurveBank.MASTER
+        } else {
+            // --- Legacy single-curve format (first run) ---
+            val nodeString = prefs.getString(
+                getString(R.string.key_geq_nodes),
+                Constants.DEFAULT_GEQ
+            )!!
+            nodes.deserialize(nodeString)
+            nodes.sortBy { it.freq }
+            binding.equalizerSurface.setNodes(nodes)
+
+            binding.nodeList.adapter = GraphicEqNodeAdapter(nodes).apply {
+                configureAdapterCallbacks(this)
+            }
+
+            // Clone into M/L/R for this session
+            initStereoBanksFromCurrent()
+        }
+    }
+
+    // Configure adapter callbacks (shared between both load paths)
+    private fun configureAdapterCallbacks(adapterInstance: GraphicEqNodeAdapter) {
+        adapterInstance.onItemsChanged = {
+            // keep equalizer surface in sync
+            binding.equalizerSurface.setNodes(it.nodes)
+
+            // sync current bank
+            adapter.nodes.sortBy { node -> node.freq }
+            storeCurrentBankNodes()
+
+            updateViewState()
+            save()
+        }
+
+        adapterInstance.onItemClicked = { node: GraphicEqNode, _: Int ->
+            editorNodeBackup = node
+            editorNodeUuid = node.uuid
+            editorActive = true
+
+            binding.freqInput.value = node.freq.toFloat()
+            binding.gainInput.value = node.gain.toFloat()
+            updateViewState()
         }
     }
 
@@ -369,23 +432,19 @@ class GraphicEqualizerFragment : Fragment() {
         binding.nodeDetailContextButtons.visibility =
             if (editorActive) View.VISIBLE else View.INVISIBLE
 
-        if (editorActive) {
-            val baseTitle = getString(R.string.geq_node_editor)
-            val suffix = when (currentBank) {
-                CurveBank.MASTER -> " (Master)"
-                CurveBank.LEFT   -> " (Left)"
-                CurveBank.RIGHT  -> " (Right)"
-            }
-            binding.editCardTitle.text = baseTitle + suffix
+        val baseTitle = if (editorActive) {
+            getString(R.string.geq_node_editor)
         } else {
-            val baseTitle = getString(R.string.geq_node_list)
-            val suffix = when (currentBank) {
-                CurveBank.MASTER -> " (Master)"
-                CurveBank.LEFT   -> " (Left)"
-                CurveBank.RIGHT  -> " (Right)"
-            }
-            binding.editCardTitle.text = baseTitle + suffix
+            getString(R.string.geq_node_list)
         }
+
+        val suffix = when (currentBank) {
+            CurveBank.MASTER -> " (Master)"
+            CurveBank.LEFT   -> " (Left)"
+            CurveBank.RIGHT  -> " (Right)"
+        }
+
+        binding.editCardTitle.text = baseTitle + suffix
     }
 
     // --- Stereo flags -> native layer ---
@@ -519,17 +578,27 @@ class GraphicEqualizerFragment : Fragment() {
             getString(if (collapsed) R.string.geq_preview else R.string.geq_preview_collapsed)
     }
 
-    // --- Persist + broadcast (still single curve for now: current adapter) ---
+    // --- Persist + broadcast: save all three banks independently ---
 
     @SuppressLint("ApplySharedPref")
     private fun save() {
-        requireContext()
+        // Make sure current bank is stored
+        storeCurrentBankNodes()
+
+        val prefs = requireContext()
             .getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
-            .edit()
-            .putString(
-                getString(R.string.key_geq_nodes),
-                adapter.nodes.serialize()
-            )
+
+        val masterString = masterNodes.serialize()
+        val leftString   = leftNodes.serialize()
+        val rightString  = rightNodes.serialize()
+
+        prefs.edit()
+            // New per-bank storage
+            .putString(PREF_KEY_GEQ_MASTER, masterString)
+            .putString(PREF_KEY_GEQ_LEFT, leftString)
+            .putString(PREF_KEY_GEQ_RIGHT, rightString)
+            // Legacy single-curve key: keep master for compatibility
+            .putString(getString(R.string.key_geq_nodes), masterString)
             .commit()
 
         requireContext().sendLocalBroadcast(Intent(Constants.ACTION_GRAPHIC_EQ_CHANGED))
@@ -540,7 +609,7 @@ class GraphicEqualizerFragment : Fragment() {
         if (editorActive)
             editorDiscard()
 
-        // Original state saving is commented out in upstream; keep as-is.
+        // Upstream had this disabled; leave it off for now.
         /*
         super.onSaveInstanceState(outState.apply {
             putBundle(STATE_NODES, adapter.nodes.toBundle())
@@ -560,6 +629,11 @@ class GraphicEqualizerFragment : Fragment() {
         const val STATE_EDITOR_ACTIVE = "editorActive"
         const val STATE_EDITOR_UI_FREQ_INPUT = "editorUiFreqInput"
         const val STATE_EDITOR_UI_GAIN_INPUT = "editorUiGainInput"
+
+        // New per-bank preference keys
+        private const val PREF_KEY_GEQ_MASTER = "geq_nodes_master"
+        private const val PREF_KEY_GEQ_LEFT   = "geq_nodes_left"
+        private const val PREF_KEY_GEQ_RIGHT  = "geq_nodes_right"
 
         fun newInstance(): GraphicEqualizerFragment {
             return GraphicEqualizerFragment()
