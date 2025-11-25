@@ -10,7 +10,11 @@ import timber.log.Timber
 import java.util.Timer
 import kotlin.concurrent.schedule
 
-class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspCallbacks? = null) : JamesDspBaseEngine(context, callbacks) {
+class JamesDspLocalEngine(
+    context: Context,
+    callbacks: JamesDspWrapper.JamesDspCallbacks? = null
+) : JamesDspBaseEngine(context, callbacks) {
+
     var handle: JamesDspHandle = JamesDspWrapper.alloc(callbacks ?: DummyCallbacks())
 
     override var sampleRate: Float
@@ -20,10 +24,11 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
             context.sendLocalBroadcast(Intent(Constants.ACTION_SAMPLE_RATE_UPDATED))
         }
         get() = super.sampleRate
+
     override var enabled: Boolean = true
 
     init {
-        if(BenchmarkManager.hasBenchmarksCached())
+        if (BenchmarkManager.hasBenchmarksCached())
             BenchmarkManager.loadBenchmarksFromCache()
     }
 
@@ -39,86 +44,69 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
     }
 
     // Processing
-    fun processInt16(input: ShortArray, output: ShortArray, offset: Int = -1, length: Int = -1)
-    {
-        if(!enabled || handle == 0L)
-        {
-            if(offset < 0 && length < 0) {
+    fun processInt16(input: ShortArray, output: ShortArray, offset: Int = -1, length: Int = -1) {
+        if (!enabled || handle == 0L) {
+            if (offset < 0 && length < 0) {
                 input.copyInto(output)
-            }
-            else {
+            } else {
                 input.copyInto(output, 0, offset, offset + length)
             }
-        }
-        else {
+        } else {
             JamesDspWrapper.processInt16(handle, input, output, offset, length)
         }
     }
 
-    fun processInt32(input: IntArray, output: IntArray, offset: Int = -1, length: Int = -1)
-    {
-        if(!enabled || handle == 0L)
-        {
-            if(offset < 0 && length < 0) {
+    fun processInt32(input: IntArray, output: IntArray, offset: Int = -1, length: Int = -1) {
+        if (!enabled || handle == 0L) {
+            if (offset < 0 && length < 0) {
                 input.copyInto(output)
-            }
-            else {
+            } else {
                 input.copyInto(output, 0, offset, offset + length)
             }
-        }
-        else {
+        } else {
             JamesDspWrapper.processInt32(handle, input, output, offset, length)
         }
     }
 
-    fun processFloat(input: FloatArray, output: FloatArray, offset: Int = -1, length: Int = -1)
-    {
-        if(!enabled || handle == 0L)
-        {
-            if(offset < 0 && length < 0) {
+    fun processFloat(input: FloatArray, output: FloatArray, offset: Int = -1, length: Int = -1) {
+        if (!enabled || handle == 0L) {
+            if (offset < 0 && length < 0) {
                 input.copyInto(output)
-            }
-            else {
+            } else {
                 input.copyInto(output, 0, offset, offset + length)
             }
-        }
-        else {
+        } else {
             JamesDspWrapper.processFloat(handle, input, output, offset, length)
         }
     }
 
     // Effect config
     override fun setOutputControl(threshold: Float, release: Float, postGain: Float): Boolean {
-        return JamesDspWrapper.setLimiter(handle, threshold, release) and JamesDspWrapper.setPostGain(handle, postGain)
+        return JamesDspWrapper.setLimiter(handle, threshold, release) &&
+               JamesDspWrapper.setPostGain(handle, postGain)
     }
 
-    override fun setReverb(enable: Boolean, preset: Int): Boolean
-    {
+    override fun setReverb(enable: Boolean, preset: Int): Boolean {
         return JamesDspWrapper.setReverb(handle, enable, preset)
     }
 
-    override fun setCrossfeed(enable: Boolean, mode: Int): Boolean
-    {
+    override fun setCrossfeed(enable: Boolean, mode: Int): Boolean {
         return JamesDspWrapper.setCrossfeed(handle, enable, mode, 0, 0)
     }
 
-    override fun setCrossfeedCustom(enable: Boolean, fcut: Int, feed: Int): Boolean
-    {
+    override fun setCrossfeedCustom(enable: Boolean, fcut: Int, feed: Int): Boolean {
         return JamesDspWrapper.setCrossfeed(handle, enable, 99, fcut, feed)
     }
 
-    override fun setBassBoost(enable: Boolean, maxGain: Float): Boolean
-    {
+    override fun setBassBoost(enable: Boolean, maxGain: Float): Boolean {
         return JamesDspWrapper.setBassBoost(handle, enable, maxGain)
     }
 
-    override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean
-    {
+    override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
         return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
     }
 
-    override fun setVacuumTube(enable: Boolean, level: Float): Boolean
-    {
+    override fun setVacuumTube(enable: Boolean, level: Float): Boolean {
         return JamesDspWrapper.setVacuumTube(handle, enable, level)
     }
 
@@ -155,83 +143,67 @@ class JamesDspLocalEngine(context: Context, callbacks: JamesDspWrapper.JamesDspC
         return JamesDspWrapper.setConvolver(handle, enable, impulseResponse, irChannels, irFrames)
     }
 
-   override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
-    // Read all 3 banks (Master/Left/Right) from SharedPreferences
-    // and push them to the native stereo graphic EQ.
-    return pushStereoGraphicEqToDsp(enable, bands)
-}
+    override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
+        // Read all 3 banks (Master/Left/Right) from SharedPreferences
+        // and push them to the native stereo graphic EQ.
+        return pushStereoGraphicEqToDsp(enable, bands)
+    }
 
-private fun pushStereoGraphicEqToDsp(enable: Boolean, fallbackBands: String): Boolean {
-    // If disabled, tell DSP to turn off the stereo GEQ.
-    if (!enable) {
-        return JamesDspWrapper.setStereoGraphicEq(
-            handle,
-            false,
-            "",
-            "",
-            ""
+    private fun pushStereoGraphicEqToDsp(enable: Boolean, fallbackBands: String): Boolean {
+        // If disabled, tell DSP to turn off the stereo GEQ.
+        if (!enable) {
+            return JamesDspWrapper.setStereoGraphicEq(
+                handle,
+                false,
+                "",
+                "",
+                ""
+            )
+        }
+
+        val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+
+        // MASTER: try dedicated master key, fall back to the legacy single-curve string
+        val master = prefs.getString(
+            PREF_GEQ_NODES_MASTER,
+            null
+        ) ?: fallbackBands
+
+        // LEFT / RIGHT: may be null; updateStereoGraphicEq will fall back to master when they're null
+        val left = prefs.getString(
+            PREF_GEQ_NODES_LEFT,
+            null
+        )
+
+        val right = prefs.getString(
+            PREF_GEQ_NODES_RIGHT,
+            null
+        )
+
+        return JamesDspWrapper.updateStereoGraphicEq(
+            self = handle,
+            enable = true,
+            master = master,
+            left = left,
+            right = right
         )
     }
 
-    val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+    override fun setStereoArbEqFlagsInternal(
+        global: Boolean,
+        master: Boolean,
+        left: Boolean,
+        right: Boolean
+    ) {
+        JamesDspWrapper.setArbEqStereoFlags(
+            handle,
+            global,
+            master,
+            left,
+            right
+        )
+    }
 
-    // MASTER: try dedicated master key, fall back to the legacy single-curve string
-    val master = prefs.getString(
-        PREF_GEQ_NODES_MASTER,
-        null
-    ) ?: fallbackBands
-
-    // LEFT / RIGHT: may be null; updateStereoGraphicEq will fall back to master when they're null
-    val left = prefs.getString(
-        PREF_GEQ_NODES_LEFT,
-        null
-    )
-
-    val right = prefs.getString(
-        PREF_GEQ_NODES_RIGHT,
-        null
-    )
-
-    return JamesDspWrapper.updateStereoGraphicEq(
-        self = handle,
-        enable = true,
-        master = master,
-        left = left,
-        right = right
-    )
-}
-
-companion object {
-    private const val PREF_GEQ_NODES_MASTER = "geq_nodes_master"
-    private const val PREF_GEQ_NODES_LEFT   = "geq_nodes_left"
-    private const val PREF_GEQ_NODES_RIGHT  = "geq_nodes_right"
-}
-
-    val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
-
-    return JamesDspWrapper.updateStereoGraphicEq(
-        self = handle,
-        enable = true,
-        master = master,
-        left = left,
-        right = right
-    )
-}
-
-override fun setStereoArbEqFlagsInternal(
-    global: Boolean,
-    master: Boolean,
-    left: Boolean,
-    right: Boolean
-) {
-    JamesDspWrapper.setArbEqStereoFlags(
-        handle,
-        global,
-        master,
-        left,
-        right
-    )
-}
     override fun setLiveprogInternal(enable: Boolean, name: String, script: String): Boolean {
         return JamesDspWrapper.setLiveprog(handle, enable, name, script)
     }
@@ -241,18 +213,21 @@ override fun setStereoArbEqFlagsInternal(
     override fun supportsCustomCrossfeed(): Boolean { return true }
 
     // EEL VM utilities
-    override fun enumerateEelVariables(): ArrayList<EelVmVariable>
-    {
+    override fun enumerateEelVariables(): ArrayList<EelVmVariable> {
         return JamesDspWrapper.enumerateEelVariables(handle)
     }
 
-    override fun manipulateEelVariable(name: String, value: Float): Boolean
-    {
+    override fun manipulateEelVariable(name: String, value: Float): Boolean {
         return JamesDspWrapper.manipulateEelVariable(handle, name, value)
     }
 
-    override fun freezeLiveprogExecution(freeze: Boolean)
-    {
+    override fun freezeLiveprogExecution(freeze: Boolean) {
         JamesDspWrapper.freezeLiveprogExecution(handle, freeze)
+    }
+
+    companion object {
+        private const val PREF_GEQ_NODES_MASTER = "geq_nodes_master"
+        private const val PREF_GEQ_NODES_LEFT   = "geq_nodes_left"
+        private const val PREF_GEQ_NODES_RIGHT  = "geq_nodes_right"
     }
 }
