@@ -45,7 +45,7 @@ class GraphicEqualizerFragment : Fragment() {
 
     private enum class CurveBank { MASTER, LEFT, RIGHT }
     private var currentBank: CurveBank = CurveBank.MASTER
-    
+
     /** editorNodeBackup contains a backup of the node loaded in the editor.
     Is null when the editor is closed or while a node is added. */
     private var editorNodeBackup: GraphicEqNode? = null
@@ -213,6 +213,21 @@ class GraphicEqualizerFragment : Fragment() {
 // Initialize Master/Left/Right banks from the loaded curve
         initStereoBanksFromCurrent()
 
+
+        // TODO fix
+        /*if(savedInstanceState != null) {
+            editorNodeUuid = savedInstanceState.getSerializableAs(STATE_EDITOR_NODE_UUID, UUID::class.java)
+            editorNodeBackup = savedInstanceState.getSerializableAs(STATE_EDITOR_NODE_BACKUP, GraphicEqNode::class.java)
+            editorActive = savedInstanceState.getBoolean(STATE_EDITOR_ACTIVE)
+            binding.freqInput.value = savedInstanceState.getFloat(STATE_EDITOR_UI_FREQ_INPUT)
+            binding.gainInput.value = savedInstanceState.getFloat(STATE_EDITOR_UI_GAIN_INPUT)
+        }*/
+
+        updateViewState()
+        return binding.root
+    }  // close of onCreateView
+
+// new
 private fun initStereoBanksFromCurrent() {
         val base = GraphicEqNodeList().apply { addAll(adapter.nodes) }
 
@@ -258,18 +273,8 @@ private fun initStereoBanksFromCurrent() {
         binding.equalizerSurface.setNodes(adapter.nodes)
         updateViewState()
     }
-        // TODO fix
-        /*if(savedInstanceState != null) {
-            editorNodeUuid = savedInstanceState.getSerializableAs(STATE_EDITOR_NODE_UUID, UUID::class.java)
-            editorNodeBackup = savedInstanceState.getSerializableAs(STATE_EDITOR_NODE_BACKUP, GraphicEqNode::class.java)
-            editorActive = savedInstanceState.getBoolean(STATE_EDITOR_ACTIVE)
-            binding.freqInput.value = savedInstanceState.getFloat(STATE_EDITOR_UI_FREQ_INPUT)
-            binding.gainInput.value = savedInstanceState.getFloat(STATE_EDITOR_UI_GAIN_INPUT)
-        }*/
 
-        updateViewState()
-        return binding.root
-    }
+//end new
 
     private fun loadNodes(savedInstanceState: Bundle?) {
         val nodes = GraphicEqNodeList()
