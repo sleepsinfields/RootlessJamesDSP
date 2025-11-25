@@ -119,6 +119,25 @@ class GraphicEqualizerFragment : Fragment() {
         Log.e("StereoEQ", "GraphicEqFragment created")
         binding = FragmentGraphicEqBinding.inflate(layoutInflater, container, false)
 
+// Restore saved switch states
+val prefs = requireContext().getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
+
+val savedMaster = prefs.getBoolean(KEY_MASTER, true)
+val savedLeft   = prefs.getBoolean(KEY_LEFT, false)
+val savedRight  = prefs.getBoolean(KEY_RIGHT, false)
+
+// Push restored UI state to switches
+binding.switchArbEqMaster.isChecked = savedMaster
+binding.switchArbEqLeft.isChecked   = savedLeft
+binding.switchArbEqRight.isChecked  = savedRight
+
+// Push restored values to DSP
+val global = savedMaster || savedLeft || savedRight
+try {
+    JdspNative.setStereoArbEqFlags(global, savedMaster, savedLeft, savedRight)
+} catch (e: Throwable) {
+    Log.e("StereoEQ", "Could not restore stereo flags", e)
+}
         // Preview card collapse / expand
         binding.previewCard.setOnClickListener {
             if (resources.configuration.orientation != ORIENTATION_LANDSCAPE) {
@@ -408,24 +427,32 @@ class GraphicEqualizerFragment : Fragment() {
         binding.editCardTitle.text = baseTitle + bankSuffix
     }
 
-    private fun updateStereoArbEqFlags() {
-        val master = binding.switchArbEqMaster.isChecked
-        val left   = binding.switchArbEqLeft.isChecked
-        val right  = binding.switchArbEqRight.isChecked
+private fun updateStereoArbEqFlags() {
+    val master = binding.switchArbEqMaster.isChecked
+    val left   = binding.switchArbEqLeft.isChecked
+    val right  = binding.switchArbEqRight.isChecked
 
-        val global = master || left || right
+    val global = master || left || right
 
-        Log.e(
-            "StereoEQ",
-            "UI switches changed global=$global master=$master left=$left right=$right"
-        )
+    // Save these switch states
+    val prefs = requireContext().getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
+    prefs.edit()
+        .putBoolean(KEY_MASTER, master)
+        .putBoolean(KEY_LEFT, left)
+        .putBoolean(KEY_RIGHT, right)
+        .apply()
 
-        try {
-            JdspNative.setStereoArbEqFlags(global, master, left, right)
-        } catch (e: UnsatisfiedLinkError) {
-            Log.e("StereoEQ", "Failed to call setStereoArbEqFlags JNI", e)
-        }
+    Log.e("StereoEQ",
+        "UI switches changed global=$global master=$master left=$left right=$right"
+    )
+
+    try {
+        JdspNative.setStereoArbEqFlags(global, master, left, right)
+    } catch (e: UnsatisfiedLinkError) {
+        Log.e("StereoEQ", "Failed to call setStereoArbEqFlags JNI", e)
     }
+}
+   
 
     // ------------------------------------------------------------------------
     // Editor logic
@@ -582,20 +609,21 @@ class GraphicEqualizerFragment : Fragment() {
     }
 
     companion object {
-        const val STATE_NODES = "nodes"
-        const val STATE_EDITOR_NODE_UUID = "editorNodeUuid"
-        const val STATE_EDITOR_NODE_BACKUP = "editorNodeBackup"
-        const val STATE_EDITOR_ACTIVE = "editorActive"
-        const val STATE_EDITOR_UI_FREQ_INPUT = "editorUiFreqInput"
-        const val STATE_EDITOR_UI_GAIN_INPUT = "editorUiGainInput"
+    const val STATE_NODES = "nodes"
+    const val STATE_EDITOR_NODE_UUID = "editorNodeUuid"
+    const val STATE_EDITOR_NODE_BACKUP = "editorNodeBackup"
+    const val STATE_EDITOR_ACTIVE = "editorActive"
+    const val STATE_EDITOR_UI_FREQ_INPUT = "editorUiFreqInput"
+    const val STATE_EDITOR_UI_GAIN_INPUT = "editorUiGainInput"
 
-        // New: per-bank stored curves
-        const val PREF_GEQ_MASTER = "geq_nodes_master"
-        const val PREF_GEQ_LEFT   = "geq_nodes_left"
-        const val PREF_GEQ_RIGHT  = "geq_nodes_right"
+    // Switch persistence keys
+    private const val PREF_STEREO_FLAGS = "stereo_geq_flags"
+    private const val KEY_MASTER = "flag_master"
+    private const val KEY_LEFT   = "flag_left"
+    private const val KEY_RIGHT  = "flag_right"
 
-        fun newInstance(): GraphicEqualizerFragment {
-            return GraphicEqualizerFragment()
-        }
+    fun newInstance(): GraphicEqualizerFragment {
+        return GraphicEqualizerFragment()
     }
+}
 }
