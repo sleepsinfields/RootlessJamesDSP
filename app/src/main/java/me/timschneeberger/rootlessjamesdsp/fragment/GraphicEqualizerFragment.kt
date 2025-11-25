@@ -38,6 +38,14 @@ class GraphicEqualizerFragment : Fragment() {
     private val adapter: GraphicEqNodeAdapter
         get() = binding.nodeList.adapter as GraphicEqNodeAdapter
 
+// --- Stereo M/L/R node banks ---
+    private var masterNodes = GraphicEqNodeList()
+    private var leftNodes   = GraphicEqNodeList()
+    private var rightNodes  = GraphicEqNodeList()
+
+    private enum class CurveBank { MASTER, LEFT, RIGHT }
+    private var currentBank: CurveBank = CurveBank.MASTER
+    
     /** editorNodeBackup contains a backup of the node loaded in the editor.
     Is null when the editor is closed or while a node is added. */
     private var editorNodeBackup: GraphicEqNode? = null
@@ -185,10 +193,71 @@ class GraphicEqualizerFragment : Fragment() {
             updateStereoArbEqFlags()
         }
 
+// Long-press switches to select which curve bank to edit
+        binding.switchArbEqMaster.setOnLongClickListener {
+            switchBank(CurveBank.MASTER)
+            true
+        }
+        binding.switchArbEqLeft.setOnLongClickListener {
+            switchBank(CurveBank.LEFT)
+            true
+        }
+        binding.switchArbEqRight.setOnLongClickListener {
+            switchBank(CurveBank.RIGHT)
+            true
+        }
         // Load node data
         binding.nodeList.layoutManager = LinearLayoutManager(requireContext())
         loadNodes(savedInstanceState)
 
+// Initialize Master/Left/Right banks from the loaded curve
+        initStereoBanksFromCurrent()
+
+private fun initStereoBanksFromCurrent() {
+        val base = GraphicEqNodeList().apply { addAll(adapter.nodes) }
+
+        masterNodes = GraphicEqNodeList().apply { addAll(base) }
+        leftNodes   = GraphicEqNodeList().apply { addAll(base) }
+        rightNodes  = GraphicEqNodeList().apply { addAll(base) }
+
+        currentBank = CurveBank.MASTER
+    }
+
+@SuppressLint("NotifyDataSetChanged")
+    private fun switchBank(target: CurveBank) {
+        // Save current adapter state into the bank we’re leaving
+        when (currentBank) {
+            CurveBank.MASTER -> {
+                masterNodes.clear()
+                masterNodes.addAll(adapter.nodes)
+            }
+            CurveBank.LEFT -> {
+                leftNodes.clear()
+                leftNodes.addAll(adapter.nodes)
+            }
+            CurveBank.RIGHT -> {
+                rightNodes.clear()
+                rightNodes.addAll(adapter.nodes)
+            }
+        }
+
+        currentBank = target
+
+        // Load the selected bank into the adapter
+        val src = when (target) {
+            CurveBank.MASTER -> masterNodes
+            CurveBank.LEFT   -> leftNodes
+            CurveBank.RIGHT  -> rightNodes
+        }
+
+        adapter.nodes.clear()
+        adapter.nodes.addAll(src)
+        adapter.nodes.sortBy { it.freq }
+        adapter.notifyDataSetChanged()
+
+        binding.equalizerSurface.setNodes(adapter.nodes)
+        updateViewState()
+    }
         // TODO fix
         /*if(savedInstanceState != null) {
             editorNodeUuid = savedInstanceState.getSerializableAs(STATE_EDITOR_NODE_UUID, UUID::class.java)
@@ -218,8 +287,23 @@ class GraphicEqualizerFragment : Fragment() {
 
         binding.nodeList.adapter = GraphicEqNodeAdapter(nodes).apply {
             onItemsChanged = {
-                binding.equalizerSurface.setNodes(it.nodes)
+                // Keep the currently selected bank in sync with adapter.nodes
+                when (currentBank) {
+                    CurveBank.MASTER -> {
+                        masterNodes.clear()
+                        masterNodes.addAll(it.nodes)
+                    }
+                    CurveBank.LEFT -> {
+                        leftNodes.clear()
+                        leftNodes.addAll(it.nodes)
+                    }
+                    CurveBank.RIGHT -> {
+                        rightNodes.clear()
+                        rightNodes.addAll(it.nodes)
+                    }
+                }
 
+                binding.equalizerSurface.setNodes(it.nodes)
                 updateViewState()
                 save()
             }
@@ -241,11 +325,21 @@ class GraphicEqualizerFragment : Fragment() {
         binding.emptyView.isVisible = empty
         binding.nodeList.isVisible = !empty && !editorActive
         binding.nodeEdit.isVisible = editorActive
+
         binding.nodeDetailContextButtons.visibility =
             if (editorActive) View.VISIBLE else View.INVISIBLE
-        binding.editCardTitle.text = getString(
-            if (editorActive) R.string.geq_node_editor else R.string.geq_node_list
-        )
+
+        if (editorActive) {
+            val baseTitle = getString(R.string.geq_node_editor)
+            val suffix = when (currentBank) {
+                CurveBank.MASTER -> " (Master)"
+                CurveBank.LEFT   -> " (Left)"
+                CurveBank.RIGHT  -> " (Right)"
+            }
+            binding.editCardTitle.text = baseTitle + suffix
+        } else {
+            binding.editCardTitle.text = getString(R.string.geq_node_list)
+        }
     }
 
     private fun updateStereoArbEqFlags() {
