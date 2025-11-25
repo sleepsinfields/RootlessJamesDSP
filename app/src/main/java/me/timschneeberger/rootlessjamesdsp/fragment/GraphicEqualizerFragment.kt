@@ -616,11 +616,16 @@ private fun updateStereoArbEqFlags() {
     const val STATE_EDITOR_UI_FREQ_INPUT = "editorUiFreqInput"
     const val STATE_EDITOR_UI_GAIN_INPUT = "editorUiGainInput"
 
-    // Switch persistence keys
+    // New: where we persist the stereo switches (master/left/right flags)
     private const val PREF_STEREO_FLAGS = "stereo_geq_flags"
     private const val KEY_MASTER = "flag_master"
     private const val KEY_LEFT   = "flag_left"
     private const val KEY_RIGHT  = "flag_right"
+
+    // New: per-bank stored curves (SharedPreferences keys)
+    const val PREF_GEQ_MASTER = "geq_nodes_master"
+    const val PREF_GEQ_LEFT   = "geq_nodes_left"
+    const val PREF_GEQ_RIGHT  = "geq_nodes_right"
 
     fun newInstance(): GraphicEqualizerFragment {
         return GraphicEqualizerFragment()
