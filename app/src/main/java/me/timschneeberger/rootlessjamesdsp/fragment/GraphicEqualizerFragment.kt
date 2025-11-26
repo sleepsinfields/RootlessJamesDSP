@@ -1,4 +1,4 @@
-packag me.timschneeberger.rootlessjamesdsp.fragment
+package me.timschneeberger.rootlessjamesdsp.fragment
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
