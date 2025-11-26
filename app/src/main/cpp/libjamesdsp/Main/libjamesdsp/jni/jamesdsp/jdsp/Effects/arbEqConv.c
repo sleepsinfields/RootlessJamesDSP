@@ -66,6 +66,37 @@ Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqFlags(
          g_arbEq.right.enabled);
 }
 
+JNIEXPORT void JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqCurves(
+        JNIEnv *env,
+        jclass clazz,
+        jstring jMaster,
+        jstring jLeft,
+        jstring jRight)
+{
+    (void)clazz;
+
+    JamesDSPLib *jdsp = getJamesDspInstance();  
+    // ↑ Use whatever call the legacy parser uses to get the jdsp pointer
+
+    const char *masterStr = (*env)->GetStringUTFChars(env, jMaster, 0);
+    const char *leftStr   = (*env)->GetStringUTFChars(env, jLeft,   0);
+    const char *rightStr  = (*env)->GetStringUTFChars(env, jRight,  0);
+
+    LOGE("JNI setStereoArbEqCurves:\nM=%s\nL=%s\nR=%s",
+         masterStr, leftStr, rightStr);
+
+    ArbitraryResponseEqualizerStringParserStereo(
+        jdsp,
+        masterStr,
+        leftStr,
+        rightStr
+    );
+
+    (*env)->ReleaseStringUTFChars(env, jMaster, masterStr);
+    (*env)->ReleaseStringUTFChars(env, jLeft,   leftStr);
+    (*env)->ReleaseStringUTFChars(env, jRight,  rightStr);
+}
 void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
 {
     jdsp->arbMag.instance.filterLen =
@@ -344,6 +375,12 @@ void ArbitraryResponseEqualizerProcess(JamesDSPLib *jdsp, size_t n)
     // function shouldn't be called, but we keep the check just in case.
     if (!jdsp->arbitraryMagEnabled)
         return;
+
+    LOGE("StereoEQNative: process enabled=%d master=%d left=%d right=%d",
+         g_arbEq.enabled,
+         g_arbEq.master.enabled,
+         g_arbEq.left.enabled,
+         g_arbEq.right.enabled);
 
     if (!g_arbEq.enabled)
         return;
