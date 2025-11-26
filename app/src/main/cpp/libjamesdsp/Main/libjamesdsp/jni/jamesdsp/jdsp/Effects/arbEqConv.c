@@ -41,7 +41,6 @@ static ArbEqSubsystemFlags g_arbEq = {
     .left   = { .enabled = 0 },
     .right  = { .enabled = 0 },
 };
-
 JNIEXPORT void JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqFlags(
         JNIEnv *env,
@@ -66,35 +65,6 @@ Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqFlags(
          g_arbEq.right.enabled);
 }
 
-JNIEXPORT void JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqCurves(
-        JNIEnv *env,
-        jclass clazz,
-        jstring jMaster,
-        jstring jLeft,
-        jstring jRight)
-{
-    (void)clazz;
-
-
-    const char *masterStr = (*env)->GetStringUTFChars(env, jMaster, 0);
-    const char *leftStr   = (*env)->GetStringUTFChars(env, jLeft,   0);
-    const char *rightStr  = (*env)->GetStringUTFChars(env, jRight,  0);
-
-    LOGE("JNI setStereoArbEqCurves:\nM=%s\nL=%s\nR=%s",
-         masterStr, leftStr, rightStr);
-
-    ArbitraryResponseEqualizerStringParserStereo(
-        jdsp,
-        masterStr,
-        leftStr,
-        rightStr
-    );
-
-    (*env)->ReleaseStringUTFChars(env, jMaster, masterStr);
-    (*env)->ReleaseStringUTFChars(env, jLeft,   leftStr);
-    (*env)->ReleaseStringUTFChars(env, jRight,  rightStr);
-}
 void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
 {
     jdsp->arbMag.instance.filterLen =
