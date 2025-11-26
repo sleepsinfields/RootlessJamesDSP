@@ -335,10 +335,10 @@ private fun switchBank(target: CurveBank) {
         return
     }
 
-    // 1. Save current visible UI nodes into current bank
+    // 1. Save current UI into current bank
     storeCurrentBankNodes()
 
-    // 2. Switch bank value
+    // 2. Switch bank
     currentBank = target
 
     // 3. Load target bank into UI
@@ -350,80 +350,90 @@ private fun switchBank(target: CurveBank) {
     Log.e("StereoEQ", "switchBank → now editing $target")
 }
     // ------------------------------------------------------------------------
-    // Node loading
-    // ------------------------------------------------------------------------
-
-    private fun loadNodes(savedInstanceState: Bundle?) {
+// Node loading
+// ------------------------------------------------------------------------
+private fun loadNodes(savedInstanceState: Bundle?) {
     val prefs = geqPrefs()
 
-    val nodes = GraphicEqNodeList()
+    val nodesForAdapter = GraphicEqNodeList()
     val dataSaved = savedInstanceState?.getBundle(STATE_NODES)
 
     if (dataSaved != null) {
         // Instance-state restore path
-        nodes.fromBundle(dataSaved)
-        initBanksFromLegacy(nodes)
+        nodesForAdapter.fromBundle(dataSaved)
+        initBanksFromLegacy(nodesForAdapter)
+        Log.e("StereoEQ", "loadNodes: restored from instanceState, size=${nodesForAdapter.size}")
     } else {
         // Try new per-bank storage first
         val masterStr = prefs.getString(PREF_GEQ_MASTER, null)
         val leftStr   = prefs.getString(PREF_GEQ_LEFT,   null)
         val rightStr  = prefs.getString(PREF_GEQ_RIGHT,  null)
 
-        if (masterStr != null && leftStr != null && rightStr != null) {
-            masterNodes = GraphicEqNodeList().apply { deserialize(masterStr) }
-            leftNodes   = GraphicEqNodeList().apply { deserialize(leftStr) }
-            rightNodes  = GraphicEqNodeList().apply { deserialize(rightStr) }
+        if (!masterStr.isNullOrEmpty() ||
+            !leftStr.isNullOrEmpty()   ||
+            !rightStr.isNullOrEmpty()
+        ) {
+            fun parseOrEmpty(str: String?): GraphicEqNodeList =
+                GraphicEqNodeList().apply {
+                    if (!str.isNullOrEmpty()) {
+                        deserialize(str)
+                    }
+                }
 
-            // Start on MASTER bank in the UI
+            // MASTER is canonical; if left/right missing, fall back to master
+            masterNodes = parseOrEmpty(masterStr)
+            leftNodes   = parseOrEmpty(leftStr ?: masterStr)
+            rightNodes  = parseOrEmpty(rightStr ?: masterStr)
+
             currentBank = CurveBank.MASTER
-            nodes.addAll(masterNodes)
+            nodesForAdapter.addAll(masterNodes)
 
             Log.e(
                 "StereoEQ",
-                "loadNodes: restored banks M=${masterNodes.size} L=${leftNodes.size} R=${rightNodes.size}"
+                "loadNodes: restored banks M=${masterNodes.size} " +
+                    "L=${leftNodes.size} R=${rightNodes.size}"
             )
         } else {
-            // Legacy: only a single GraphicEQ string
+            // Full fallback: legacy single-curve string
             val legacyString = prefs.getString(
                 getString(R.string.key_geq_nodes),
                 Constants.DEFAULT_GEQ
             )!!
 
-            nodes.deserialize(legacyString)
-            initBanksFromLegacy(nodes)
+            nodesForAdapter.deserialize(legacyString)
+            initBanksFromLegacy(nodesForAdapter)
 
             Log.e(
                 "StereoEQ",
-                "loadNodes: legacy curve loaded (${nodes.size} nodes) " +
+                "loadNodes: legacy curve loaded (${nodesForAdapter.size} nodes) " +
                     "and cloned to all banks"
             )
         }
     }
 
-    nodes.sortBy { it.freq }
-    binding.equalizerSurface.setNodes(nodes)
+    nodesForAdapter.sortBy { it.freq }
 
-    // Adapter using the current bank's nodes (initially 'nodes' == master bank)
-    binding.nodeList.adapter = GraphicEqNodeAdapter(nodes).apply {
-        onItemsChanged = {
-            // Reflect UI changes
-            binding.equalizerSurface.setNodes(it.nodes)
-            updateViewState()
-            save()   // this should write back to the current bank & prefs
-        }
+val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
+    onItemsChanged = {
+        binding.equalizerSurface.setNodes(it.nodes)
+        updateViewState()
+        save()  // will update the correct bank + prefs
+    }
 
-        onItemClicked = { node: GraphicEqNode, _: Int ->
-            editorNodeBackup = node
-            editorNodeUuid = node.uuid
-            editorActive = true
+    onItemClicked = { node: GraphicEqNode, _: Int ->
+        editorNodeBackup = node
+        editorNodeUuid = node.uuid
+        editorActive = true
 
-            binding.freqInput.value = node.freq.toFloat()
-            binding.gainInput.value = node.gain.toFloat()
-            updateViewState()
-        }
+        binding.freqInput.value = node.freq.toFloat()
+        binding.gainInput.value = node.gain.toFloat()
+        updateViewState()
     }
 }
 
+binding.nodeList.adapter = nodeAdapter
+binding.equalizerSurface.setNodes(nodeAdapter.nodes)
+}
     // ------------------------------------------------------------------------
     // UI state helpers
     // ------------------------------------------------------------------------
@@ -594,32 +604,30 @@ private fun switchBank(target: CurveBank) {
         binding.previewTitle.text =
             getString(if (collapsed) R.string.geq_preview else R.string.geq_preview_collapsed)
     }
+    
+@SuppressLint("ApplySharedPref")
+private fun save() {
+    // Sync current adapter state into current bank first
+    storeCurrentBankNodes()
 
-    @SuppressLint("ApplySharedPref")
-    private fun save() {
-        // First, sync the current adapter state into whichever bank we're on.
-        storeCurrentBankNodes()
+    val prefs = geqPrefs()
 
-        val prefs = requireContext()
-            .getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+    val masterStr = GraphicEqNodeList().apply { addAll(masterNodes) }.serialize()
+    val leftStr   = GraphicEqNodeList().apply { addAll(leftNodes)   }.serialize()
+    val rightStr  = GraphicEqNodeList().apply { addAll(rightNodes)  }.serialize()
 
-        val masterStr = GraphicEqNodeList().apply { addAll(masterNodes) }.serialize()
-        val leftStr   = GraphicEqNodeList().apply { addAll(leftNodes)   }.serialize()
-        val rightStr  = GraphicEqNodeList().apply { addAll(rightNodes)  }.serialize()
+    // Legacy: keep writing a single curve as well (use MASTER as canonical)
+    val legacyStr = masterStr
 
-        // Legacy: keep writing a single curve as well (use MASTER as canonical)
-        val legacyStr = masterStr
+    prefs.edit()
+        .putString(getString(R.string.key_geq_nodes), legacyStr)
+        .putString(PREF_GEQ_MASTER, masterStr)
+        .putString(PREF_GEQ_LEFT,   leftStr)
+        .putString(PREF_GEQ_RIGHT,  rightStr)
+        .commit()
 
-        prefs.edit()
-            .putString(getString(R.string.key_geq_nodes), legacyStr)
-            .putString(PREF_GEQ_MASTER, masterStr)
-            .putString(PREF_GEQ_LEFT,   leftStr)
-            .putString(PREF_GEQ_RIGHT,  rightStr)
-            .commit()
-
-        requireContext().sendLocalBroadcast(Intent(Constants.ACTION_GRAPHIC_EQ_CHANGED))
-    }
-
+    requireContext().sendLocalBroadcast(Intent(Constants.ACTION_GRAPHIC_EQ_CHANGED))
+}
     override fun onSaveInstanceState(outState: Bundle) {
         // TODO workaround: discard changes
         if (editorActive)
