@@ -67,6 +67,8 @@ Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqFlags(
 
 void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
 {
+    LOGE("ArbEq ctor: jdsp=%p", (void*)jdsp);
+
     jdsp->arbMag.instance.filterLen =
         InitArbitraryEq(&jdsp->arbMag.instance.coeffGen, 0);
     LOGE("Constructor called");
