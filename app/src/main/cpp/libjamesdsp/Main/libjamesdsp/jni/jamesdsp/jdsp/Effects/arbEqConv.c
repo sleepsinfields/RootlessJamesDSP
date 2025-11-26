@@ -76,8 +76,6 @@ Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqCurves(
 {
     (void)clazz;
 
-    JamesDSPLib *jdsp = getJamesDspInstance();  
-    // ↑ Use whatever call the legacy parser uses to get the jdsp pointer
 
     const char *masterStr = (*env)->GetStringUTFChars(env, jMaster, 0);
     const char *leftStr   = (*env)->GetStringUTFChars(env, jLeft,   0);
