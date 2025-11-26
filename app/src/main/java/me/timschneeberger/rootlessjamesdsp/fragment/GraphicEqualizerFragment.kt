@@ -268,80 +268,83 @@ return binding.root
 
 }
 
-    // ------------------------------------------------------------------------
-    // Stereo bank helpers
-    // ------------------------------------------------------------------------
+  // ------------------------------------------------------------------------
+// Stereo bank helpers
+// ------------------------------------------------------------------------
 
-    private fun initBanksFromLegacy(nodes: GraphicEqNodeList) {
-        masterNodes = GraphicEqNodeList().apply { addAll(nodes) }
-        leftNodes   = GraphicEqNodeList().apply { addAll(nodes) }
-        rightNodes  = GraphicEqNodeList().apply { addAll(nodes) }
+private fun initBanksFromLegacy(nodes: GraphicEqNodeList) {
+    masterNodes = GraphicEqNodeList().apply { addAll(nodes) }
+    leftNodes   = GraphicEqNodeList().apply { addAll(nodes) }
+    rightNodes  = GraphicEqNodeList().apply { addAll(nodes) }
 
-        currentBank = CurveBank.MASTER
-        Log.e(
-            "StereoEQ",
-            "initBanksFromLegacy: size=${nodes.size} cloned to M/L/R"
-        )
+    currentBank = CurveBank.MASTER
+    Log.e(
+        "StereoEQ",
+        "initBanksFromLegacy: size=${nodes.size} cloned to M/L/R"
+    )
+}
+
+private fun storeCurrentBankNodes() {
+    when (currentBank) {
+        CurveBank.MASTER -> {
+            masterNodes.clear()
+            masterNodes.addAll(adapter.nodes)
+            Log.e("StereoEQ", "storeCurrentBankNodes: MASTER size=${masterNodes.size}")
+        }
+        CurveBank.LEFT -> {
+            leftNodes.clear()
+            leftNodes.addAll(adapter.nodes)
+            Log.e("StereoEQ", "storeCurrentBankNodes: LEFT size=${leftNodes.size}")
+        }
+        CurveBank.RIGHT -> {
+            rightNodes.clear()
+            rightNodes.addAll(adapter.nodes)
+            Log.e("StereoEQ", "storeCurrentBankNodes: RIGHT size=${rightNodes.size}")
+        }
     }
+}
 
-    private fun storeCurrentBankNodes() {
-        when (currentBank) {
-            CurveBank.MASTER -> {
-                masterNodes.clear()
-                masterNodes.addAll(adapter.nodes)
-                Log.e("StereoEQ", "storeCurrentBankNodes: MASTER size=${masterNodes.size}")
-            }
-            CurveBank.LEFT -> {
-                leftNodes.clear()
-                leftNodes.addAll(adapter.nodes)
-                Log.e("StereoEQ", "storeCurrentBankNodes: LEFT size=${leftNodes.size}")
-            }
-            CurveBank.RIGHT -> {
-                rightNodes.clear()
-                rightNodes.addAll(adapter.nodes)
-                Log.e("StereoEQ", "storeCurrentBankNodes: RIGHT size=${rightNodes.size}")
-            }
+@SuppressLint("NotifyDataSetChanged")
+private fun loadBankNodes(target: CurveBank) {
+    val src = when (target) {
+        CurveBank.MASTER -> {
+            Log.e("StereoEQ", "loadBankNodes: MASTER size=${masterNodes.size}")
+            masterNodes
+        }
+        CurveBank.LEFT -> {
+            Log.e("StereoEQ", "loadBankNodes: LEFT size=${leftNodes.size}")
+            leftNodes
+        }
+        CurveBank.RIGHT -> {
+            Log.e("StereoEQ", "loadBankNodes: RIGHT size=${rightNodes.size}")
+            rightNodes
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun loadBankNodes(target: CurveBank) {
-        val src = when (target) {
-            CurveBank.MASTER -> {
-                Log.e("StereoEQ", "loadBankNodes: MASTER size=${masterNodes.size}")
-                masterNodes
-            }
-            CurveBank.LEFT -> {
-                Log.e("StereoEQ", "loadBankNodes: LEFT size=${leftNodes.size}")
-                leftNodes
-            }
-            CurveBank.RIGHT -> {
-                Log.e("StereoEQ", "loadBankNodes: RIGHT size=${rightNodes.size}")
-                rightNodes
-            }
-        }
-
-        adapter.nodes.clear()
-        adapter.nodes.addAll(src)
-        adapter.nodes.sortBy { it.freq }
-        adapter.notifyDataSetChanged()
-        binding.equalizerSurface.setNodes(adapter.nodes)
-    }
+    adapter.nodes.clear()
+    adapter.nodes.addAll(src)
+    adapter.nodes.sortBy { it.freq }
+    adapter.notifyDataSetChanged()
+    binding.equalizerSurface.setNodes(adapter.nodes)
+}
 
 @SuppressLint("NotifyDataSetChanged")
 private fun switchBank(target: CurveBank) {
-    if (target == currentBank) return  // No-op if already on this bank
+    if (target == currentBank) {
+        Log.e("StereoEQ", "switchBank: target == current; ignoring")
+        return
+    }
 
-    // 1) Save current UI nodes into the current bank
+    // 1. Save current visible UI nodes into current bank
     storeCurrentBankNodes()
 
-    // 2) Switch bank
+    // 2. Switch bank value
     currentBank = target
 
-    // 3) Load that bank into the UI
+    // 3. Load target bank into UI
     loadBankNodes(target)
 
-    // 4) Persist all banks
+    // 4. Persist all three banks
     save()
 
     Log.e("StereoEQ", "switchBank → now editing $target")
