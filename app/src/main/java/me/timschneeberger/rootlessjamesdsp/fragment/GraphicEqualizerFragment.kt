@@ -344,17 +344,17 @@ private fun switchBank(target: CurveBank) {
         return
     }
 
-    // 1. Save current UI into current bank
+    // 1) Save current visible UI into the current bank list
     storeCurrentBankNodes()
 
-    // 2. Switch bank
+    // 2) Change active bank
     currentBank = target
 
-    // 3. Load target bank into UI
+    // 3) Load target bank into adapter/UI
     loadBankNodes(target)
 
-    // 4. Persist all three banks
-    save()
+    // 4) Refresh labels like "(Master)/(Left)/(Right)"
+    updateViewState()
 
     Log.e("StereoEQ", "switchBank → now editing $target")
 }
@@ -382,17 +382,21 @@ private fun loadNodes(savedInstanceState: Bundle?) {
             !leftStr.isNullOrEmpty()   ||
             !rightStr.isNullOrEmpty()
         ) {
-            fun parseOrEmpty(str: String?): GraphicEqNodeList =
-                GraphicEqNodeList().apply {
-                    if (!str.isNullOrEmpty()) {
-                        deserialize(str)
-                    }
-                }
+          fun parseOrEmpty(str: String?): GraphicEqNodeList =
+    GraphicEqNodeList().apply {
+        if (!str.isNullOrEmpty()) {
+            deserialize(str)
+        }
+    }
 
-            // MASTER is canonical; if left/right missing, fall back to master
-            masterNodes = parseOrEmpty(masterStr)
-            leftNodes   = parseOrEmpty(leftStr ?: masterStr)
-            rightNodes  = parseOrEmpty(rightStr ?: masterStr)
+// Use master as canonical; if left/right missing OR empty → fallback to master
+val masterSrc = masterStr
+val leftSrc   = if (leftStr.isNullOrEmpty()) masterStr else leftStr
+val rightSrc  = if (rightStr.isNullOrEmpty()) masterStr else rightStr
+
+masterNodes = parseOrEmpty(masterSrc)
+leftNodes   = parseOrEmpty(leftSrc)
+rightNodes  = parseOrEmpty(rightSrc)
 
             currentBank = CurveBank.MASTER
             nodesForAdapter.addAll(masterNodes)
@@ -426,8 +430,11 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
     onItemsChanged = {
         binding.equalizerSurface.setNodes(it.nodes)
         updateViewState()
-        // No storeCurrentBankNodes() and no save() here.
-        // We'll save explicitly after user-confirmed edits.
+
+        // 🔴 This was missing:
+        storeCurrentBankNodes()   // sync visible nodes → current bank list
+
+        save()                   // serialize all banks → prefs (MUST be last)
     }
 
     onItemClicked = { node: GraphicEqNode, _: Int ->
@@ -443,7 +450,6 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
 
 binding.nodeList.adapter = nodeAdapter
 binding.equalizerSurface.setNodes(nodeAdapter.nodes)
-}
     // ------------------------------------------------------------------------
     // UI state helpers
     // ------------------------------------------------------------------------
