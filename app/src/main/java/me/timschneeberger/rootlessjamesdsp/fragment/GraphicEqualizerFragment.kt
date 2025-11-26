@@ -84,15 +84,18 @@ private fun geqPrefs() =
     // Broadcast & AutoEQ
     // ------------------------------------------------------------------------
 
-    private val autoEqSelectorLauncher =
-        registerForActivityResult(AutoEqSelectorContract()) { result ->
-            result?.let {
-                adapter.nodes.deserialize(it)
-                adapter.nodes.sortBy { node -> node.freq }
-                binding.equalizerSurface.setNodes(adapter.nodes)
-                save()
-            }
+   private val autoEqSelectorLauncher =
+    registerForActivityResult(AutoEqSelectorContract()) { result ->
+        result?.let {
+            adapter.nodes.deserialize(it)
+            adapter.nodes.sortBy { node -> node.freq }
+            binding.equalizerSurface.setNodes(adapter.nodes)
+
+            // NEW:
+            storeCurrentBankNodes()
+            save()
         }
+    }
 
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -164,40 +167,46 @@ binding.previewCard.setOnClickListener {
 
   
     // Reset button  
-    binding.reset.setOnClickListener {  
-        requireContext().showYesNoAlert(  
-            R.string.geq_reset_confirm_title,  
-            R.string.geq_reset_confirm,  
-        ) { yes ->  
-            if (yes) {  
-                adapter.nodes.deserialize(Constants.DEFAULT_GEQ)  
-                adapter.nodes.sortBy { node -> node.freq }  
-                binding.equalizerSurface.setNodes(adapter.nodes)  
-                editorDiscard()  
-                save()  
-                updateViewState()  
-            }  
-        }  
-    }  
+    binding.reset.setOnClickListener {
+    requireContext().showYesNoAlert(
+        R.string.geq_reset_confirm_title,
+        R.string.geq_reset_confirm,
+    ) { yes ->
+        if (yes) {
+            adapter.nodes.deserialize(Constants.DEFAULT_GEQ)
+            adapter.nodes.sortBy { node -> node.freq }
+            binding.equalizerSurface.setNodes(adapter.nodes)
+            editorDiscard()
+            updateViewState()
+
+            // NEW:
+            storeCurrentBankNodes()
+            save()
+        }
+    }
+}
 
     // Edit-as-string  
-    binding.editString.setOnClickListener {  
-        requireContext().showInputAlert(  
-            layoutInflater,  
-            R.string.geq_edit_as_string,  
-            R.string.geq_edit_hint,  
-            adapter.nodes.serialize(),  
-            false,  
-            null  
-        ) { text ->  
-            text?.let {  
-                adapter.nodes.deserialize(it)  
-                adapter.nodes.sortBy { node -> node.freq }  
-                binding.equalizerSurface.setNodes(adapter.nodes)  
-            }  
-            save()  
-        }  
-    }  
+    binding.editString.setOnClickListener {
+    requireContext().showInputAlert(
+        layoutInflater,
+        R.string.geq_edit_as_string,
+        R.string.geq_edit_hint,
+        adapter.nodes.serialize(),
+        false,
+        null
+    ) { text ->
+        text?.let {
+            adapter.nodes.deserialize(it)
+            adapter.nodes.sortBy { node -> node.freq }
+            binding.equalizerSurface.setNodes(adapter.nodes)
+        }
+
+        // NEW:
+        storeCurrentBankNodes()
+        save()
+    }
+}
 
     // Add node  
     binding.add.setOnClickListener {  
@@ -417,7 +426,8 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
     onItemsChanged = {
         binding.equalizerSurface.setNodes(it.nodes)
         updateViewState()
-        save()  // will update the correct bank + prefs
+        // No storeCurrentBankNodes() and no save() here.
+        // We'll save explicitly after user-confirmed edits.
     }
 
     onItemClicked = { node: GraphicEqNode, _: Int ->
@@ -563,31 +573,35 @@ binding.equalizerSurface.setNodes(nodeAdapter.nodes)
         updateViewState()
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun editorSave() {
-        if (!editorCanSave()) {
-            requireContext().showYesNoAlert(
-                R.string.geq_discard_changes_title,
-                R.string.geq_discard_changes
-            ) { yes ->
-                if (yes) {
-                    editorDiscard()
-                }
+@SuppressLint("NotifyDataSetChanged")
+private fun editorSave() {
+    if (!editorCanSave()) {
+        requireContext().showYesNoAlert(
+            R.string.geq_discard_changes_title,
+            R.string.geq_discard_changes
+        ) { yes ->
+            if (yes) {
+                editorDiscard()
             }
-            return
         }
-
-        Timber.d("editorSave: confirming changes to node $editorNodeUuid")
-        editorNodeBackup = null
-        editorNodeUuid = null
-        editorActive = false
-
-        adapter.nodes.sortBy { it.freq }
-        adapter.notifyDataSetChanged()
-
-        updateViewState()
+        return
     }
 
+    Timber.d("editorSave: confirming changes to node $editorNodeUuid")
+    editorNodeBackup = null
+    editorNodeUuid = null
+    editorActive = false
+
+    adapter.nodes.sortBy { it.freq }
+    adapter.notifyDataSetChanged()
+
+    updateViewState()
+
+    // NEW: sync current bank + persist
+    storeCurrentBankNodes()
+    save()
+}
+ 
     // ------------------------------------------------------------------------
     // Misc (orientation, save)
     // ------------------------------------------------------------------------
@@ -607,14 +621,13 @@ binding.equalizerSurface.setNodes(nodeAdapter.nodes)
     
 @SuppressLint("ApplySharedPref")
 private fun save() {
-    // Sync current adapter state into current bank first
-    storeCurrentBankNodes()
-
     val prefs = geqPrefs()
 
-    val masterStr = GraphicEqNodeList().apply { addAll(masterNodes) }.serialize()
-    val leftStr   = GraphicEqNodeList().apply { addAll(leftNodes)   }.serialize()
-    val rightStr  = GraphicEqNodeList().apply { addAll(rightNodes)  }.serialize()
+    // Bank lists are already in masterNodes / leftNodes / rightNodes.
+    // Just serialize them.
+    val masterStr = masterNodes.serialize()
+    val leftStr   = leftNodes.serialize()
+    val rightStr  = rightNodes.serialize()
 
     // Legacy: keep writing a single curve as well (use MASTER as canonical)
     val legacyStr = masterStr
