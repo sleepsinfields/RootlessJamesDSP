@@ -272,10 +272,12 @@ void ArbitraryResponseEqualizerStringParser(JamesDSPLib *jdsp, char *stringEq)
 // ----------------------------------------------------------------------------
 
 // Global subsystem on/off (all three curves)
+
 void ArbitraryResponseEqualizerSetGlobalEnabled(JamesDSPLib *jdsp, char enable)
 {
     (void)jdsp; // not used yet, but kept for symmetry / future
     g_arbEq.enabled = enable ? 1 : 0;
+    LOGE("Global ArbEq flag set to %d", g_arbEq.enabled);
 }
 
 void ArbitraryResponseEqualizerSetMasterEnabled(JamesDSPLib *jdsp, char enable)
