@@ -486,26 +486,28 @@ binding.equalizerSurface.setNodes(nodeAdapter.nodes)
 
     val global = master || left || right
 
-    // 1) Persist to SharedPreferences
-    val prefs = requireContext().getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
+    val prefs = requireContext()
+        .getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
+
     prefs.edit()
         .putBoolean(KEY_MASTER, master)
-        .putBoolean(KEY_LEFT, left)
-        .putBoolean(KEY_RIGHT, right)
+        .putBoolean(KEY_LEFT,   left)
+        .putBoolean(KEY_RIGHT,  right)
         .apply()
 
-    // 2) Log for sanity
     Log.e(
         "StereoEQ",
         "UI switches changed global=$global master=$master left=$left right=$right"
     )
 
-    // 3) Push to DSP
     try {
         JdspNative.setStereoArbEqFlags(global, master, left, right)
     } catch (e: UnsatisfiedLinkError) {
         Log.e("StereoEQ", "Failed to call setStereoArbEqFlags JNI", e)
     }
+
+    // NEW: recompute which bank is active and rewrite legacy curve
+    save()
 }
 
     // ------------------------------------------------------------------------
@@ -628,19 +630,35 @@ private fun editorSave() {
     
 @SuppressLint("ApplySharedPref")
 private fun save() {
+    // 0) Always sync the current UI back into its bank first
+    storeCurrentBankNodes()
+
     val prefs = geqPrefs()
 
-    // Bank lists are already in masterNodes / leftNodes / rightNodes.
-    // Just serialize them.
+    // 1) Serialize all three banks
     val masterStr = masterNodes.serialize()
     val leftStr   = leftNodes.serialize()
     val rightStr  = rightNodes.serialize()
 
-    // Legacy: keep writing a single curve as well (use MASTER as canonical)
-    val legacyStr = masterStr
+    // 2) Decide which bank is the “active” legacy curve
+    val masterOn = binding.switchArbEqMaster.isChecked
+    val leftOn   = binding.switchArbEqLeft.isChecked
+    val rightOn  = binding.switchArbEqRight.isChecked
+
+    // Simple priority logic:
+    // - If MASTER is on → use MASTER curve
+    // - Else if only LEFT is on → use LEFT curve
+    // - Else if only RIGHT is on → use RIGHT curve
+    // - Else → fall back to MASTER curve
+    val legacyStr = when {
+        masterOn -> masterStr
+        leftOn && !rightOn -> leftStr
+        rightOn && !leftOn -> rightStr
+        else -> masterStr
+    }
 
     prefs.edit()
-        .putString(getString(R.string.key_geq_nodes), legacyStr)
+        .putString(getString(R.string.key_geq_nodes), legacyStr) // what DSP actually reads
         .putString(PREF_GEQ_MASTER, masterStr)
         .putString(PREF_GEQ_LEFT,   leftStr)
         .putString(PREF_GEQ_RIGHT,  rightStr)
