@@ -634,35 +634,49 @@ private fun collapsePreview(collapsed: Boolean) {
 
 @SuppressLint("ApplySharedPref")
 private fun save() {
-// 0) sync adapter → current bank
-storeCurrentBankNodes()
+    // 0) sync adapter → current bank
+    storeCurrentBankNodes()
 
-val prefs = geqPrefs()  
+    val prefs = geqPrefs()
 
-val masterStr = masterNodes.serialize()  
-val leftStr   = leftNodes.serialize()  
-val rightStr  = rightNodes.serialize()  
+    // 1) Serialize all three banks
+    val masterStr = masterNodes.serialize()
+    val leftStr   = leftNodes.serialize()
+    val rightStr  = rightNodes.serialize()
 
-val masterOn = binding.switchArbEqMaster.isChecked  
-val leftOn   = binding.switchArbEqLeft.isChecked  
-val rightOn  = binding.switchArbEqRight.isChecked  
+    // 2) Read switch states
+    val masterOn = binding.switchArbEqMaster.isChecked
+    val leftOn   = binding.switchArbEqLeft.isChecked
+    val rightOn  = binding.switchArbEqRight.isChecked
 
-val legacyStr = when {  
-    masterOn -> masterStr  
-    leftOn && !rightOn -> leftStr  
-    rightOn && !leftOn -> rightStr  
-    else -> masterStr  
-}  
+    // Choose which should become the legacy (single-curve) string
+    val legacyStr = when {
+        masterOn -> masterStr
+        leftOn && !rightOn -> leftStr
+        rightOn && !leftOn -> rightStr
+        else -> masterStr   // fallback
+    }
 
-prefs.edit()  
-    .putString(getString(R.string.key_geq_nodes), legacyStr)  
-    .putString(PREF_GEQ_MASTER, masterStr)  
-    .putString(PREF_GEQ_LEFT,   leftStr)  
-    .putString(PREF_GEQ_RIGHT,  rightStr)  
-    .commit()  
+    // ✅ INSERT LOGS HERE — this is the correct place
+    Log.e("StereoEQ", "SAVE: masterNodes=${masterNodes.size} leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}")
+    Log.e("StereoEQ", "SAVE: legacyStr source = " +
+            when {
+                masterOn -> "MASTER"
+                leftOn && !rightOn -> "LEFT"
+                rightOn && !leftOn -> "RIGHT"
+                else -> "MASTER (fallback)"
+            }
+    )
 
-requireContext().sendLocalBroadcast(Intent(Constants.ACTION_GRAPHIC_EQ_CHANGED))
+    // 3) Write to SharedPreferences
+    prefs.edit()
+        .putString(getString(R.string.key_geq_nodes), legacyStr)
+        .putString(PREF_GEQ_MASTER, masterStr)
+        .putString(PREF_GEQ_LEFT,   leftStr)
+        .putString(PREF_GEQ_RIGHT,  rightStr)
+        .commit()
 
+    requireContext().sendLocalBroadcast(Intent(Constants.ACTION_GRAPHIC_EQ_CHANGED))
 }
 override fun onSaveInstanceState(outState: Bundle) {
 // TODO workaround: discard changes
