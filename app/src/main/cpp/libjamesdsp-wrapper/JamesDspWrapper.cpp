@@ -611,6 +611,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphi
 
     return JNI_TRUE;
 }
+
 extern "C" JNIEXPORT void JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setArbEqStereoFlags(
         JNIEnv *env,
@@ -624,18 +625,13 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setArbEqStereoF
     (void)env;
     (void)obj;
 
-    // Use the standard wrapper macro to get JamesDSPLib*.
-    // This will:
-    //   - check `self`
-    //   - get the JamesDspWrapper*
-    //   - get dsp = cast(wrapper->dsp)
-    //   - early-return if anything is null
-    DECLARE_DSP_V
+    // Use the standard handle → wrapper → dsp path
+    DECLARE_DSP_V  // sets `wrapper` and `dsp`, returns early if null
 
-    const char global = (globalEnable  == JNI_TRUE) ? 1 : 0;
-    const char master = (masterEnable  == JNI_TRUE) ? 1 : 0;
-    const char left   = (leftEnable    == JNI_TRUE) ? 1 : 0;
-    const char right  = (rightEnable   == JNI_TRUE) ? 1 : 0;
+    const char global = (globalEnable == JNI_TRUE) ? 1 : 0;
+    const char master = (masterEnable == JNI_TRUE) ? 1 : 0;
+    const char left   = (leftEnable   == JNI_TRUE) ? 1 : 0;
+    const char right  = (rightEnable  == JNI_TRUE) ? 1 : 0;
 
     ArbitraryResponseEqualizerSetGlobalEnabled(dsp, global);
     ArbitraryResponseEqualizerSetMasterEnabled(dsp, master);
@@ -645,7 +641,6 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setArbEqStereoF
     LOGE("JamesDspWrapper_setArbEqStereoFlags: global=%d master=%d left=%d right=%d",
          global, master, left, right);
 }
-
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setCrossfeed(JNIEnv *env, jobject obj, jlong self,
