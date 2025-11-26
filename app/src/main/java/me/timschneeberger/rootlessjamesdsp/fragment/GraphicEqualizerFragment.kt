@@ -450,6 +450,7 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
 
 binding.nodeList.adapter = nodeAdapter
 binding.equalizerSurface.setNodes(nodeAdapter.nodes)
+}
     // ------------------------------------------------------------------------
     // UI state helpers
     // ------------------------------------------------------------------------
