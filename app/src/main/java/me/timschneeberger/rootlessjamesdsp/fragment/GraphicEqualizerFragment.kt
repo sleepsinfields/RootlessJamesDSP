@@ -631,7 +631,32 @@ private fun collapsePreview(collapsed: Boolean) {
     binding.previewTitle.text =  
         getString(if (collapsed) R.string.geq_preview else R.string.geq_preview_collapsed)  
 }
+/**
+ * If a side curve (LEFT/RIGHT) is effectively empty or malformed,
+ * fall back to MASTER's string. This keeps native stereo EQ stable.
+ */
+private fun normalizeSideCurve(side: String, master: String, label: String): String {
+    val trimmed = side.trim()
 
+    // Completely empty? -> use master
+    if (trimmed.isEmpty()) {
+        Log.e("StereoEQ", "normalizeSideCurve: $label empty → using MASTER")
+        return master
+    }
+
+    // Example: only "GraphicEQ:" and no points (no space after header, etc.)
+    // Very short strings are suspicious; length threshold keeps it simple.
+    if (!trimmed.contains(' ') || trimmed.length < 20) {
+        Log.e(
+            "StereoEQ",
+            "normalizeSideCurve: $label too short (len=${trimmed.length}) → using MASTER"
+        )
+        return master
+    }
+
+    // Looks like a real curve, keep as-is
+    return side
+}
 @SuppressLint("ApplySharedPref")
 private fun save() {
     // 0) sync adapter → current bank
@@ -639,10 +664,14 @@ private fun save() {
 
     val prefs = geqPrefs()
 
-    // 1) Serialize all three banks
-    val masterStr = masterNodes.serialize()
-    val leftStr   = leftNodes.serialize()
-    val rightStr  = rightNodes.serialize()
+    // 1) Serialize raw banks
+    var masterStr = masterNodes.serialize()
+    var leftStr   = leftNodes.serialize()
+    var rightStr  = rightNodes.serialize()
+
+    // 1.5) Normalize LEFT/RIGHT so they are never "empty"/degenerate
+    leftStr  = normalizeSideCurve(leftStr,  masterStr, "LEFT")
+    rightStr = normalizeSideCurve(rightStr, masterStr, "RIGHT")
 
     // 2) Read switch states
     val masterOn = binding.switchArbEqMaster.isChecked
@@ -657,25 +686,28 @@ private fun save() {
         else -> masterStr   // fallback
     }
 
-    // ✅ INSERT LOGS HERE — this is the correct place
     Log.e("StereoEQ", "SAVE: masterNodes=${masterNodes.size} leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}")
-    Log.e("StereoEQ", "SAVE: legacyStr source = " +
-            when {
-                masterOn -> "MASTER"
-                leftOn && !rightOn -> "LEFT"
-                rightOn && !leftOn -> "RIGHT"
-                else -> "MASTER (fallback)"
-            }
+    Log.e(
+        "StereoEQ",
+        "SAVE: legacyStr source = " + when {
+            masterOn -> "MASTER"
+            leftOn && !rightOn -> "LEFT"
+            rightOn && !leftOn -> "RIGHT"
+            else -> "MASTER (fallback)"
+        }
     )
 
-// 2.5) Push curves to native stereo engine
+    // 2.5) Push curves to native stereo engine with sanitized strings
     try {
         JdspNative.setStereoArbEqCurves(
             master = masterStr,
             left   = leftStr,
             right  = rightStr
         )
-        Log.e("StereoEQ", "SAVE: pushed curves to native (lengths: M=${masterStr.length} L=${leftStr.length} R=${rightStr.length})")
+        Log.e(
+            "StereoEQ",
+            "SAVE: pushed curves to native (lengths: M=${masterStr.length} L=${leftStr.length} R=${rightStr.length})"
+        )
     } catch (e: UnsatisfiedLinkError) {
         Log.e("StereoEQ", "Failed to call setStereoArbEqCurves JNI", e)
     }
