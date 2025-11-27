@@ -406,19 +406,36 @@ void ArbitraryResponseEqualizerDisable(JamesDSPLib *jdsp)
     jdsp->arbitraryMagEnabled = 0;
 }
 
+static int lastGlobal = -1;
+static int lastMaster = -1;
+static int lastLeft = -1;
+static int lastRight = -1;
+
 void ArbitraryResponseEqualizerProcess(JamesDSPLib *jdsp, size_t n)
 {
     // If main arbitrary EQ is disabled at jdspController level, this
     // function shouldn't be called, but we keep the check just in case.
     if (!jdsp->arbitraryMagEnabled)
         return;
+int g = g_arbEq.enabled;
+int m = g_arbEq.master.enabled;
+int l = g_arbEq.left.enabled;
+int r = g_arbEq.right.enabled;
 
+if (g!=lastGlobal || m!=lastMaster || l!=lastLeft || r!=lastRight) {
+    LOGE("StereoEQNative: state changed: g=%d m=%d l=%d r=%d", g, m, l, r);
+    lastGlobal = g;
+    lastMaster = m;
+    lastLeft = l;
+    lastRight = r;
+}
+/*
     LOGE("StereoEQNative: process enabled=%d master=%d left=%d right=%d",
          g_arbEq.enabled,
          g_arbEq.master.enabled,
          g_arbEq.left.enabled,
          g_arbEq.right.enabled);
-
+*/
     if (!g_arbEq.enabled)
         return;
 
