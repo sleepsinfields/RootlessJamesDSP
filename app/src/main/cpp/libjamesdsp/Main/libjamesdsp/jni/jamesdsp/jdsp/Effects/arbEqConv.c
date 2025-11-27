@@ -411,67 +411,59 @@ static int lastMaster = -1;
 static int lastLeft = -1;
 static int lastRight = -1;
 
+static int debugBlocksRemaining = 0;
+
 void ArbitraryResponseEqualizerProcess(JamesDSPLib *jdsp, size_t n)
 {
-    // If main arbitrary EQ is disabled at jdspController level, this
-    // function shouldn't be called, but we keep the check just in case.
     if (!jdsp->arbitraryMagEnabled)
         return;
-int g = g_arbEq.enabled;
-int m = g_arbEq.master.enabled;
-int l = g_arbEq.left.enabled;
-int r = g_arbEq.right.enabled;
 
-if (g!=lastGlobal || m!=lastMaster || l!=lastLeft || r!=lastRight) {
-    LOGE("StereoEQNative: state changed: g=%d m=%d l=%d r=%d", g, m, l, r);
-    lastGlobal = g;
-    lastMaster = m;
-    lastLeft = l;
-    lastRight = r;
-}
-/*
-    LOGE("StereoEQNative: process enabled=%d master=%d left=%d right=%d",
-         g_arbEq.enabled,
-         g_arbEq.master.enabled,
-         g_arbEq.left.enabled,
-         g_arbEq.right.enabled);
-*/
+    int g = g_arbEq.enabled;
+    int m = g_arbEq.master.enabled;
+    int l = g_arbEq.left.enabled;
+    int r = g_arbEq.right.enabled;
+
+    if (g!=lastGlobal || m!=lastMaster || l!=lastLeft || r!=lastRight) {
+        LOGE("StereoEQNative: state changed: g=%d m=%d l=%d r=%d", g, m, l, r);
+        lastGlobal = g;
+        lastMaster = m;
+        lastLeft = l;
+        lastRight = r;
+
+        // After a state change, log the next 8 process calls
+        debugBlocksRemaining = 8;
+    }
+
+    if (debugBlocksRemaining > 0) {
+        LOGE("StereoEQNative: process n=%zu g=%d m=%d l=%d r=%d",
+             n, g, m, l, r);
+        debugBlocksRemaining--;
+    }
+
     if (!g_arbEq.enabled)
         return;
 
     float *left  = jdsp->tmpBuffer[0];
     float *right = jdsp->tmpBuffer[1];
 
-    // 1) Master curve (stereo)
-    if (g_arbEq.master.enabled)
-    {
-        FFTConvolver2x2Process(
-            &jdsp->arbMag.masterConv,
-            left, right,
-            left, right,
-            (unsigned int)n
-        );
+    if (g_arbEq.master.enabled) {
+        FFTConvolver2x2Process(&jdsp->arbMag.masterConv,
+                               left, right,
+                               left, right,
+                               (unsigned int)n);
     }
 
-    // 2) Left-only curve
-    if (g_arbEq.left.enabled)
-    {
-        FFTConvolver2x2Process(
-            &jdsp->arbMag.leftConv,
-            left, right,
-            left, right,
-            (unsigned int)n
-        );
+    if (g_arbEq.left.enabled) {
+        FFTConvolver2x2Process(&jdsp->arbMag.leftConv,
+                               left, right,
+                               left, right,
+                               (unsigned int)n);
     }
 
-    // 3) Right-only curve
-    if (g_arbEq.right.enabled)
-    {
-        FFTConvolver2x2Process(
-            &jdsp->arbMag.rightConv,
-            left, right,
-            left, right,
-            (unsigned int)n
-        );
+    if (g_arbEq.right.enabled) {
+        FFTConvolver2x2Process(&jdsp->arbMag.rightConv,
+                               left, right,
+                               left, right,
+                               (unsigned int)n);
     }
 }
