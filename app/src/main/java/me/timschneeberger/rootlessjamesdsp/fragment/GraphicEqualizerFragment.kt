@@ -678,26 +678,23 @@ private fun save() {
     val rawLeft   = leftNodes.serialize()
     val rawRight  = rightNodes.serialize()
 
-    // 1.5) Sanitize LEFT/RIGHT so they are never "empty"/degenerate
-    val safeLeft  = normalizeSideCurve(rawLeft,  masterStr, "LEFT")
-    val safeRight = normalizeSideCurve(rawRight, masterStr, "RIGHT")
-
     // 2) Read switch states
     val masterOn = binding.switchArbEqMaster.isChecked
     val leftOn   = binding.switchArbEqLeft.isChecked
     val rightOn  = binding.switchArbEqRight.isChecked
 
-    // Choose which should become the legacy (single-curve) string
+    // 3) Which should become the legacy (single-curve) string
     val legacyStr = when {
         masterOn -> masterStr
-        leftOn && !rightOn -> safeLeft
-        rightOn && !leftOn -> safeRight
+        leftOn && !rightOn -> rawLeft
+        rightOn && !leftOn -> rawRight
         else -> masterStr   // fallback
     }
 
     Log.e(
         "StereoEQ",
-        "SAVE: masterNodes=${masterNodes.size} leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}"
+        "SAVE: masterNodes=${masterNodes.size} " +
+            "leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}"
     )
     Log.e(
         "StereoEQ",
@@ -709,7 +706,11 @@ private fun save() {
         }
     )
 
-    // 2.5) Only push curves to native stereo engine if something actually changed
+    // 4) Normalize sides so we never send degenerate curves into native
+    val safeLeft  = normalizeSideCurve(rawLeft,  masterStr, "LEFT")
+    val safeRight = normalizeSideCurve(rawRight, masterStr, "RIGHT")
+
+    // 5) Only push curves to native stereo engine if something actually changed
     val shouldPush =
         masterStr != lastMasterStr ||
         safeLeft  != lastLeftStr   ||
@@ -725,7 +726,8 @@ private fun save() {
 
             Log.e(
                 "StereoEQ",
-                "SAVE: curves changed → pushed to native (lengths: M=${masterStr.length} L=${safeLeft.length} R=${safeRight.length})"
+                "SAVE: curves changed → pushed to native " +
+                    "(lengths: M=${masterStr.length} L=${safeLeft.length} R=${safeRight.length})"
             )
 
             // Update last-pushed cache
@@ -739,7 +741,25 @@ private fun save() {
         Log.e("StereoEQ", "SAVE: curves unchanged → skipping JNI push")
     }
 
-    // 3) Write to SharedPreferences (so presets / legacy string stay in sync)
+    // 6) Re-apply flags so DSP doesn't need a manual toggle to pick up new curves
+    val global = masterOn || leftOn || rightOn
+    try {
+        JdspNative.setStereoArbEqFlags(
+            global,
+            masterOn,
+            leftOn,
+            rightOn
+        )
+        Log.e(
+            "StereoEQ",
+            "SAVE: re-applied flags after curve change " +
+                "global=$global master=$masterOn left=$leftOn right=$rightOn"
+        )
+    } catch (e: UnsatisfiedLinkError) {
+        Log.e("StereoEQ", "Failed to re-apply setStereoArbEqFlags from save()", e)
+    }
+
+    // 7) Write to SharedPreferences (so presets / legacy string stay in sync)
     prefs.edit()
         .putString(getString(R.string.key_geq_nodes), legacyStr)
         .putString(PREF_GEQ_MASTER, masterStr)
