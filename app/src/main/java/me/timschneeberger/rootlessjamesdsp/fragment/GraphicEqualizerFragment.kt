@@ -36,6 +36,7 @@ class GraphicEqualizerFragment : Fragment() {
 
 private lateinit var binding: FragmentGraphicEqBinding  
 
+
 private val adapter: GraphicEqNodeAdapter  
     get() = binding.nodeList.adapter as GraphicEqNodeAdapter  
 
@@ -656,7 +657,7 @@ private fun normalizeSideCurve(side: String, master: String, label: String): Str
     // Looks like a real curve, keep as-is
     return side
 }
-// At top of class:
+// At top of class (inside GraphicEqualizerFragment, outside any function):
 private var lastMasterStr: String? = null
 private var lastLeftStr: String? = null
 private var lastRightStr: String? = null
@@ -703,14 +704,32 @@ private fun save() {
             else -> "MASTER (fallback)"
         }
     )
+val safeLeft  = normalizeSideCurve(leftStr,  masterStr, "LEFT")
+val safeRight = normalizeSideCurve(rightStr, masterStr, "RIGHT")
 
-    // 2.5) Only push curves to native stereo engine if something changed
-    val curvesChanged =
-        masterStr != lastMasterCurve ||
-        leftStr   != lastLeftCurve   ||
-        rightStr  != lastRightCurve
+// and then use safeLeft/safeRight for both JNI + prefs:
+val shouldPush =
+    masterStr != lastMasterStr ||
+    safeLeft  != lastLeftStr   ||
+    safeRight != lastRightStr
 
-    if (curvesChanged) {
+// in JNI
+JdspNative.setStereoArbEqCurves(
+    master = masterStr,
+    left   = safeLeft,
+    right  = safeRight
+)
+
+// and in prefs
+.putString(PREF_GEQ_LEFT,  safeLeft)
+.putString(PREF_GEQ_RIGHT, safeRight)
+    // 2.5) Only push curves to native stereo engine if something actually changed
+    val shouldPush =
+        masterStr != lastMasterStr ||
+        leftStr   != lastLeftStr   ||
+        rightStr  != lastRightStr
+
+    if (shouldPush) {
         try {
             JdspNative.setStereoArbEqCurves(
                 master = masterStr,
@@ -723,14 +742,14 @@ private fun save() {
             )
 
             // Update last-pushed cache
-            lastMasterCurve = masterStr
-            lastLeftCurve   = leftStr
-            lastRightCurve  = rightStr
+            lastMasterStr = masterStr
+            lastLeftStr   = leftStr
+            lastRightStr  = rightStr
         } catch (e: UnsatisfiedLinkError) {
             Log.e("StereoEQ", "Failed to call setStereoArbEqCurves JNI", e)
         }
     } else {
-        Log.e("StereoEQ", "SAVE: curves unchanged → skipping native push")
+        Log.e("StereoEQ", "SAVE: curves unchanged → skipping JNI push")
     }
 
     // 3) Write to SharedPreferences (still happens so presets / legacy string stay in sync)
