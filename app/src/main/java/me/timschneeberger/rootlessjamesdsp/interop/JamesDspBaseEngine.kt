@@ -351,15 +351,16 @@ try {
         return setConvolverInternal(true, imp, info[0], info[1], info[2])
     }
 
-    fun setGraphicEq(enable: Boolean, bands: String): Boolean {
-        // Sanity check
-        if (!bands.contains("GraphicEQ:", ignoreCase = true)) {
-            Timber.e("setGraphicEq: malformed string")
-            setGraphicEqInternal(false, "")
-            return false
-        }
-        return setGraphicEqInternal(enable, bands)
+fun setGraphicEq(enable: Boolean, bands: String): Boolean {
+    // Sanity check
+    if (!bands.contains("GraphicEQ:", ignoreCase = true)) {
+        Timber.e("setGraphicEq: malformed string")
+        setGraphicEqInternal(false, "")
+        return false
     }
+
+    return setGraphicEqInternal(enable, bands)
+}
 
 // new
 fun setStereoArbEqFlags(
