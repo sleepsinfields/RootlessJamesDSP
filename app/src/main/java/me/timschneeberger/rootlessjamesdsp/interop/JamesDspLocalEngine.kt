@@ -150,6 +150,7 @@ class JamesDspLocalEngine(
     }
 
     private fun pushStereoGraphicEqToDsp(enable: Boolean, fallbackBands: String): Boolean {
+    // If disabled, tell DSP to turn off the stereo GEQ.
     if (!enable) {
         return JamesDspWrapper.setStereoGraphicEq(
             handle,
@@ -162,20 +163,23 @@ class JamesDspLocalEngine(
 
     val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
 
-    // MASTER always has a real curve string
+    // MASTER: try dedicated master key, fall back to the legacy single-curve string
     val master = prefs.getString(
-        PREF_GEQ_NODES_MASTER,
+        GraphicEqualizerFragment.PREF_GEQ_MASTER,
         null
     ) ?: fallbackBands
 
-    // LEFT / RIGHT: normalize so "GraphicEQ:" (no nodes) becomes null
-    val leftRaw = prefs.getString(PREF_GEQ_NODES_LEFT, null)
-    val rightRaw = prefs.getString(PREF_GEQ_NODES_RIGHT, null)
+    // LEFT / RIGHT: may be null; updateStereoGraphicEq will fall back to master when they're null
+    val left = prefs.getString(
+        GraphicEqualizerFragment.PREF_GEQ_LEFT,
+        null
+    )
 
-    val left = normalizeSideCurve(leftRaw)
-    val right = normalizeSideCurve(rightRaw)
+    val right = prefs.getString(
+        GraphicEqualizerFragment.PREF_GEQ_RIGHT,
+        null
+    )
 
-    // updateStereoGraphicEq will fall back to master when left/right are null
     return JamesDspWrapper.updateStereoGraphicEq(
         self = handle,
         enable = true,
@@ -184,28 +188,13 @@ class JamesDspLocalEngine(
         right = right
     )
 }
+
 /**
      * Normalize a side curve (LEFT/RIGHT) relative to the master.
      * - If side is null/blank, fall back to master.
      * - If it doesn't look like a GraphicEQ string, also fall back to master.
      */
-    private fun normalizeSideCurve(
-        master: String,
-        side: String?,
-        label: String
-    ): String {
-        if (side.isNullOrBlank()) {
-            Timber.e("StereoEQ: $label curve missing; falling back to master")
-            return master
-        }
-
-        if (!side.contains("GraphicEQ:", ignoreCase = true)) {
-            Timber.e("StereoEQ: $label curve malformed; falling back to master")
-            return master
-        }
-
-        return side
-    }
+    // not impilmented
 
     override fun setStereoArbEqFlagsInternal(
         global: Boolean,
