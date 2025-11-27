@@ -523,6 +523,8 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(
     {
         ArbitraryResponseEqualizerDisable(dsp);
     }
+LOGE("🔥 setGraphicEq triggered! (THIS SHOULD NOT BE CALLED IN STEREO MODE)");
+LOGE("Wrapper StereoCurves:\nM=%s\nL=%s\nR=%s", masterStr, leftStr, rightStr);
 
     return true;
 }
@@ -538,7 +540,6 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphi
         jstring leftEq,
         jstring rightEq)
 {
-    // Gives you: JamesDSPLib *dsp = ...
     DECLARE_DSP_B
 
     // If explicitly disabled, just turn off the EQ and return.
@@ -556,6 +557,9 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoGraphi
         ArbitraryResponseEqualizerDisable(dsp);
         return JNI_TRUE;
     }
+
+    // ✅ This is the correct place for your “path hit” log:
+    LOGE("🔥 setStereoGraphicEq triggered (correct stereo path)");
 
     // Get master chars
     const char *masterStr = env->GetStringUTFChars(masterEq, nullptr);
