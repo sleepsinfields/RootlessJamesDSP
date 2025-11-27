@@ -184,6 +184,28 @@ class JamesDspLocalEngine(
         right = right
     )
 }
+/**
+     * Normalize a side curve (LEFT/RIGHT) relative to the master.
+     * - If side is null/blank, fall back to master.
+     * - If it doesn't look like a GraphicEQ string, also fall back to master.
+     */
+    private fun normalizeSideCurve(
+        master: String,
+        side: String?,
+        label: String
+    ): String {
+        if (side.isNullOrBlank()) {
+            Timber.e("StereoEQ: $label curve missing; falling back to master")
+            return master
+        }
+
+        if (!side.contains("GraphicEQ:", ignoreCase = true)) {
+            Timber.e("StereoEQ: $label curve malformed; falling back to master")
+            return master
+        }
+
+        return side
+    }
 
     override fun setStereoArbEqFlagsInternal(
         global: Boolean,
