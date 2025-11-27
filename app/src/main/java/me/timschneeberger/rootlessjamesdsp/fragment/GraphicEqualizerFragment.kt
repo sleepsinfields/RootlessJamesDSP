@@ -675,8 +675,12 @@ private fun save() {
 
     // 1) Serialize all three banks
     val masterStr = masterNodes.serialize()
-    val leftStr   = leftNodes.serialize()
-    val rightStr  = rightNodes.serialize()
+    val rawLeft   = leftNodes.serialize()
+    val rawRight  = rightNodes.serialize()
+
+    // 1.5) Sanitize LEFT/RIGHT so they are never "empty"/degenerate
+    val safeLeft  = normalizeSideCurve(rawLeft,  masterStr, "LEFT")
+    val safeRight = normalizeSideCurve(rawRight, masterStr, "RIGHT")
 
     // 2) Read switch states
     val masterOn = binding.switchArbEqMaster.isChecked
@@ -686,8 +690,8 @@ private fun save() {
     // Choose which should become the legacy (single-curve) string
     val legacyStr = when {
         masterOn -> masterStr
-        leftOn && !rightOn -> leftStr
-        rightOn && !leftOn -> rightStr
+        leftOn && !rightOn -> safeLeft
+        rightOn && !leftOn -> safeRight
         else -> masterStr   // fallback
     }
 
@@ -704,47 +708,30 @@ private fun save() {
             else -> "MASTER (fallback)"
         }
     )
-val safeLeft  = normalizeSideCurve(leftStr,  masterStr, "LEFT")
-val safeRight = normalizeSideCurve(rightStr, masterStr, "RIGHT")
 
-// and then use safeLeft/safeRight for both JNI + prefs:
-val shouldPush =
-    masterStr != lastMasterStr ||
-    safeLeft  != lastLeftStr   ||
-    safeRight != lastRightStr
-
-// in JNI
-JdspNative.setStereoArbEqCurves(
-    master = masterStr,
-    left   = safeLeft,
-    right  = safeRight
-)
-
-// and in prefs
-.putString(PREF_GEQ_LEFT,  safeLeft)
-.putString(PREF_GEQ_RIGHT, safeRight)
     // 2.5) Only push curves to native stereo engine if something actually changed
     val shouldPush =
         masterStr != lastMasterStr ||
-        leftStr   != lastLeftStr   ||
-        rightStr  != lastRightStr
+        safeLeft  != lastLeftStr   ||
+        safeRight != lastRightStr
 
     if (shouldPush) {
         try {
             JdspNative.setStereoArbEqCurves(
                 master = masterStr,
-                left   = leftStr,
-                right  = rightStr
+                left   = safeLeft,
+                right  = safeRight
             )
+
             Log.e(
                 "StereoEQ",
-                "SAVE: curves changed → pushed to native (lengths: M=${masterStr.length} L=${leftStr.length} R=${rightStr.length})"
+                "SAVE: curves changed → pushed to native (lengths: M=${masterStr.length} L=${safeLeft.length} R=${safeRight.length})"
             )
 
             // Update last-pushed cache
             lastMasterStr = masterStr
-            lastLeftStr   = leftStr
-            lastRightStr  = rightStr
+            lastLeftStr   = safeLeft
+            lastRightStr  = safeRight
         } catch (e: UnsatisfiedLinkError) {
             Log.e("StereoEQ", "Failed to call setStereoArbEqCurves JNI", e)
         }
@@ -752,12 +739,12 @@ JdspNative.setStereoArbEqCurves(
         Log.e("StereoEQ", "SAVE: curves unchanged → skipping JNI push")
     }
 
-    // 3) Write to SharedPreferences (still happens so presets / legacy string stay in sync)
+    // 3) Write to SharedPreferences (so presets / legacy string stay in sync)
     prefs.edit()
         .putString(getString(R.string.key_geq_nodes), legacyStr)
         .putString(PREF_GEQ_MASTER, masterStr)
-        .putString(PREF_GEQ_LEFT,   leftStr)
-        .putString(PREF_GEQ_RIGHT,  rightStr)
+        .putString(PREF_GEQ_LEFT,   safeLeft)
+        .putString(PREF_GEQ_RIGHT,  safeRight)
         .commit()
 
     requireContext().sendLocalBroadcast(Intent(Constants.ACTION_GRAPHIC_EQ_CHANGED))
