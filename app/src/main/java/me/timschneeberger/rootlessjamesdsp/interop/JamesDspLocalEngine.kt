@@ -150,44 +150,40 @@ class JamesDspLocalEngine(
     }
 
     private fun pushStereoGraphicEqToDsp(enable: Boolean, fallbackBands: String): Boolean {
-        // If disabled, tell DSP to turn off the stereo GEQ.
-        if (!enable) {
-            return JamesDspWrapper.setStereoGraphicEq(
-                handle,
-                false,
-                "",
-                "",
-                ""
-            )
-        }
-
-        val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
-
-        // MASTER: try dedicated master key, fall back to the legacy single-curve string
-        val master = prefs.getString(
-            PREF_GEQ_NODES_MASTER,
-            null
-        ) ?: fallbackBands
-
-        // LEFT / RIGHT: may be null; updateStereoGraphicEq will fall back to master when they're null
-        val left = prefs.getString(
-            PREF_GEQ_NODES_LEFT,
-            null
-        )
-
-        val right = prefs.getString(
-            PREF_GEQ_NODES_RIGHT,
-            null
-        )
-
-        return JamesDspWrapper.updateStereoGraphicEq(
-            self = handle,
-            enable = true,
-            master = master,
-            left = left,
-            right = right
+    if (!enable) {
+        return JamesDspWrapper.setStereoGraphicEq(
+            handle,
+            false,
+            "",
+            "",
+            ""
         )
     }
+
+    val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+
+    // MASTER always has a real curve string
+    val master = prefs.getString(
+        PREF_GEQ_NODES_MASTER,
+        null
+    ) ?: fallbackBands
+
+    // LEFT / RIGHT: normalize so "GraphicEQ:" (no nodes) becomes null
+    val leftRaw = prefs.getString(PREF_GEQ_NODES_LEFT, null)
+    val rightRaw = prefs.getString(PREF_GEQ_NODES_RIGHT, null)
+
+    val left = normalizeSideCurve(leftRaw)
+    val right = normalizeSideCurve(rightRaw)
+
+    // updateStereoGraphicEq will fall back to master when left/right are null
+    return JamesDspWrapper.updateStereoGraphicEq(
+        self = handle,
+        enable = true,
+        master = master,
+        left = left,
+        right = right
+    )
+}
 
     override fun setStereoArbEqFlagsInternal(
         global: Boolean,
