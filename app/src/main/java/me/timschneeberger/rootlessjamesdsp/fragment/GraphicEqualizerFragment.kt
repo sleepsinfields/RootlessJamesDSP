@@ -507,9 +507,8 @@ private fun updateStereoArbEqFlags() {
         Log.e("StereoEQ", "Failed to call setStereoArbEqFlags JNI", e)
     }
 
-    // Recompute which curve is active & rewrite legacy string
-    // (also sync adapter → current bank)
-    save()
+    // ❌ REMOVE THIS:
+    // save()
 }
 
 
@@ -657,21 +656,26 @@ private fun normalizeSideCurve(side: String, master: String, label: String): Str
     // Looks like a real curve, keep as-is
     return side
 }
+// At top of class:
+private var lastMasterStr: String? = null
+private var lastLeftStr: String? = null
+private var lastRightStr: String? = null
+
 @SuppressLint("ApplySharedPref")
 private fun save() {
-    // 0) sync adapter → current bank
-    storeCurrentBankNodes()
+    // 0) Only sync adapter → current bank if we actually have nodes.
+    if (adapter.nodes.isNotEmpty()) {
+        storeCurrentBankNodes()
+    } else {
+        Log.e("StereoEQ", "SAVE: adapter empty, skipping storeCurrentBankNodes()")
+    }
 
     val prefs = geqPrefs()
 
-    // 1) Serialize raw banks
-    var masterStr = masterNodes.serialize()
-    var leftStr   = leftNodes.serialize()
-    var rightStr  = rightNodes.serialize()
-
-    // 1.5) Normalize LEFT/RIGHT so they are never "empty"/degenerate
-    leftStr  = normalizeSideCurve(leftStr,  masterStr, "LEFT")
-    rightStr = normalizeSideCurve(rightStr, masterStr, "RIGHT")
+    // 1) Serialize all three banks
+    val masterStr = masterNodes.serialize()
+    val leftStr   = leftNodes.serialize()
+    val rightStr  = rightNodes.serialize()
 
     // 2) Read switch states
     val masterOn = binding.switchArbEqMaster.isChecked
@@ -686,7 +690,10 @@ private fun save() {
         else -> masterStr   // fallback
     }
 
-    Log.e("StereoEQ", "SAVE: masterNodes=${masterNodes.size} leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}")
+    Log.e(
+        "StereoEQ",
+        "SAVE: masterNodes=${masterNodes.size} leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}"
+    )
     Log.e(
         "StereoEQ",
         "SAVE: legacyStr source = " + when {
@@ -697,22 +704,36 @@ private fun save() {
         }
     )
 
-    // 2.5) Push curves to native stereo engine with sanitized strings
-    try {
-        JdspNative.setStereoArbEqCurves(
-            master = masterStr,
-            left   = leftStr,
-            right  = rightStr
-        )
-        Log.e(
-            "StereoEQ",
-            "SAVE: pushed curves to native (lengths: M=${masterStr.length} L=${leftStr.length} R=${rightStr.length})"
-        )
-    } catch (e: UnsatisfiedLinkError) {
-        Log.e("StereoEQ", "Failed to call setStereoArbEqCurves JNI", e)
+    // 2.5) Only push curves to native stereo engine if something changed
+    val curvesChanged =
+        masterStr != lastMasterCurve ||
+        leftStr   != lastLeftCurve   ||
+        rightStr  != lastRightCurve
+
+    if (curvesChanged) {
+        try {
+            JdspNative.setStereoArbEqCurves(
+                master = masterStr,
+                left   = leftStr,
+                right  = rightStr
+            )
+            Log.e(
+                "StereoEQ",
+                "SAVE: curves changed → pushed to native (lengths: M=${masterStr.length} L=${leftStr.length} R=${rightStr.length})"
+            )
+
+            // Update last-pushed cache
+            lastMasterCurve = masterStr
+            lastLeftCurve   = leftStr
+            lastRightCurve  = rightStr
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e("StereoEQ", "Failed to call setStereoArbEqCurves JNI", e)
+        }
+    } else {
+        Log.e("StereoEQ", "SAVE: curves unchanged → skipping native push")
     }
 
-    // 3) Write to SharedPreferences
+    // 3) Write to SharedPreferences (still happens so presets / legacy string stay in sync)
     prefs.edit()
         .putString(getString(R.string.key_geq_nodes), legacyStr)
         .putString(PREF_GEQ_MASTER, masterStr)
