@@ -65,6 +65,71 @@ Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqFlags(
          g_arbEq.right.enabled);
 }
 
+JNIEXPORT void JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_JdspNative_setStereoArbEqCurves(
+        JNIEnv *env,
+        jclass clazz,
+        jstring masterEq,
+        jstring leftEq,
+        jstring rightEq)
+{
+    (void)clazz; // avoid unused warning
+
+    if (masterEq == NULL || (*env)->GetStringUTFLength(env, masterEq) <= 0) {
+        LOGE("setStereoArbEqCurves: masterEq is null or empty – ignoring");
+        // You might want to disable EQ here or just bail out.
+        return;
+    }
+
+    const char *masterStr = (*env)->GetStringUTFChars(env, masterEq, NULL);
+    const char *leftStr   = NULL;
+    const char *rightStr  = NULL;
+
+    jboolean leftIsMaster  = JNI_FALSE;
+    jboolean rightIsMaster = JNI_FALSE;
+
+    // Left: use explicit if provided, otherwise fall back to master
+    if (leftEq != NULL && (*env)->GetStringUTFLength(env, leftEq) > 0) {
+        leftStr = (*env)->GetStringUTFChars(env, leftEq, NULL);
+    } else {
+        leftStr = masterStr;
+        leftIsMaster = JNI_TRUE;
+    }
+
+    // Right: use explicit if provided, otherwise fall back to master
+    if (rightEq != NULL && (*env)->GetStringUTFLength(env, rightEq) > 0) {
+        rightStr = (*env)->GetStringUTFChars(env, rightEq, NULL);
+    } else {
+        rightStr = masterStr;
+        rightIsMaster = JNI_TRUE;
+    }
+
+    LOGE("setStereoArbEqCurves JNI: M(len=%d) L(len=%d) R(len=%d)",
+         (*env)->GetStringUTFLength(env, masterEq),
+         leftEq  ? (*env)->GetStringUTFLength(env, leftEq)  : -1,
+         rightEq ? (*env)->GetStringUTFLength(env, rightEq) : -1);
+
+    // TODO: hook into DSP here
+    // Example once you know how to get a JamesDSPLib* in this file:
+    //
+    // ArbitraryResponseEqualizerStringParserStereo(
+    //     jdsp,      // <--- your DSP instance pointer
+    //     masterStr,
+    //     leftStr,
+    //     rightStr
+    // );
+    // ArbitraryResponseEqualizerEnable(jdsp, 1);
+
+    // Clean up JNI strings
+    if (!leftIsMaster && leftEq != NULL) {
+        (*env)->ReleaseStringUTFChars(env, leftEq, leftStr);
+    }
+    if (!rightIsMaster && rightEq != NULL) {
+        (*env)->ReleaseStringUTFChars(env, rightEq, rightStr);
+    }
+    (*env)->ReleaseStringUTFChars(env, masterEq, masterStr);
+}
+
 void ArbitraryResponseEqualizerConstructor(JamesDSPLib *jdsp)
 {
     LOGE("ArbEq ctor: jdsp=%p", (void*)jdsp);
