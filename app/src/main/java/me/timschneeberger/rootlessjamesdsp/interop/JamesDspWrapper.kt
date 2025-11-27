@@ -92,6 +92,17 @@ fun updateStereoGraphicEq(
     )
 }
 
+private fun normalizeSideCurve(raw: String?): String? {
+    if (raw.isNullOrBlank()) return null
+
+    val trimmed = raw.trim()
+
+    if (trimmed.equals("GraphicEQ:", ignoreCase = true)) {
+        return null
+    }
+
+    return trimmed
+}
 external fun setCrossfeed(
     self: JamesDspHandle,
     enable: Boolean,
