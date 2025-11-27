@@ -668,6 +668,18 @@ private fun save() {
             }
     )
 
+// 2.5) Push curves to native stereo engine
+    try {
+        JdspNative.setStereoArbEqCurves(
+            master = masterStr,
+            left   = leftStr,
+            right  = rightStr
+        )
+        Log.e("StereoEQ", "SAVE: pushed curves to native (lengths: M=${masterStr.length} L=${leftStr.length} R=${rightStr.length})")
+    } catch (e: UnsatisfiedLinkError) {
+        Log.e("StereoEQ", "Failed to call setStereoArbEqCurves JNI", e)
+    }
+
     // 3) Write to SharedPreferences
     prefs.edit()
         .putString(getString(R.string.key_geq_nodes), legacyStr)
