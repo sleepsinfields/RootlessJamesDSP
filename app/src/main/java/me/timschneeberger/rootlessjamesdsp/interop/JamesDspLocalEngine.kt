@@ -9,6 +9,7 @@ import me.timschneeberger.rootlessjamesdsp.utils.extensions.ContextExtensions.se
 import timber.log.Timber
 import java.util.Timer
 import kotlin.concurrent.schedule
+import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
 
 class JamesDspLocalEngine(
     context: Context,
