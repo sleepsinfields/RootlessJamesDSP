@@ -513,6 +513,9 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(
 
     if (enable)
     {
+        // Legacy single-curve path (used by old UI / non-stereo mode)
+        LOGE("🔥 setGraphicEq triggered (legacy single-curve path)");
+
         const char *nativeString = env->GetStringUTFChars(graphicEq, nullptr);
         ArbitraryResponseEqualizerStringParser(dsp, (char*)nativeString);
         env->ReleaseStringUTFChars(graphicEq, nativeString);
@@ -523,10 +526,8 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setGraphicEq(
     {
         ArbitraryResponseEqualizerDisable(dsp);
     }
-LOGE("🔥 setGraphicEq triggered! (THIS SHOULD NOT BE CALLED IN STEREO MODE)");
-LOGE("Wrapper StereoCurves:\nM=%s\nL=%s\nR=%s", masterStr, leftStr, rightStr);
 
-    return true;
+    return JNI_TRUE;  // or `true`, both are fine for jboolean
 }
 
 // new
