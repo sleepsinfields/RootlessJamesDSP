@@ -45,7 +45,7 @@ abstract class JamesDspBaseEngine(
 
     companion object {
         // Scaling constants for advanced convolver parameters
-        private const val ADV_DB_SCALE = 1000.0   // 0.00001 dB steps for thresholds
+        private const val ADV_DB_SCALE = 100000.0   // 0.00001 dB steps for thresholds
         private const val SHIFT_SCALE = 1000.0     // samples -> fixed-point
     }
 
