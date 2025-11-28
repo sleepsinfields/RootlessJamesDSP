@@ -139,8 +139,8 @@ savedInstanceState: Bundle?,
 Log.e("StereoEQ", "GraphicEqFragment created")
 binding = FragmentGraphicEqBinding.inflate(layoutInflater, container, false)
 
-// Restore saved switch states
-val prefs = requireContext().getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
+// Restore saved switch states from same GEQ prefs file
+val prefs = geqPrefs()
 
 val savedMaster = prefs.getBoolean(KEY_MASTER, true)
 val savedLeft   = prefs.getBoolean(KEY_LEFT, false)
@@ -488,8 +488,7 @@ private fun updateStereoArbEqFlags() {
 
     val global = master || left || right
 
-    val prefs = requireContext()
-        .getSharedPreferences(PREF_STEREO_FLAGS, Context.MODE_PRIVATE)
+    val prefs = geqPrefs()
 
     prefs.edit()
         .putBoolean(KEY_MASTER, master)
@@ -792,8 +791,7 @@ const val STATE_EDITOR_ACTIVE = "editorActive"
 const val STATE_EDITOR_UI_FREQ_INPUT = "editorUiFreqInput"  
 const val STATE_EDITOR_UI_GAIN_INPUT = "editorUiGainInput"  
 
-// New: where we persist the stereo switches (master/left/right flags)  
-private const val PREF_STEREO_FLAGS = "stereo_geq_flags"  
+// New: where we persist the stereo switches (master/left/right flags) 
 private const val KEY_MASTER = "flag_master"  
 private const val KEY_LEFT   = "flag_left"  
 private const val KEY_RIGHT  = "flag_right"  
