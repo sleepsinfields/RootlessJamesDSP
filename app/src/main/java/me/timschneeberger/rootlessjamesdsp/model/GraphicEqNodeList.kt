@@ -13,10 +13,23 @@ class GraphicEqNodeList : ObservableArrayList<GraphicEqNode>() {
     private val dfGain = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH))
 
     init {
-        dfFreq.maximumFractionDigits = 3
-        dfGain.maximumFractionDigits = 9
+        dfFreq.maximumFractionDigits = 6
+        dfGain.maximumFractionDigits = 12
     }
 
+// new replacement 
+fun serialize(): String {
+    val sb = StringBuilder("GraphicEQ: ")
+    for (node in this) {
+        sb.append(node.freq.toString())
+            .append(' ')
+            .append(node.gain.toString())
+            .append("; ")
+    }
+    return sb.toString()
+}
+
+/*
     fun serialize(): String {
         var str = "GraphicEQ: "
         for (i in 0 until this.size) {
@@ -25,7 +38,7 @@ class GraphicEqNodeList : ObservableArrayList<GraphicEqNode>() {
 
         return str
     }
-
+*/
 
     fun deserialize(str: String) {
         this.clear()
