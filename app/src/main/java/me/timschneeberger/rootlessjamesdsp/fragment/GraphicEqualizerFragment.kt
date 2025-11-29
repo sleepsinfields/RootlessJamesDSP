@@ -663,6 +663,13 @@ private var lastRightStr: String? = null
 
 @SuppressLint("ApplySharedPref")
 private fun save() {
+    // If the inline editor is active, treat changes as preview-only
+    // and skip the heavy serialize/JNI/prefs work.
+    if (editorActive) {
+        Log.e("StereoEQ", "SAVE: editorActive=true → skipping save (preview mode)")
+        return
+    }
+
     // 0) Only sync adapter → current bank if we actually have nodes.
     if (adapter.nodes.isNotEmpty()) {
         storeCurrentBankNodes()
@@ -674,26 +681,29 @@ private fun save() {
 
     // 1) Serialize all three banks
     val masterStr = masterNodes.serialize()
-    val rawLeft   = leftNodes.serialize()
-    val rawRight  = rightNodes.serialize()
+    val leftStr   = leftNodes.serialize()
+    val rightStr  = rightNodes.serialize()
+
+    // 1.5) Normalize LEFT/RIGHT so they are never degenerate
+    val safeLeft  = normalizeSideCurve(leftStr,  masterStr, "LEFT")
+    val safeRight = normalizeSideCurve(rightStr, masterStr, "RIGHT")
 
     // 2) Read switch states
     val masterOn = binding.switchArbEqMaster.isChecked
     val leftOn   = binding.switchArbEqLeft.isChecked
     val rightOn  = binding.switchArbEqRight.isChecked
 
-    // 3) Which should become the legacy (single-curve) string
+    // Choose which should become the legacy (single-curve) string
     val legacyStr = when {
         masterOn -> masterStr
-        leftOn && !rightOn -> rawLeft
-        rightOn && !leftOn -> rawRight
+        leftOn && !rightOn -> safeLeft
+        rightOn && !leftOn -> safeRight
         else -> masterStr   // fallback
     }
 
     Log.e(
         "StereoEQ",
-        "SAVE: masterNodes=${masterNodes.size} " +
-            "leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}"
+        "SAVE: masterNodes=${masterNodes.size} leftNodes=${leftNodes.size} rightNodes=${rightNodes.size}"
     )
     Log.e(
         "StereoEQ",
@@ -705,11 +715,7 @@ private fun save() {
         }
     )
 
-    // 4) Normalize sides so we never send degenerate curves into native
-    val safeLeft  = normalizeSideCurve(rawLeft,  masterStr, "LEFT")
-    val safeRight = normalizeSideCurve(rawRight, masterStr, "RIGHT")
-
-    // 5) Only push curves to native stereo engine if something actually changed
+    // 2.5) Only push curves to native stereo engine if something actually changed
     val shouldPush =
         masterStr != lastMasterStr ||
         safeLeft  != lastLeftStr   ||
@@ -725,8 +731,7 @@ private fun save() {
 
             Log.e(
                 "StereoEQ",
-                "SAVE: curves changed → pushed to native " +
-                    "(lengths: M=${masterStr.length} L=${safeLeft.length} R=${safeRight.length})"
+                "SAVE: curves changed → pushed to native (lengths: M=${masterStr.length} L=${safeLeft.length} R=${safeRight.length})"
             )
 
             // Update last-pushed cache
@@ -740,7 +745,7 @@ private fun save() {
         Log.e("StereoEQ", "SAVE: curves unchanged → skipping JNI push")
     }
 
-    // 6) Re-apply flags so DSP doesn't need a manual toggle to pick up new curves
+    // Re-apply flags so DSP always sees consistent (flags + curves)
     val global = masterOn || leftOn || rightOn
     try {
         JdspNative.setStereoArbEqFlags(
@@ -758,7 +763,7 @@ private fun save() {
         Log.e("StereoEQ", "Failed to re-apply setStereoArbEqFlags from save()", e)
     }
 
-    // 7) Write to SharedPreferences (so presets / legacy string stay in sync)
+    // 3) Write to SharedPreferences (so presets / legacy string stay in sync)
     prefs.edit()
         .putString(getString(R.string.key_geq_nodes), legacyStr)
         .putString(PREF_GEQ_MASTER, masterStr)
@@ -768,6 +773,7 @@ private fun save() {
 
     requireContext().sendLocalBroadcast(Intent(Constants.ACTION_GRAPHIC_EQ_CHANGED))
 }
+
 override fun onSaveInstanceState(outState: Bundle) {
 // TODO workaround: discard changes
 if (editorActive)
