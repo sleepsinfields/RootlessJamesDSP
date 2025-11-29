@@ -8,19 +8,17 @@ import java.util.UUID
 
 class GraphicEqNodeList : ObservableArrayList<GraphicEqNode>() {
 
-
-// new replacement 
-fun serialize(): String {
-    val sb = StringBuilder("GraphicEQ: ")
-    for (node in this) {
-        sb.append(node.freq.toString())
-            .append(' ')
-            .append(node.gain.toString())
-            .append("; ")
+    // Full double-precision serialize: no DecimalFormat rounding
+    fun serialize(): String {
+        val sb = StringBuilder("GraphicEQ: ")
+        for (node in this) {
+            sb.append(node.freq.toString())
+                .append(' ')
+                .append(node.gain.toString())
+                .append("; ")
+        }
+        return sb.toString()
     }
-    return sb.toString()
-}
-
 
     fun deserialize(str: String) {
         this.clear()
@@ -52,7 +50,10 @@ fun serialize(): String {
         val count = Integer.min(freq.size, gain.size)
         for (i in 0 until count) {
             val node = GraphicEqNode(freq[i], gain[i], uuids?.get(i) ?: UUID.randomUUID())
-            Timber.d("tracking restored node UUID ${node.uuid} for ${freq[i]} Hz with ${gain[i]} dB (source: fromBundle)")
+            Timber.d(
+                "tracking restored node UUID ${node.uuid} for ${freq[i]} Hz " +
+                    "with ${gain[i]} dB (source: fromBundle)"
+            )
             this.add(node)
         }
     }
@@ -70,7 +71,7 @@ fun serialize(): String {
         val freq = DoubleArray(this.size)
         val gain = DoubleArray(this.size)
         val uuids = arrayListOf<UUID>()
-        for((i, node) in this.withIndex()) {
+        for ((i, node) in this.withIndex()) {
             freq[i] = node.freq
             gain[i] = node.gain
             uuids.add(node.uuid)
