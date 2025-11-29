@@ -21,10 +21,14 @@ class NumberInputBox @JvmOverloads constructor(
 
     private var onValueChangedListener: ((Float) -> Unit)? = null
     private val binding: ViewNumberInputBoxBinding
+
+    // Internal high-precision backing value
+    private var internalValue: Double = 0.0
+
     private val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH))
 
     init {
-        // UI precision – can be whatever you like
+        // Default UI precision – can be overridden via XML attr floatPrecision
         df.maximumFractionDigits = 12
     }
 
@@ -34,7 +38,8 @@ class NumberInputBox @JvmOverloads constructor(
         get() = df.maximumFractionDigits
         set(value) {
             df.maximumFractionDigits = value
-            binding.input.setText(df.format(this.value))
+            // Re-render current internal value with new precision
+            binding.input.setText(df.format(internalValue))
         }
 
     var min: Float = Float.MIN_VALUE
@@ -51,19 +56,47 @@ class NumberInputBox @JvmOverloads constructor(
 
     var step: Float = 1f
 
+    /**
+     * Public Float API (kept for existing code).
+     * Internally we store everything as Double.
+     */
     var value: Float
+        get() = internalValue.toFloat()
         set(newValue) {
             // Preview bug fix
             if (this.isInEditMode) {
                 return
             }
 
-            val str = df.format(newValue)
-            binding.input.setText(str)
-            onValueChangedListener?.invoke(newValue)
+            internalValue = newValue.toDouble()
+            val str = df.format(internalValue)
+            val currentText = binding.input.text?.toString() ?: ""
+            if (currentText != str) {
+                binding.input.setText(str)
+                // Optionally move cursor to end
+                binding.input.setSelection(str.length)
+            }
+            onValueChangedListener?.invoke(internalValue.toFloat())
         }
-        get() {
-            return binding.input.text.toString().toFloatOrNull() ?: 0f
+
+    /**
+     * Optional Double API if you want to work in Double directly elsewhere.
+     */
+    var valueDouble: Double
+        get() = internalValue
+        set(newValue) {
+            if (this.isInEditMode) {
+                return
+            }
+
+            internalValue = newValue
+            val str = df.format(internalValue)
+            val currentText = binding.input.text?.toString() ?: ""
+            if (currentText != str) {
+                binding.input.setText(str)
+                binding.input.setSelection(str.length)
+            }
+            onValueChangedListener?.invoke(internalValue.toFloat())
         }
 
     var suffixText: String = ""
@@ -93,15 +126,27 @@ class NumberInputBox @JvmOverloads constructor(
     private val textWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-        override fun afterTextChanged(s: Editable) {
-            if (s.toString().isNotEmpty()) {
-                val input = s.toString().toFloatOrNull() ?: 0f
-                val validated = validateNumber(input)
-                if (validated != null)
-                    value = validated
 
-                onValueChangedListener?.invoke(value)
+        override fun afterTextChanged(s: Editable) {
+            val raw = s.toString()
+            if (raw.isEmpty()) {
+                return
             }
+
+            // Parse as Double to preserve as much precision as possible
+            val inputDouble = raw.toDoubleOrNull() ?: 0.0
+
+            // Clamp using existing Float-based min/max logic
+            val clampedFloat = validateNumber(inputDouble.toFloat())
+            if (clampedFloat != null) {
+                // Out of range -> use clamped value (go through Float setter)
+                value = clampedFloat
+                return
+            }
+
+            // In range -> just update internal Double and notify listener
+            internalValue = inputDouble
+            onValueChangedListener?.invoke(internalValue.toFloat())
         }
     }
 
@@ -115,6 +160,9 @@ class NumberInputBox @JvmOverloads constructor(
         value = validNumber
     }
 
+    /**
+     * Clamp to [min, max]. Returns null if already in range.
+     */
     private fun validateNumber(input: Float): Float? {
         if (input > max) {
             return max
@@ -135,6 +183,8 @@ class NumberInputBox @JvmOverloads constructor(
 
         precision = a.getInteger(R.styleable.NumberInputBox_floatPrecision, precision)
         step = a.getFloat(R.styleable.NumberInputBox_step, 1f)
+
+        // Initialize internalValue through the Float API
         value = a.getFloat(R.styleable.NumberInputBox_value, 0f)
         min = a.getFloat(R.styleable.NumberInputBox_android_min, min)
         max = a.getFloat(R.styleable.NumberInputBox_android_max, max)
@@ -177,10 +227,9 @@ class NumberInputBox @JvmOverloads constructor(
     }
 
     /**
-     * Return the current text as a Double, without going through Float first.
-     * This preserves as much of the user-entered precision as possible.
+     * Return the current value as a Double, using the internal backing value.
      */
     fun valueAsDouble(): Double {
-        return binding.input.text.toString().toDoubleOrNull() ?: 0.0
+        return internalValue
     }
 }
