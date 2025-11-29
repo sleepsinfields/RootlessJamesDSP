@@ -538,8 +538,13 @@ private fun editorCanSave(): Boolean {
 private fun editorApply() {
     if (editorCanSave()) {
         val uuid = editorNodeUuid
-        val freq = binding.freqInput.value.toDouble()
-        val gain = binding.gainInput.value.toDouble()
+        // BEFORE:
+        // val freq = binding.freqInput.value.toDouble()
+        // val gain = binding.gainInput.value.toDouble()
+
+        // AFTER – read from text as Double, avoiding Float rounding:
+        val freq = binding.freqInput.valueAsDouble()
+        val gain = binding.gainInput.valueAsDouble()
 
         if (uuid == null) {
             val node = GraphicEqNode(freq, gain)
