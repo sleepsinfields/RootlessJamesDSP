@@ -221,8 +221,8 @@ binding.add.setOnClickListener {
     editorNodeUuid = null    
     editorActive = true    
 
-    binding.freqInput.value = 100    
-    binding.gainInput.value = 0   
+    binding.freqInput.value = 100f
+    binding.gainInput.value = 0f
     updateViewState()    
 }    
 
@@ -535,34 +535,34 @@ private fun editorCanSave(): Boolean {
     return freqValid && gainValid  
 }  
 
-private fun editorApply() {
-    if (editorCanSave()) {
-        val uuid = editorNodeUuid
-        val freq = binding.freqInput.valueAsDouble()
-        val gain = binding.gainInput.valueAsDouble()
+private fun editorApply() {  
+    if (editorCanSave()) {  
+        val uuid = editorNodeUuid  
+        val freq = binding.freqInput.valueAsDouble  
+        val gain = binding.gainInput.valueAsDouble  
 
-        if (uuid == null) {
-            val node = GraphicEqNode(freq, gain)
-            adapter.nodes.add(node)
-            editorNodeUuid = node.uuid
+        if (uuid == null) {  
+            val node = GraphicEqNode(freq, gain)  
+            adapter.nodes.add(node)  
+            editorNodeUuid = node.uuid  
             Timber.d(
                 "editorApply: tracking new added node $editorNodeUuid " +
                     "for $freq Hz with $gain dB (source: editorApply/add)"
-            )
-        } else {
-            Timber.d("editorApply: modifying node $editorNodeUuid")
-            val index = adapter.nodes.indexOfFirst { it.uuid == uuid }
-            if (index < 0) {
-                Timber.e("editorApply: failed to find matching node UUID")
-            } else {
+            )  
+        } else {  
+            Timber.d("editorApply: modifying node $editorNodeUuid")  
+            val index = adapter.nodes.indexOfFirst { it.uuid == uuid }  
+            if (index < 0) {  
+                Timber.e("editorApply: failed to find matching node UUID")  
+            } else {  
                 Timber.d(
                     "tracking node UUID $uuid (unchanged) for $freq Hz with $gain dB " +
                         "(source: editorApply/modify)"
-                )
-                adapter.nodes[index] = GraphicEqNode(freq, gain, uuid)
-            }
-        }
-    }
+                )  
+                adapter.nodes[index] = GraphicEqNode(freq, gain, uuid)  
+            }  
+        }  
+    }  
 }
 
 private fun editorDiscard() {
