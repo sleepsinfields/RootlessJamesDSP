@@ -57,7 +57,9 @@ class NumberInputBox @JvmOverloads constructor(
             if (this.isInEditMode) {
                 return
             }
-
+// Add this inside NumberInputBox class
+    val valueAsDouble: Double
+        get() = binding.input.text.toString().toDoubleOrNull() ?: 0.0
             val str = df.format(newValue)
             binding.input.setText(str)
             onValueChangedListener?.invoke(newValue)
