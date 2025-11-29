@@ -538,8 +538,8 @@ private fun editorCanSave(): Boolean {
 private fun editorApply() {
     if (editorCanSave()) {
         val uuid = editorNodeUuid
-        val freq = binding.freqInput.valueAsDouble
-        val gain = binding.gainInput.valueAsDouble
+        val freq = binding.freqInput.value.toDouble()
+        val gain = binding.gainInput.value.toDouble()
 
         if (uuid == null) {
             val node = GraphicEqNode(freq, gain)
