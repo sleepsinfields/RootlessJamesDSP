@@ -40,6 +40,8 @@ private lateinit var binding: FragmentGraphicEqBinding
 private val adapter: GraphicEqNodeAdapter  
     get() = binding.nodeList.adapter as GraphicEqNodeAdapter  
 
+// Suppress expensive save() during internal “revert” operations
+private var suppressAutoSave = false
 // ------------------------------------------------------------------------  
 // Stereo M/L/R banks  
 // ------------------------------------------------------------------------  
@@ -433,22 +435,24 @@ currentBank = CurveBank.MASTER
 nodesForAdapter.sortBy { it.freq }
 
 val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
-onItemsChanged = {
-binding.equalizerSurface.setNodes(it.nodes)
-updateViewState()
-save()   // keep this, last line
-}
+    onItemsChanged = {
+        binding.equalizerSurface.setNodes(it.nodes)
+        updateViewState()
 
-onItemClicked = { node: GraphicEqNode, _: Int ->  
-    editorNodeBackup = node  
-    editorNodeUuid = node.uuid  
-    editorActive = true  
+        if (!suppressAutoSave) {
+            save()   // only auto-save when not reverting
+        }
+    }
 
-    binding.freqInput.value = node.freq.toFloat()  
-    binding.gainInput.value = node.gain.toFloat()  
-    updateViewState()  
-}
+    onItemClicked = { node: GraphicEqNode, _: Int ->
+        editorNodeBackup = node
+        editorNodeUuid = node.uuid
+        editorActive = true
 
+        binding.freqInput.value = node.freq.toFloat()
+        binding.gainInput.value = node.gain.toFloat()
+        updateViewState()
+    }
 }
 
 binding.nodeList.adapter = nodeAdapter
@@ -561,27 +565,35 @@ private fun editorApply() {
     }  
 }  
 
-private fun editorDiscard() {  
-    val uuid = editorNodeUuid  
-    if (editorNodeBackup != null && uuid != null) {  
-        // Revert edits to node  
-        Timber.d("editorDiscard: reverting modifications to node $uuid")  
-        val index = adapter.nodes.indexOfFirst { it.uuid == uuid }  
-        if (index < 0) {  
-            Timber.e("editorDiscard: failed to find matching node UUID")  
-        } else {  
-            adapter.nodes[index] = editorNodeBackup  
-        }  
-    } else if (uuid != null) {  
-        // Revert added node  
-        Timber.d("editorDiscard: reverting addition of node $uuid")  
-        adapter.nodes.removeAll { it.uuid == uuid }  
-    }  
+private fun editorDiscard() {
+    suppressAutoSave = true
+    try {
+        val uuid = editorNodeUuid
+        if (editorNodeBackup != null && uuid != null) {
+            // Revert edits to node
+            Timber.d("editorDiscard: reverting modifications to node $uuid")
+            val index = adapter.nodes.indexOfFirst { it.uuid == uuid }
+            if (index < 0) {
+                Timber.e("editorDiscard: failed to find matching node UUID")
+            } else {
+                adapter.nodes[index] = editorNodeBackup
+            }
+        } else if (uuid != null) {
+            // Revert added node
+            Timber.d("editorDiscard: reverting addition of node $uuid")
+            adapter.nodes.removeAll { it.uuid == uuid }
+        }
 
-    editorNodeBackup = null  
-    editorNodeUuid = null  
-    editorActive = false  
-    updateViewState()  
+        editorNodeBackup = null
+        editorNodeUuid = null
+        editorActive = false
+
+        // Just refresh UI; no save
+        binding.equalizerSurface.setNodes(adapter.nodes)
+        updateViewState()
+    } finally {
+        suppressAutoSave = false
+    }
 }
 
 @SuppressLint("NotifyDataSetChanged")
