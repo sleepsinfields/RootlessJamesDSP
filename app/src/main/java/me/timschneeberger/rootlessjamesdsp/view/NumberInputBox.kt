@@ -24,7 +24,7 @@ class NumberInputBox @JvmOverloads constructor(
     private val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH))
 
     init {
-        df.maximumFractionDigits = 9
+        df.maximumFractionDigits = 12
     }
 
     var customStepScale: ((Float /* current value */, Boolean /* increasing */) -> Float)? = null
