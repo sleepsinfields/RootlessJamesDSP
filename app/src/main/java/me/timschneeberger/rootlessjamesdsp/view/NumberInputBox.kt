@@ -177,8 +177,8 @@ class NumberInputBox @JvmOverloads constructor(
     }
 
     /**
-     * NEW: read the current text as a Double without going through Float.
-     * This gives you full decimal precision as typed.
+     * Return the current text as a Double, without going through Float first.
+     * This preserves as much of the user-entered precision as possible.
      */
     fun valueAsDouble(): Double {
         return binding.input.text.toString().toDoubleOrNull() ?: 0.0
