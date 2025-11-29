@@ -221,8 +221,8 @@ binding.add.setOnClickListener {
     editorNodeUuid = null    
     editorActive = true    
 
-    binding.freqInput.value = 100f    
-    binding.gainInput.value = 0f    
+    binding.freqInput.value = 100    
+    binding.gainInput.value = 0   
     updateViewState()    
 }    
 
@@ -449,8 +449,8 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
         editorNodeUuid = node.uuid
         editorActive = true
 
-        binding.freqInput.value = node.freq.toFloat()
-        binding.gainInput.value = node.gain.toFloat()
+        binding.freqInput.value = node.freq
+        binding.gainInput.value = node.gain
         updateViewState()
     }
 }
@@ -538,8 +538,8 @@ private fun editorCanSave(): Boolean {
 private fun editorApply() {  
     if (editorCanSave()) {  
         val uuid = editorNodeUuid  
-        val freq = binding.freqInput.value.toDouble()  
-        val gain = binding.gainInput.value.toDouble()  
+        val freq = binding.freqInput.value 
+        val gain = binding.gainInput.value  
 
         if (uuid == null) {  
             val node = GraphicEqNode(freq, gain)  
