@@ -214,17 +214,19 @@ requireContext().showInputAlert(
 }
 
 // Add node    
-binding.add.setOnClickListener {    
-    if (editorActive) return@setOnClickListener    
 
-    editorNodeBackup = null    
-    editorNodeUuid = null    
-    editorActive = true    
+binding.add.setOnClickListener {
+    if (editorActive) return@setOnClickListener
 
-    binding.freqInput.value = 100f
-    binding.gainInput.value = 0f
-    updateViewState()    
-}    
+    editorNodeBackup = null
+    editorNodeUuid = null
+    editorActive = true
+
+    // Use Double-backed API for initial values
+    binding.freqInput.valueDouble = 100.0
+    binding.gainInput.valueDouble = 0.0
+    updateViewState()
+}
 
 binding.freqInput.setOnValueChangedListener { editorApply() }    
 binding.gainInput.setOnValueChangedListener { editorApply() }    
@@ -449,8 +451,8 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
     editorNodeUuid = node.uuid
     editorActive = true
 
-    binding.freqInput.value = node.freq.toFloat()
-    binding.gainInput.value = node.gain.toFloat()
+    binding.freqInput.valueDouble = node.freq.toDouble()
+    binding.gainInput.valueDouble = node.gain.toDouble()
     updateViewState()
 }
 }
