@@ -8,7 +8,7 @@ import java.util.UUID
 
 class GraphicEqNodeList : ObservableArrayList<GraphicEqNode>() {
 
-    // Full double-precision serialize: no DecimalFormat rounding
+    // Full-precision serialization: no DecimalFormat, just Double.toString()
     fun serialize(): String {
         val sb = StringBuilder("GraphicEQ: ")
         for (node in this) {
@@ -43,16 +43,15 @@ class GraphicEqNodeList : ObservableArrayList<GraphicEqNode>() {
     fun fromBundle(bundle: Bundle) {
         this.clear()
 
-        val freq = bundle.getDoubleArray(STATE_FREQ) ?: return
-        val gain = bundle.getDoubleArray(STATE_GAIN) ?: return
+        val freq  = bundle.getDoubleArray(STATE_FREQ) ?: return
+        val gain  = bundle.getDoubleArray(STATE_GAIN) ?: return
         val uuids = bundle.getSerializableAs<Array<UUID>>(STATE_UUID)
 
         val count = Integer.min(freq.size, gain.size)
         for (i in 0 until count) {
             val node = GraphicEqNode(freq[i], gain[i], uuids?.get(i) ?: UUID.randomUUID())
             Timber.d(
-                "tracking restored node UUID ${node.uuid} for ${freq[i]} Hz " +
-                    "with ${gain[i]} dB (source: fromBundle)"
+                "tracking restored node UUID ${node.uuid} for ${freq[i]} Hz with ${gain[i]} dB (source: fromBundle)"
             )
             this.add(node)
         }
@@ -68,8 +67,8 @@ class GraphicEqNodeList : ObservableArrayList<GraphicEqNode>() {
     }
 
     fun toArrays(): Triple<DoubleArray, DoubleArray, Array<UUID>> {
-        val freq = DoubleArray(this.size)
-        val gain = DoubleArray(this.size)
+        val freq  = DoubleArray(this.size)
+        val gain  = DoubleArray(this.size)
         val uuids = arrayListOf<UUID>()
         for ((i, node) in this.withIndex()) {
             freq[i] = node.freq
