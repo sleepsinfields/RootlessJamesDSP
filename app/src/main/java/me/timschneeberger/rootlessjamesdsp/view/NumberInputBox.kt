@@ -162,8 +162,7 @@ class NumberInputBox @JvmOverloads constructor(
             value = validateNumber(newValue) ?: newValue
         }
     }
-
-    override fun onAttachedToWindow() {
+override fun onAttachedToWindow() {
         binding.input.addTextChangedListener(textWatcher)
         super.onAttachedToWindow()
     }
@@ -176,4 +175,10 @@ class NumberInputBox @JvmOverloads constructor(
     fun setOnValueChangedListener(listener: ((Float) -> Unit)?) {
         onValueChangedListener = listener
     }
+
+    // NEW: helper for double precision consumers
+    fun valueAsDouble(): Double {
+        return binding.input.text.toString().toDoubleOrNull() ?: 0.0
+    }
 }
+  
