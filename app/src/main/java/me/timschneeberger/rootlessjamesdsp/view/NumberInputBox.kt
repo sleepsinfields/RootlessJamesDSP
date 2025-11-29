@@ -19,15 +19,16 @@ class NumberInputBox @JvmOverloads constructor(
     defStyleRes: Int = 0,
 ) : LinearLayout(context, attrs) {
 
-    private var onValueChangedListener: ((Double) -> Unit)? = null
+    private var onValueChangedListener: ((Float) -> Unit)? = null
     private val binding: ViewNumberInputBoxBinding
     private val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH))
 
     init {
+        // High precision display; actual numeric type is still Float
         df.maximumFractionDigits = 12
     }
 
-    var customStepScale: ((Double /* current value */, Boolean /* increasing */) -> Double)? = null
+    var customStepScale: ((Float /* current value */, Boolean /* increasing */) -> Float)? = null
 
     var precision: Int
         get() = df.maximumFractionDigits
@@ -36,21 +37,21 @@ class NumberInputBox @JvmOverloads constructor(
             binding.input.setText(df.format(this.value))
         }
 
-    var min: Double = Double.NEGATIVE_INFINITY
+    var min: Float = Float.MIN_VALUE
         set(value) {
             field = value
             validateValue()
         }
 
-    var max: Double = Double.POSITIVE_INFINITY
+    var max: Float = Float.MAX_VALUE
         set(value) {
             field = value
             validateValue()
         }
 
-    var step: Double = 1.0
+    var step: Float = 1f
 
-    var value: Double
+    var value: Float
         set(newValue) {
             // Preview bug fix
             if (this.isInEditMode) {
@@ -58,33 +59,31 @@ class NumberInputBox @JvmOverloads constructor(
             }
 
             val str = df.format(newValue)
-            // avoid recursive afterTextChanged logic re-parsing:
-            if (binding.input.text.toString() != str) {
-                binding.input.setText(str)
-                binding.input.setSelection(str.length)
-            }
+            binding.input.setText(str)
             onValueChangedListener?.invoke(newValue)
         }
         get() {
-            return binding.input.text.toString().toDoubleOrNull() ?: 0.0
+            return binding.input.text.toString().toFloatOrNull() ?: 0f
         }
 
-// 
     var suffixText: String = ""
         set(value) {
             field = value
             binding.inputLayout.suffixText = value
         }
+
     var helperText: String = ""
         set(value) {
             field = value
             binding.inputLayout.helperText = value
         }
+
     var helperTextEnabled: Boolean = false
         set(value) {
             field = value
             binding.inputLayout.isHelperTextEnabled = value
         }
+
     var hintText: String = ""
         set(value) {
             field = value
@@ -94,34 +93,30 @@ class NumberInputBox @JvmOverloads constructor(
     private val textWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+
         override fun afterTextChanged(s: Editable) {
             if (s.toString().isNotEmpty()) {
-                val input = s.toString().toDoubleOrNull() ?: 0.0
+                val input = s.toString().toFloatOrNull() ?: 0f
                 val validated = validateNumber(input)
-                // If validateNumber clamps, write clamped value once
-                if (validated != null && validated != input) {
-                    // This will format and invoke listener
+                if (validated != null) {
                     value = validated
-                } else {
-                    // Just propagate the raw double value
-                    onValueChangedListener?.invoke(input)
                 }
+                onValueChangedListener?.invoke(value)
             }
         }
     }
 
     fun isCurrentValueValid(): Boolean {
-        return (binding.input.text?.isNotBlank() ?: false) &&
-            validateNumber(value) == null
+        return (binding.input.text?.isNotBlank() ?: false) && validateNumber(value) == null
     }
 
-    private fun validateValue(input: Double = value) {
+    private fun validateValue(input: Float = value) {
         val validNumber = validateNumber(input)
         validNumber ?: return
         value = validNumber
     }
 
-    private fun validateNumber(input: Double): Double? {
+    private fun validateNumber(input: Float): Float? {
         return when {
             input > max -> max
             input < min -> min
@@ -138,43 +133,36 @@ class NumberInputBox @JvmOverloads constructor(
         )
         binding = ViewNumberInputBoxBinding.inflate(LayoutInflater.from(context), this, true)
 
-// Read the current text as Double, with full precision
-    val valueAsDouble: Double
-        get() = binding.input.text.toString().toDoubleOrNull() ?: 0.0
-
         precision = a.getInteger(R.styleable.NumberInputBox_floatPrecision, precision)
-        step = a.getFloat(R.styleable.NumberInputBox_step, 1f).toDouble()
-        value = a.getFloat(R.styleable.NumberInputBox_value, 0f).toDouble()
-        min = a.getFloat(R.styleable.NumberInputBox_android_min, min.toFloat()).toDouble()
-        max = a.getFloat(R.styleable.NumberInputBox_android_max, max.toFloat()).toDouble()
+        step = a.getFloat(R.styleable.NumberInputBox_step, 1f)
+        value = a.getFloat(R.styleable.NumberInputBox_value, 0f)
+        min = a.getFloat(R.styleable.NumberInputBox_android_min, min)
+        max = a.getFloat(R.styleable.NumberInputBox_android_max, max)
         suffixText = a.getString(R.styleable.NumberInputBox_suffixText) ?: suffixText
         helperText = a.getString(R.styleable.NumberInputBox_helperText) ?: helperText
-        helperTextEnabled = a.getBoolean(
-            R.styleable.NumberInputBox_helperTextEnabled,
-            helperTextEnabled
-        )
+        helperTextEnabled =
+            a.getBoolean(R.styleable.NumberInputBox_helperTextEnabled, helperTextEnabled)
         hintText = a.getString(R.styleable.NumberInputBox_hintText) ?: hintText
 
         a.recycle()
 
         binding.plus.setOnClickListener {
-            val finalStep = customStepScale?.invoke(value, true) ?: step
-            val newValue = value + finalStep
+            val finalStep = if (customStepScale == null) step
+            else customStepScale?.invoke(value, true) ?: value
+
+            val newValue = (value + finalStep)
             value = validateNumber(newValue) ?: newValue
         }
+
         binding.minus.setOnClickListener {
-            val finalStep = customStepScale?.invoke(value, false) ?: step
-            val newValue = value - finalStep
+            val finalStep = if (customStepScale == null) step
+            else customStepScale?.invoke(value, false) ?: value
+
+            val newValue = (value - finalStep)
             value = validateNumber(newValue) ?: newValue
         }
-/**
- * High-precision version so callers can receive full Double values.
- */
-fun setOnValueChangedListenerDouble(listener: ((Double) -> Unit)?) {
-    onValueChangedListener = { fValue ->
-        listener?.invoke(fValue.toDouble())
     }
-}
+
     override fun onAttachedToWindow() {
         binding.input.addTextChangedListener(textWatcher)
         super.onAttachedToWindow()
