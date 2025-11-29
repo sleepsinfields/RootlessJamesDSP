@@ -1,17 +1,3 @@
-package me.timschneeberger.rootlessjamesdsp.view
-
-import android.content.Context
-import android.text.Editable
-import android.text.TextWatcher
-import android.util.AttributeSet
-import android.view.LayoutInflater
-import android.widget.LinearLayout
-import me.timschneeberger.rootlessjamesdsp.R
-import me.timschneeberger.rootlessjamesdsp.databinding.ViewNumberInputBoxBinding
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
-import java.util.*
-
 class NumberInputBox @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -19,12 +5,12 @@ class NumberInputBox @JvmOverloads constructor(
     defStyleRes: Int = 0,
 ) : LinearLayout(context, attrs) {
 
-    private var onValueChangedListener: ((Float) -> Unit)? = null
+    // CHANGED: listener now uses Double
+    private var onValueChangedListener: ((Double) -> Unit)? = null
     private val binding: ViewNumberInputBoxBinding
     private val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH))
 
     init {
-        // High precision display; actual numeric type is still Float
         df.maximumFractionDigits = 12
     }
 
@@ -51,22 +37,24 @@ class NumberInputBox @JvmOverloads constructor(
 
     var step: Float = 1f
 
+    // Existing Float-based API (unchanged from your version)
     var value: Float
         set(newValue) {
-            // Preview bug fix
             if (this.isInEditMode) {
                 return
             }
-// Add this inside NumberInputBox class
-    val valueAsDouble: Double
-        get() = binding.input.text.toString().toDoubleOrNull() ?: 0.0
+
             val str = df.format(newValue)
             binding.input.setText(str)
-            onValueChangedListener?.invoke(newValue)
+            // NOTE: do NOT call listener here, we call it from afterTextChanged
         }
         get() {
             return binding.input.text.toString().toFloatOrNull() ?: 0f
         }
+
+    // NEW: Double view of current text – this is what the EQ will use
+    val valueAsDouble: Double
+        get() = binding.input.text.toString().toDoubleOrNull() ?: 0.0
 
     var suffixText: String = ""
         set(value) {
@@ -95,15 +83,20 @@ class NumberInputBox @JvmOverloads constructor(
     private val textWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-
         override fun afterTextChanged(s: Editable) {
-            if (s.toString().isNotEmpty()) {
-                val input = s.toString().toFloatOrNull() ?: 0f
-                val validated = validateNumber(input)
-                if (validated != null) {
-                    value = validated
+            val text = s.toString()
+            if (text.isNotEmpty()) {
+                val asDouble = text.toDoubleOrNull()
+                if (asDouble != null) {
+                    // Clamp via existing Float-based logic
+                    val validated = validateNumber(asDouble.toFloat())
+                    if (validated != null) {
+                        // This will also reformat text if clamped
+                        value = validated
+                    }
+                    // Notify listener WITH DOUBLE
+                    onValueChangedListener?.invoke(asDouble)
                 }
-                onValueChangedListener?.invoke(value)
             }
         }
     }
@@ -122,7 +115,7 @@ class NumberInputBox @JvmOverloads constructor(
         return when {
             input > max -> max
             input < min -> min
-            else -> null
+            else        -> null
         }
     }
 
@@ -142,8 +135,10 @@ class NumberInputBox @JvmOverloads constructor(
         max = a.getFloat(R.styleable.NumberInputBox_android_max, max)
         suffixText = a.getString(R.styleable.NumberInputBox_suffixText) ?: suffixText
         helperText = a.getString(R.styleable.NumberInputBox_helperText) ?: helperText
-        helperTextEnabled =
-            a.getBoolean(R.styleable.NumberInputBox_helperTextEnabled, helperTextEnabled)
+        helperTextEnabled = a.getBoolean(
+            R.styleable.NumberInputBox_helperTextEnabled,
+            helperTextEnabled
+        )
         hintText = a.getString(R.styleable.NumberInputBox_hintText) ?: hintText
 
         a.recycle()
@@ -151,20 +146,20 @@ class NumberInputBox @JvmOverloads constructor(
         binding.plus.setOnClickListener {
             val finalStep = if (customStepScale == null) step
             else customStepScale?.invoke(value, true) ?: value
-
             val newValue = (value + finalStep)
+
             value = validateNumber(newValue) ?: newValue
         }
-
         binding.minus.setOnClickListener {
             val finalStep = if (customStepScale == null) step
             else customStepScale?.invoke(value, false) ?: value
-
             val newValue = (value - finalStep)
+
             value = validateNumber(newValue) ?: newValue
         }
     }
-override fun onAttachedToWindow() {
+
+    override fun onAttachedToWindow() {
         binding.input.addTextChangedListener(textWatcher)
         super.onAttachedToWindow()
     }
@@ -174,13 +169,9 @@ override fun onAttachedToWindow() {
         super.onDetachedFromWindow()
     }
 
-    fun setOnValueChangedListener(listener: ((Float) -> Unit)?) {
+    // CHANGED: listener is (Double) -> Unit, but all your call sites ignore the parameter,
+    // so they do NOT need to change.
+    fun setOnValueChangedListener(listener: ((Double) -> Unit)?) {
         onValueChangedListener = listener
     }
-
-    // NEW: helper for double precision consumers
-    fun valueAsDouble(): Double {
-        return binding.input.text.toString().toDoubleOrNull() ?: 0.0
-    }
 }
-  
