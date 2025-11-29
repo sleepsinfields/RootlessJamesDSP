@@ -187,7 +187,7 @@
                             app:step="10"
                             app:suffixText="Hz"
                             app:value="100"
-                            app:floatPrecision="3"
+                            app:floatPrecision="6"
                             android:min="0"
                             android:max="24000" />
 
@@ -198,7 +198,7 @@
                             app:helperText="@string/geq_gain_range"
                             app:helperTextEnabled="true"
                             app:hintText="@string/geq_gain"
-                            app:floatPrecision="9"
+                            app:floatPrecision="12"
                             app:step="0.5"
                             app:suffixText="dB"
                             android:min="-32"
