@@ -19,7 +19,7 @@ class NumberInputBox @JvmOverloads constructor(
     defStyleRes: Int = 0,
 ) : LinearLayout(context, attrs) {
 
-    private var onValueChangedListener: ((Float) -> Unit)? = null
+    private var onValueChangedListener: ((Double) -> Unit)? = null
     private val binding: ViewNumberInputBoxBinding
     private val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH))
 
@@ -27,7 +27,7 @@ class NumberInputBox @JvmOverloads constructor(
         df.maximumFractionDigits = 12
     }
 
-    var customStepScale: ((Float /* current value */, Boolean /* increasing */) -> Float)? = null
+    var customStepScale: ((Double /* current value */, Boolean /* increasing */) -> Double)? = null
 
     var precision: Int
         get() = df.maximumFractionDigits
@@ -35,31 +35,41 @@ class NumberInputBox @JvmOverloads constructor(
             df.maximumFractionDigits = value
             binding.input.setText(df.format(this.value))
         }
-    var min: Float = Float.MIN_VALUE
+
+    var min: Double = Double.NEGATIVE_INFINITY
         set(value) {
             field = value
             validateValue()
         }
-    var max: Float = Float.MAX_VALUE
+
+    var max: Double = Double.POSITIVE_INFINITY
         set(value) {
             field = value
             validateValue()
         }
-    var step: Float = 1f
-    var value: Float
+
+    var step: Double = 1.0
+
+    var value: Double
         set(newValue) {
             // Preview bug fix
-            if(this.isInEditMode) {
+            if (this.isInEditMode) {
                 return
             }
 
             val str = df.format(newValue)
-            binding.input.setText(str)
+            // avoid recursive afterTextChanged logic re-parsing:
+            if (binding.input.text.toString() != str) {
+                binding.input.setText(str)
+                binding.input.setSelection(str.length)
+            }
             onValueChangedListener?.invoke(newValue)
         }
         get() {
-            return binding.input.text.toString().toFloatOrNull() ?: 0f
+            return binding.input.text.toString().toDoubleOrNull() ?: 0.0
         }
+
+// 
     var suffixText: String = ""
         set(value) {
             field = value
