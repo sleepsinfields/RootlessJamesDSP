@@ -29,7 +29,7 @@ class NumberInputBox @JvmOverloads constructor(
 
     init {
         // Default UI precision – can be overridden via XML attr floatPrecision
-        df.maximumFractionDigits = 12
+        df.maximumFractionDigits = 15
     }
 
     var customStepScale: ((Float /* current value */, Boolean /* increasing */) -> Float)? = null
