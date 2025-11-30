@@ -198,7 +198,7 @@
                             app:helperText="@string/geq_gain_range"
                             app:helperTextEnabled="true"
                             app:hintText="@string/geq_gain"
-                            app:floatPrecision="12"
+                            app:floatPrecision="15"
                             app:step="0.5"
                             app:suffixText="dB"
                             android:min="-32"
