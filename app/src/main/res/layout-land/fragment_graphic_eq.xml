@@ -195,7 +195,7 @@
                                 app:step="10"
                                 app:suffixText="Hz"
                                 app:value="100"
-                                app:floatPrecision="6"
+                                app:floatPrecision="15"
                                 android:min="0"
                                 android:max="24000" />
 
