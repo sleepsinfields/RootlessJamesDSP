@@ -208,7 +208,7 @@
                                 app:hintText="@string/geq_gain"
                                 app:step="0.5"
                                 app:suffixText="dB"
-                                app:floatPrecision="12"
+                                app:floatPrecision="15"
                                 android:min="-32"
                                 android:max="32"/>
                         </LinearLayout>
