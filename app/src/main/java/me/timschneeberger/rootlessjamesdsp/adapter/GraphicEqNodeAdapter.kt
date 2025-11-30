@@ -111,7 +111,7 @@ class GraphicEqNodeAdapter(var nodes: GraphicEqNodeList) :
         // Set content
         df.maximumFractionDigits = 6
         viewHolder.freq.text = "${df.format(nodes[position].freq)}Hz"
-        df.maximumFractionDigits = 12
+        df.maximumFractionDigits = 15
         viewHolder.gain.text = "${df.format(nodes[position].gain)}dB"
 
         // Set click listeners
