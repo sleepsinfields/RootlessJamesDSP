@@ -109,7 +109,7 @@ class GraphicEqNodeAdapter(var nodes: GraphicEqNodeList) :
         viewHolder.deleteButton.isEnabled = true
 
         // Set content
-        df.maximumFractionDigits = 6
+        df.maximumFractionDigits = 15
         viewHolder.freq.text = "${df.format(nodes[position].freq)}Hz"
         df.maximumFractionDigits = 15
         viewHolder.gain.text = "${df.format(nodes[position].gain)}dB"
