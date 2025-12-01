@@ -121,6 +121,15 @@
     <string name="geq_enable">Arbitrary response equalizer</string>
     <string name="geq_nodes">Magnitude response</string>
 
+
+
+<string name="geq_goto_freq">Goto freq</string>
+<string name="geq_jump_last_edited">Last edited</string>
+<string name="geq_goto_freq_title">Go to frequency</string>
+<string name="geq_goto_freq_hint">Enter frequency in Hz</string>
+
+
+
     <string name="bass_enable">Dynamic bass boost</string>
     <string name="bass_max_gain">Maximum gain</string>
 
