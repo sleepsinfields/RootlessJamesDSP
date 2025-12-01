@@ -24,7 +24,18 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/add"
-                style="@style/Widget.Material3.Chip.Assist.Elevated"
+               
+// goto freq
+<com.google.android.material.button.MaterialButton
+    android:id="@+id/gotoFreq"
+    style="@style/Widget.MaterialComponents.Button.TextButton"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/geq_goto_freq"
+/>
+// goto freq
+
+ style="@style/Widget.Material3.Chip.Assist.Elevated"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/gep_add_node"
@@ -36,7 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/geq_reset"
-                app:chipIcon="@drawable/ic_twotone_delete_forever_24dp" />
+     app:chipIcon="@drawable/ic_twotone_delete_forever_24dp" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/autoeq"
