@@ -148,6 +148,26 @@ val savedMaster = prefs.getBoolean(KEY_MASTER, true)
 val savedLeft   = prefs.getBoolean(KEY_LEFT, false)
 val savedRight  = prefs.getBoolean(KEY_RIGHT, false)
 
+//
+binding.gotoFreq.setOnClickListener {
+    requireContext().showInputAlert(
+        layoutInflater,
+        R.string.geq_goto_freq_title,
+        R.string.geq_goto_freq_hint,
+        "",
+        false,
+        null
+    ) { text ->
+        val freq = text?.toDoubleOrNull() ?: return@showInputAlert
+        gotoFrequency(freq)
+    }
+}
+
+binding.jumpLastEdited.setOnClickListener {
+    jumpToLastEdited()
+}
+// 
+
 // Push restored UI state to switches
 binding.switchArbEqMaster.isChecked = savedMaster
 binding.switchArbEqLeft.isChecked   = savedLeft
@@ -517,6 +537,36 @@ private fun updateStereoArbEqFlags() {
     // save()
 }
 
+// new helper
+private fun gotoFrequency(targetHz: Double) {
+    val nodes = adapter.nodes
+    if (nodes.isEmpty()) return
+
+    var bestIndex = 0
+    var bestDiff = Double.MAX_VALUE
+
+    for (i in nodes.indices) {
+        val diff = kotlin.math.abs(nodes[i].freq - targetHz)
+        if (diff < bestDiff) {
+            bestDiff = diff
+            bestIndex = i
+        }
+    }
+
+    // Scroll list to that node
+    binding.nodeList.scrollToPosition(bestIndex)
+
+    // Optionally auto-open editor for it:
+    val node = nodes[bestIndex]
+    editorNodeBackup = node
+    editorNodeUuid = node.uuid
+    editorActive = true
+
+    binding.freqInput.value = node.freq.toFloat()
+    binding.gainInput.value = node.gain.toFloat()
+    updateViewState()
+}
+// end
 
 // ------------------------------------------------------------------------  
 // Editor logic  
