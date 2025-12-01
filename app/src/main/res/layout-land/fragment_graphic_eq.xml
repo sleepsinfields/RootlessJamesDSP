@@ -56,12 +56,11 @@
 
     <!-- NEW: Goto frequency chip -->
     <com.google.android.material.chip.Chip
-        android:id="@+id/gotoFreq"
-        style="@style/Widget.Material3.Chip.Assist.Elevated"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/geq_goto_freq"
-        app:chipIcon="@drawable/ic_baseline_search_24dp" />
+    android:id="@+id/gotoFreq"
+    style="@style/Widget.Material3.Chip.Assist.Elevated"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/geq_goto_freq" />
 
     <!-- NEW: Jump to last edited chip -->
     <com.google.android.material.chip.Chip
