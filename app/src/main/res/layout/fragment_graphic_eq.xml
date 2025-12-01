@@ -26,17 +26,7 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/add"
-               
-// goto freq
-<com.google.android.material.button.MaterialButton
-    android:id="@+id/gotoFreq"
-    style="@style/Widget.MaterialComponents.Button.TextButton"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/geq_goto_freq"
-/>
-// goto freq
-
+                
  style="@style/Widget.Material3.Chip.Assist.Elevated"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -66,6 +56,25 @@
                 android:layout_height="wrap_content"
                 android:text="@string/geq_edit_as_string"
                 app:chipIcon="@drawable/ic_twotone_edit_24dp" />
+//
+    <!-- NEW: Goto frequency chip -->
+    <com.google.android.material.chip.Chip
+        android:id="@+id/gotoFreq"
+        style="@style/Widget.Material3.Chip.Assist.Elevated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/geq_goto_freq"
+        app:chipIcon="@drawable/ic_baseline_search_24dp" />
+
+    <!-- NEW: Jump to last edited chip -->
+    <com.google.android.material.chip.Chip
+        android:id="@+id/jumpLastEdited"
+        style="@style/Widget.Material3.Chip.Assist.Elevated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/geq_jump_last_edited"
+        app:chipIcon="@drawable/ic_twotone_history_24dp" />
+//
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>
 
