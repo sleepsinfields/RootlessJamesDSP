@@ -170,20 +170,6 @@ binding.gotoFreq.setOnClickListener {
 binding.jumpLastEdited.setOnClickListener {
     jumpToLastEdited()
 }
-// 
-binding.gotoFreq.setOnClickListener {
-    requireContext().showInputAlert(
-        layoutInflater,
-        R.string.geq_goto_freq_title,
-        R.string.geq_goto_freq_hint,
-        "",
-        false,
-        null
-    ) { text ->
-        val freq = text?.toDoubleOrNull() ?: return@showInputAlert
-        gotoFrequency(freq)
-    }
-}
 
 // Push restored UI state to switches
 binding.switchArbEqMaster.isChecked = savedMaster
@@ -260,8 +246,8 @@ binding.add.setOnClickListener {
     editorActive = true
 
     // Use Double-backed API for initial values
-    binding.freqInput.valueDouble = 100.0
-    binding.gainInput.valueDouble = 0.0
+    binding.freqInput.value = 100f
+    binding.gainInput.value = 0f
     updateViewState()
 }
 
@@ -554,23 +540,6 @@ private fun updateStereoArbEqFlags() {
     // save()
 }
 
-
-
-    // Scroll list to that node
-    binding.nodeList.scrollToPosition(bestIndex)
-
-    // Optionally auto-open editor for it:
-    val node = nodes[bestIndex]
-    editorNodeBackup = node
-    editorNodeUuid = node.uuid
-    editorActive = true
-
-    binding.freqInput.value = node.freq.toFloat()
-    binding.gainInput.value = node.gain.toFloat()
-    updateViewState()
-}
-// end
-
 // ------------------------------------------------------------------------  
 // Editor logic  
 // ------------------------------------------------------------------------  
@@ -609,42 +578,40 @@ private fun gotoFrequency(targetHz: Double) {
     binding.nodeList.scrollToPosition(bestIndex)
 }
 private fun editorApply() {
-    if (editorCanSave()) {
-        lastEditedNodeUuid = uuid
-        val uuid = editorNodeUuid
-        // BEFORE:
-        // val freq = binding.freqInput.value.toDouble()
-        // val gain = binding.gainInput.value.toDouble()
+    if (!editorCanSave()) return
 
-        // AFTER – read from text as Double, avoiding Float rounding:
-        val freq = binding.freqInput.valueAsDouble()
-        val gain = binding.gainInput.valueAsDouble()
+    val uuid = editorNodeUuid
 
-        if (uuid == null) {
-            val node = GraphicEqNode(freq, gain)
-            adapter.nodes.add(node)
-            editorNodeUuid = node.uuid
-            Timber.d(
-                "editorApply: tracking new added node $editorNodeUuid " +
-                    "for $freq Hz with $gain dB (source: editorApply/add)"
-            )
+    // Read from text as Double, avoiding Float rounding:
+    val freq = binding.freqInput.valueAsDouble()
+    val gain = binding.gainInput.valueAsDouble()
+
+    if (uuid == null) {
+        val node = GraphicEqNode(freq, gain)
+        adapter.nodes.add(node)
+        editorNodeUuid = node.uuid
+        Timber.d(
+            "editorApply: tracking new added node $editorNodeUuid " +
+                "for $freq Hz with $gain dB (source: editorApply/add)"
+        )
+    } else {
+        Timber.d("editorApply: modifying node $editorNodeUuid")
+        val index = adapter.nodes.indexOfFirst { it.uuid == uuid }
+        if (index < 0) {
+            Timber.e("editorApply: failed to find matching node UUID")
         } else {
-            Timber.d("editorApply: modifying node $editorNodeUuid")
-            val index = adapter.nodes.indexOfFirst { it.uuid == uuid }
-            if (index < 0) {
-                Timber.e("editorApply: failed to find matching node UUID")
-            } else {
-                adapter.nodes[index] = GraphicEqNode(freq, gain, uuid)
-                Timber.d(
-                    "tracking node UUID $uuid (unchanged) for $freq Hz with $gain dB " +
-                        "(source: editorApply/modify)"
-                )
-              // After node created or modified
-lastEditedNodeUuid = editorNodeUuid
-            }
+            adapter.nodes[index] = GraphicEqNode(freq, gain, uuid)
+            Timber.d(
+                "tracking node UUID $uuid (unchanged) for $freq Hz with $gain dB " +
+                    "(source: editorApply/modify)"
+            )
         }
     }
+
+    // After node created or modified, remember last edited
+    lastEditedNodeUuid = editorNodeUuid
 }
+
 private fun editorDiscard() {
     suppressAutoSave = true
     try {
