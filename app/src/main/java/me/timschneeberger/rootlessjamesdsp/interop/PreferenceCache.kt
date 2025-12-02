@@ -47,7 +47,23 @@ class PreferenceCache(val context: Context) {
     fun markChangesAsCommitted() {
         changedNamespaces.clear()
     }
+// 
+fun putDouble(@StringRes keyRes: Int, value: Double) {
+    if (selectedNamespace == null)
+        throw IllegalStateException("No active namespace selected")
 
+    val key = context.getString(keyRes)
+    val prefs = getPreferences(context, selectedNamespace!!)
+
+    // Store as string to preserve full precision (up to the 15–17 digits Double supports)
+    prefs.edit()
+        .putString(key, value.toString())
+        .apply()
+
+    // Update in-memory cache so readback matches
+    cache[key] = value
+}
+// 
     companion object {
         @Suppress("DEPRECATION")
         fun getPreferences(
