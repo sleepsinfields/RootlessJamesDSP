@@ -108,9 +108,17 @@ class JamesDspLocalEngine(
     }
 
     override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
-        return JamesDspWrapper.setVacuumTube(handle, enable, level)
-    }
+    // Clamp here if you want to be safe
+    val floatLevel = level.toFloat()
 
+    return try {
+        // Forward to native wrapper; it still expects Float
+        JamesDspWrapper.setVacuumTube(handle, enable, floatLevel)
+    } catch (t: Throwable) {
+        Timber.e(t, "LocalEngine: setVacuumTube failed (enable=$enable, level=$level)")
+        false
+    }
+}
     override fun setMultiEqualizerInternal(
         enable: Boolean,
         filterType: Int,
