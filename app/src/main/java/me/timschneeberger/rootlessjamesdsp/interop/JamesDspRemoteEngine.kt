@@ -23,6 +23,7 @@ import me.timschneeberger.rootlessjamesdsp.utils.extensions.toShort
 import timber.log.Timber
 import java.util.UUID
 import kotlin.math.roundToInt
+import android.util.Log
 
 class JamesDspRemoteEngine(
     context: Context,
