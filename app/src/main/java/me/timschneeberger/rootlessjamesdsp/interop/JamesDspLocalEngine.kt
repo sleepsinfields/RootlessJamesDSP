@@ -107,10 +107,8 @@ class JamesDspLocalEngine(
         return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
     }
 
-    override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
-    // Local (in-process) engine path not used in Rootless mode.
-    // Stub implementation just to satisfy the abstract API.
-    return true
+   override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
+    return JdspWrapper.setVacuumTube(handle, enable, level.toFloat())
 }
     override fun setMultiEqualizerInternal(
         enable: Boolean,
