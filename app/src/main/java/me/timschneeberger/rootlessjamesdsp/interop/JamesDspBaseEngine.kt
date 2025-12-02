@@ -126,11 +126,12 @@ abstract class JamesDspBaseEngine(
             cache.select(Constants.PREF_TUBE)
             val tubeEnabled = cache.get(R.string.key_tube_enable, false)
            
-// 1) Read as String so we don't lose precision to Float
-val tubeDriveString = cache.get(R.string.key_tube_drive, "2.0")
+// 1) Read as Float so PreferenceCache uses getFloat()
+val tubeDriveFloat: Float = cache.get(R.string.key_tube_drive, 2f)
 
-// 2) Parse to Double (fallback to 2.0 if weird)
-val tubeDrive: Double = tubeDriveString.toDoubleOrNull() ?: 2.0
+// 2) Widen to Double for the double-precision chain
+val tubeDrive: Double = tubeDriveFloat.toDouble()
+
 
 
 
