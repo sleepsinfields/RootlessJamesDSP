@@ -474,8 +474,13 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
     editorNodeUuid = node.uuid
     editorActive = true
 
-    binding.freqInput.valueDouble = node.freq.toDouble()
-    binding.gainInput.valueDouble = node.gain.toDouble()
+    onItemClicked = { node: GraphicEqNode, _: Int ->
+    editorNodeBackup = node
+    editorNodeUuid = node.uuid
+    editorActive = true
+
+    binding.freqInput.value = node.freq.toFloat()
+    binding.gainInput.value = node.gain.toFloat()
     updateViewState()
 }
 }
