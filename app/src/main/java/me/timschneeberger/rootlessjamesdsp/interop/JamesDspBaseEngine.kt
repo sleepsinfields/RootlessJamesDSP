@@ -125,10 +125,8 @@ abstract class JamesDspBaseEngine(
 
             cache.select(Constants.PREF_TUBE)
 val tubeEnabled = cache.get(R.string.key_tube_enable, false)
+val tubeDrive   = cache.get(R.string.key_tube_drive, 2.0)  // Double
 
-// Read as Float from cache, then convert to Double
-val tubeDrive = cache.get(R.string.key_tube_drive, 2f).toDouble()
-//
 Log.e("TubeDebug", "syncWithPreferences: enabled=$tubeEnabled drive=$tubeDrive")
 //
 
