@@ -107,7 +107,7 @@ class JamesDspLocalEngine(
         return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
     }
 
-    override fun setVacuumTube(enable: Boolean, level: Float): Boolean {
+    override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
         return JamesDspWrapper.setVacuumTube(handle, enable, level)
     }
 
