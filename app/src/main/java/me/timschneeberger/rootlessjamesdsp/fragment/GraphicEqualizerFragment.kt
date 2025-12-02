@@ -42,6 +42,10 @@ private val adapter: GraphicEqNodeAdapter
 
 // Suppress expensive save() during internal “revert” operations
 private var suppressAutoSave = false
+
+private var lastEditedNodeUuid: UUID? = null
+
+
 // ------------------------------------------------------------------------  
 // Stereo M/L/R banks  
 // ------------------------------------------------------------------------  
@@ -167,7 +171,23 @@ binding.jumpLastEdited.setOnClickListener {
     jumpToLastEdited()
 }
 // 
+binding.gotoFreq.setOnClickListener {
+    requireContext().showInputAlert(
+        layoutInflater,
+        R.string.geq_goto_freq_title,
+        R.string.geq_goto_freq_hint,
+        "",
+        false,
+        null
+    ) { text ->
+        val freq = text?.toDoubleOrNull() ?: return@showInputAlert
+        gotoFrequency(freq)
+    }
+}
 
+binding.jumpLastEdited.setOnClickListener {
+    jumpToLastEdited()
+}
 // Push restored UI state to switches
 binding.switchArbEqMaster.isChecked = savedMaster
 binding.switchArbEqLeft.isChecked   = savedLeft
@@ -589,6 +609,7 @@ private fun editorCanSave(): Boolean {
 
 private fun editorApply() {
     if (editorCanSave()) {
+        lastEditedNodeUuid = uuid
         val uuid = editorNodeUuid
         // BEFORE:
         // val freq = binding.freqInput.value.toDouble()
@@ -680,6 +701,26 @@ updateViewState()
 storeCurrentBankNodes()  
 save()
 
+}
+
+private fun jumpToLastEdited() {
+    val uuid = lastEditedNodeUuid ?: return
+
+    val index = adapter.nodes.indexOfFirst { it.uuid == uuid }
+    if (index < 0) return
+
+    binding.nodeList.scrollToPosition(index)
+}
+
+private fun gotoFrequency(freq: Double) {
+    if (adapter.nodes.isEmpty()) return
+
+    // Find nearest node by absolute distance
+    val target = adapter.nodes.minByOrNull { abs(it.freq - freq) } ?: return
+    val index = adapter.nodes.indexOf(target)
+
+    if (index >= 0)
+        binding.nodeList.scrollToPosition(index)
 }
 
 // ------------------------------------------------------------------------  
