@@ -394,84 +394,97 @@ Log.e("StereoEQ", "switchBank → now editing $target")
 // ------------------------------------------------------------------------
 // Node loading
 // ------------------------------------------------------------------------
+@SuppressLint("NotifyDataSetChanged")
 private fun loadNodes(savedInstanceState: Bundle?) {
-val prefs = geqPrefs()
+    val prefs = geqPrefs()
 
-val nodesForAdapter = GraphicEqNodeList()  
-val dataSaved = savedInstanceState?.getBundle(STATE_NODES)  
+    val nodesForAdapter = GraphicEqNodeList()
+    val dataSaved = savedInstanceState?.getBundle(STATE_NODES)
 
-if (dataSaved != null) {  
-    // Instance-state restore path  
-    nodesForAdapter.fromBundle(dataSaved)  
-    initBanksFromLegacy(nodesForAdapter)  
-    Log.e("StereoEQ", "loadNodes: restored from instanceState, size=${nodesForAdapter.size}")  
-} else {  
-    // Try new per-bank storage first  
-    val masterStr = prefs.getString(PREF_GEQ_MASTER, null)  
-    val leftStr   = prefs.getString(PREF_GEQ_LEFT,   null)  
-    val rightStr  = prefs.getString(PREF_GEQ_RIGHT,  null)  
+    if (dataSaved != null) {
+        // Instance-state restore path
+        nodesForAdapter.fromBundle(dataSaved)
+        initBanksFromLegacy(nodesForAdapter)
+        Log.e("StereoEQ", "loadNodes: restored from instanceState, size=${nodesForAdapter.size}")
+    } else {
+        // Try new per-bank storage first
+        val masterStr = prefs.getString(PREF_GEQ_MASTER, null)
+        val leftStr   = prefs.getString(PREF_GEQ_LEFT,   null)
+        val rightStr  = prefs.getString(PREF_GEQ_RIGHT,  null)
 
-    if (!masterStr.isNullOrEmpty() ||  
-        !leftStr.isNullOrEmpty()   ||  
-        !rightStr.isNullOrEmpty()  
-    ) {  
-      fun parseOrEmpty(str: String?): GraphicEqNodeList =  
-GraphicEqNodeList().apply {  
-    if (!str.isNullOrEmpty()) {  
-        deserialize(str)  
-    }  
-}
+        if (!masterStr.isNullOrEmpty() ||
+            !leftStr.isNullOrEmpty()   ||
+            !rightStr.isNullOrEmpty()
+        ) {
+            fun parseOrEmpty(str: String?): GraphicEqNodeList =
+                GraphicEqNodeList().apply {
+                    if (!str.isNullOrEmpty()) {
+                        deserialize(str)
+                    }
+                }
 
-// Use master as canonical; if left/right missing OR empty → fallback to master
-val masterSrc = masterStr
-val leftSrc   = if (leftStr.isNullOrEmpty()) masterStr else leftStr
-val rightSrc  = if (rightStr.isNullOrEmpty()) masterStr else rightStr
+            // Use master as canonical; if left/right missing OR empty → fallback to master
+            val masterSrc = masterStr
+            val leftSrc   = if (leftStr.isNullOrEmpty()) masterStr else leftStr
+            val rightSrc  = if (rightStr.isNullOrEmpty()) masterStr else rightStr
 
-masterNodes = parseOrEmpty(masterSrc)
-leftNodes   = parseOrEmpty(leftSrc)
-rightNodes  = parseOrEmpty(rightSrc)
+            masterNodes = parseOrEmpty(masterSrc)
+            leftNodes   = parseOrEmpty(leftSrc)
+            rightNodes  = parseOrEmpty(rightSrc)
 
-currentBank = CurveBank.MASTER  
-        nodesForAdapter.addAll(masterNodes)  
+            currentBank = CurveBank.MASTER
+            nodesForAdapter.addAll(masterNodes)
 
-        Log.e(  
-            "StereoEQ",  
-            "loadNodes: restored banks M=${masterNodes.size} " +  
-                "L=${leftNodes.size} R=${rightNodes.size}"  
-        )  
-    } else {  
-        // Full fallback: legacy single-curve string  
-        val legacyString = prefs.getString(  
-            getString(R.string.key_geq_nodes),  
-            Constants.DEFAULT_GEQ  
-        )!!  
+            Log.e(
+                "StereoEQ",
+                "loadNodes: restored banks M=${masterNodes.size} " +
+                    "L=${leftNodes.size} R=${rightNodes.size}"
+            )
+        } else {
+            // Full fallback: legacy single-curve string
+            val legacyString = prefs.getString(
+                getString(R.string.key_geq_nodes),
+                Constants.DEFAULT_GEQ
+            )!!
 
-        nodesForAdapter.deserialize(legacyString)  
-        initBanksFromLegacy(nodesForAdapter)  
+            nodesForAdapter.deserialize(legacyString)
+            initBanksFromLegacy(nodesForAdapter)
 
-        Log.e(  
-            "StereoEQ",  
-            "loadNodes: legacy curve loaded (${nodesForAdapter.size} nodes) " +  
-                "and cloned to all banks"  
-        )  
-    }  
-}  
-
-nodesForAdapter.sortBy { it.freq }
-
-val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
-    onItemsChanged = {
-        binding.equalizerSurface.setNodes(it.nodes)
-        updateViewState()
-
-        if (!suppressAutoSave) {
-            save()   // only auto-save when not reverting
+            Log.e(
+                "StereoEQ",
+                "loadNodes: legacy curve loaded (${nodesForAdapter.size} nodes) " +
+                    "and cloned to all banks"
+            )
         }
     }
-}
 
-binding.nodeList.adapter = nodeAdapter
-binding.equalizerSurface.setNodes(nodeAdapter.nodes)
+    nodesForAdapter.sortBy { it.freq }
+
+    val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
+        onItemsChanged = {
+            binding.equalizerSurface.setNodes(it.nodes)
+            updateViewState()
+
+            if (!suppressAutoSave) {
+                save()   // only auto-save when not reverting
+            }
+        }
+
+        onItemClicked = { node: GraphicEqNode, _: Int ->
+            // Enter editor mode for the tapped node
+            editorNodeBackup = node
+            editorNodeUuid = node.uuid
+            editorActive = true
+            lastEditedNodeUuid = node.uuid
+
+            binding.freqInput.valueDouble = node.freq.toDouble()
+            binding.gainInput.valueDouble = node.gain.toDouble()
+            updateViewState()
+        }
+    }
+
+    binding.nodeList.adapter = nodeAdapter
+    binding.equalizerSurface.setNodes(nodeAdapter.nodes)
 }
 // ------------------------------------------------------------------------
 // UI state helpers
@@ -567,39 +580,45 @@ private fun gotoFrequency(targetHz: Double) {
     // Scroll list to that node
     binding.nodeList.scrollToPosition(bestIndex)
 }
+
 private fun editorApply() {
     if (!editorCanSave()) return
 
-    val uuid = editorNodeUuid
-
-    // Read from text as Double, avoiding Float rounding:
+    val currentUuid = editorNodeUuid
     val freq = binding.freqInput.valueAsDouble()
     val gain = binding.gainInput.valueAsDouble()
 
-    if (uuid == null) {
+    if (currentUuid == null) {
+        // New node
         val node = GraphicEqNode(freq, gain)
         adapter.nodes.add(node)
         editorNodeUuid = node.uuid
+        lastEditedNodeUuid = node.uuid
+
         Timber.d(
-            "editorApply: tracking new added node $editorNodeUuid " +
-                "for $freq Hz with $gain dB (source: editorApply/add)"
+            "editorApply: added node ${node.uuid} for $freq Hz with $gain dB " +
+                "(source: editorApply/add)"
         )
     } else {
-        Timber.d("editorApply: modifying node $editorNodeUuid")
-        val index = adapter.nodes.indexOfFirst { it.uuid == uuid }
+        // Modify existing node
+        Timber.d("editorApply: modifying node $currentUuid")
+        val index = adapter.nodes.indexOfFirst { it.uuid == currentUuid }
         if (index < 0) {
             Timber.e("editorApply: failed to find matching node UUID")
         } else {
-            adapter.nodes[index] = GraphicEqNode(freq, gain, uuid)
+            val node = GraphicEqNode(freq, gain, currentUuid)
+            adapter.nodes[index] = node
+            lastEditedNodeUuid = node.uuid
+
             Timber.d(
-                "tracking node UUID $uuid (unchanged) for $freq Hz with $gain dB " +
+                "tracking node UUID $currentUuid (unchanged) for $freq Hz with $gain dB " +
                     "(source: editorApply/modify)"
             )
         }
     }
 
-    // After node created or modified, remember last edited
-    lastEditedNodeUuid = editorNodeUuid
+    // Keep the graph preview in sync while editing
+    binding.equalizerSurface.setNodes(adapter.nodes)
 }
 
 private fun editorDiscard() {
@@ -662,7 +681,6 @@ storeCurrentBankNodes()
 save()
 
 }
-
 private fun jumpToLastEdited() {
     val uuid = lastEditedNodeUuid ?: return
     val nodes = adapter.nodes
@@ -671,8 +689,16 @@ private fun jumpToLastEdited() {
     if (index < 0) return
 
     binding.nodeList.scrollToPosition(index)
-}
 
+    val node = nodes[index]
+    editorNodeBackup = node
+    editorNodeUuid = node.uuid
+    editorActive = true
+
+    binding.freqInput.valueDouble = node.freq.toDouble()
+    binding.gainInput.valueDouble = node.gain.toDouble()
+    updateViewState()
+}
 
 
 // ------------------------------------------------------------------------  
