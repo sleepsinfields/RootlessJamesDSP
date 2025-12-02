@@ -67,13 +67,23 @@ class PreferenceCache(val context: Context) {
         ): T {
             val name = context.getString(nameRes)
             val prefs = getPreferences(context, namespace)
-            val current: T = when(type) {
-                Boolean::class -> prefs.getBoolean(name, default as Boolean) as T
-                String::class -> prefs.getString(name, default as String) as T
-                Int::class -> prefs.getInt(name, default as Int) as T
-                Float::class -> prefs.getFloat(name, default as Float) as T
-                else -> throw IllegalArgumentException("Unknown type")
-            }
+            val current: T = when (type) {
+    Boolean::class -> prefs.getBoolean(name, default as Boolean) as T
+
+    String::class -> prefs.getString(name, default as String) as T
+
+    Int::class -> prefs.getInt(name, default as Int) as T
+
+    Float::class -> prefs.getFloat(name, default as Float) as T
+
+    Double::class -> {
+        // Stored as STRING internally so precision is preserved
+        val raw = prefs.getString(name, default.toString())!!
+        raw.toDoubleOrNull() as T? ?: default
+    }
+
+    else -> throw IllegalArgumentException("Unknown type")
+}
             return current
         }
 
