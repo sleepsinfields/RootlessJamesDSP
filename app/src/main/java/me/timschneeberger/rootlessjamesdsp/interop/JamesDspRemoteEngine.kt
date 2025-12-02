@@ -175,13 +175,14 @@ class JamesDspRemoteEngine(
     }
 
 
-    override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
+   override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
     var ret = true
     if (enable) {
-        // scaled is still a Float because AudioEffect uses shorts under the hood
-        val scaled = (level * 1000.0).toFloat()
-        ret = effect.setParameter(150, scaled.roundToInt().toShort()) == AudioEffect.SUCCESS
-        Log.e("TubeDebug", "RemoteEngine → DSP: level=$level scaled=$scaled")
+        ret = effect.setParameter(
+            150,
+            (level * 1000.0).roundToInt().toShort()
+        ) == AudioEffect.SUCCESS 
+Log.e("TubeDebug", "RemoteEngine → DSP: level=$level scaled=$scaled")
     }
     return ret && (effect.setParameter(1206, enable.toShort()) == AudioEffect.SUCCESS)
 }
