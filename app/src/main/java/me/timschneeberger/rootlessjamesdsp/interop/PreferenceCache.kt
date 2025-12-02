@@ -67,7 +67,8 @@ class PreferenceCache(val context: Context) {
         ): T {
             val name = context.getString(nameRes)
             val prefs = getPreferences(context, namespace)
-            val current: T = when (type) {
+            
+val current: T = when (type) {
     Boolean::class -> prefs.getBoolean(name, default as Boolean) as T
 
     String::class -> prefs.getString(name, default as String) as T
@@ -77,9 +78,20 @@ class PreferenceCache(val context: Context) {
     Float::class -> prefs.getFloat(name, default as Float) as T
 
     Double::class -> {
-        // Stored as STRING internally so precision is preserved
-        val raw = prefs.getString(name, default.toString())!!
-        raw.toDoubleOrNull() as T? ?: default
+        // Try string-based storage first (full precision)
+        try {
+            val raw = prefs.getString(name, null)
+            if (!raw.isNullOrBlank()) {
+                raw.toDoubleOrNull()?.let { return it as T }
+            }
+        } catch (_: ClassCastException) {
+            // fall through to legacy float path
+        }
+
+        // Legacy fallback: value may be stored as Float
+        val def = default as Double
+        val legacyFloat = prefs.getFloat(name, def.toFloat())
+        legacyFloat.toDouble() as T
     }
 
     else -> throw IllegalArgumentException("Unknown type")
