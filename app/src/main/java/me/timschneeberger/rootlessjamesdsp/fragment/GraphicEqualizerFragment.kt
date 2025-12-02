@@ -185,9 +185,6 @@ binding.gotoFreq.setOnClickListener {
     }
 }
 
-binding.jumpLastEdited.setOnClickListener {
-    jumpToLastEdited()
-}
 // Push restored UI state to switches
 binding.switchArbEqMaster.isChecked = savedMaster
 binding.switchArbEqLeft.isChecked   = savedLeft
@@ -557,21 +554,7 @@ private fun updateStereoArbEqFlags() {
     // save()
 }
 
-// new helper
-private fun gotoFrequency(targetHz: Double) {
-    val nodes = adapter.nodes
-    if (nodes.isEmpty()) return
 
-    var bestIndex = 0
-    var bestDiff = Double.MAX_VALUE
-
-    for (i in nodes.indices) {
-        val diff = kotlin.math.abs(nodes[i].freq - targetHz)
-        if (diff < bestDiff) {
-            bestDiff = diff
-            bestIndex = i
-        }
-    }
 
     // Scroll list to that node
     binding.nodeList.scrollToPosition(bestIndex)
@@ -607,6 +590,24 @@ private fun editorCanSave(): Boolean {
     return freqValid && gainValid  
 }  
 
+private fun gotoFrequency(targetHz: Double) {
+    val nodes = adapter.nodes
+    if (nodes.isEmpty()) return
+
+    var bestIndex = 0
+    var bestDiff = Double.MAX_VALUE
+
+    for (i in nodes.indices) {
+        val diff = kotlin.math.abs(nodes[i].freq - targetHz)
+        if (diff < bestDiff) {
+            bestDiff = diff
+            bestIndex = i
+        }
+    }
+
+    // Scroll list to that node
+    binding.nodeList.scrollToPosition(bestIndex)
+}
 private fun editorApply() {
     if (editorCanSave()) {
         lastEditedNodeUuid = uuid
@@ -638,6 +639,8 @@ private fun editorApply() {
                     "tracking node UUID $uuid (unchanged) for $freq Hz with $gain dB " +
                         "(source: editorApply/modify)"
                 )
+              // After node created or modified
+lastEditedNodeUuid = editorNodeUuid
             }
         }
     }
@@ -705,23 +708,15 @@ save()
 
 private fun jumpToLastEdited() {
     val uuid = lastEditedNodeUuid ?: return
+    val nodes = adapter.nodes
 
-    val index = adapter.nodes.indexOfFirst { it.uuid == uuid }
+    val index = nodes.indexOfFirst { it.uuid == uuid }
     if (index < 0) return
 
     binding.nodeList.scrollToPosition(index)
 }
 
-private fun gotoFrequency(freq: Double) {
-    if (adapter.nodes.isEmpty()) return
 
-    // Find nearest node by absolute distance
-    val target = adapter.nodes.minByOrNull { abs(it.freq - freq) } ?: return
-    val index = adapter.nodes.indexOf(target)
-
-    if (index >= 0)
-        binding.nodeList.scrollToPosition(index)
-}
 
 // ------------------------------------------------------------------------  
 // Misc (orientation, save)  
