@@ -468,21 +468,6 @@ val nodeAdapter = GraphicEqNodeAdapter(nodesForAdapter).apply {
             save()   // only auto-save when not reverting
         }
     }
-
-    onItemClicked = { node: GraphicEqNode, _: Int ->
-    editorNodeBackup = node
-    editorNodeUuid = node.uuid
-    editorActive = true
-
-    onItemClicked = { node: GraphicEqNode, _: Int ->
-    editorNodeBackup = node
-    editorNodeUuid = node.uuid
-    editorActive = true
-
-    binding.freqInput.value = node.freq.toFloat()
-    binding.gainInput.value = node.gain.toFloat()
-    updateViewState()
-}
 }
 
 binding.nodeList.adapter = nodeAdapter
