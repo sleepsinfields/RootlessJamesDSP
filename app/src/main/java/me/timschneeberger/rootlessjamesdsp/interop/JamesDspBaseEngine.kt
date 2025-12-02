@@ -126,13 +126,41 @@ abstract class JamesDspBaseEngine(
             cache.select(Constants.PREF_TUBE)
             val tubeEnabled = cache.get(R.string.key_tube_enable, false)
            
-// 1) Read as Float so PreferenceCache uses getFloat()
-val tubeDriveFloat: Float = cache.get(R.string.key_tube_drive, 2f)
+val tubeDrive = cache.getDoubleTube(R.string.key_tube_drive, 2.0)
 
-// 2) Widen to Double for the double-precision chain
-val tubeDrive: Double = tubeDriveFloat.toDouble()
+// Pseudocode – adapt to your actual PreferenceCache style
+fun getDoubleTube(@StringRes keyRes: Int, default: Double): Double {
+    val key = context.getString(keyRes)
+    val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
+    // First try the new String-backed representation
+    prefs.getString(key, null)?.let { s ->
+        s.toDoubleOrNull()?.let { return it }
+    }
 
+    // Legacy fallback: if value is still stored as float, use that
+    return try {
+        if (prefs.contains(key)) {
+            prefs.getFloat(key, default.toFloat()).toDouble()
+        } else {
+            default
+        }
+    } catch (e: ClassCastException) {
+        // In case there’s some weird leftover type, just fall back
+        default
+    }
+}
+
+fun putDoubleTube(@StringRes keyRes: Int, value: Double) {
+    val key = context.getString(keyRes)
+    val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+
+    // 15 decimal places, trimmed
+    val df = DecimalFormat("0.###############", DecimalFormatSymbols(Locale.US))
+    val text = df.format(value)
+
+    prefs.edit().putString(key, text).apply()
+}
 
 
             cache.select(Constants.PREF_DDC)
