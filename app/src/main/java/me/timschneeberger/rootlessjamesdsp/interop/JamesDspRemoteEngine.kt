@@ -177,14 +177,12 @@ class JamesDspRemoteEngine(
 
     override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
     var ret = true
-
     if (enable) {
-        // level is Double; keep math in Double, then quantize at the very end
-        val scaled = (level * 1000.0).roundToInt().toShort()
-        ret = effect.setParameter(150, scaled) == AudioEffect.SUCCESS
+        ret = effect.setParameter(
+            150,
+            (level * 1000.0).roundToInt().toShort()
+        ) == AudioEffect.SUCCESS
     }
-
-    // Enable/disable still just a boolean flag
     return ret && (effect.setParameter(1206, enable.toShort()) == AudioEffect.SUCCESS)
 }
 
