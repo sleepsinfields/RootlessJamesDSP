@@ -125,7 +125,14 @@ abstract class JamesDspBaseEngine(
 
             cache.select(Constants.PREF_TUBE)
             val tubeEnabled = cache.get(R.string.key_tube_enable, false)
-            val tubeDrive = cache.get(R.string.key_tube_drive, 2f)
+           
+// 1) Read as String so we don't lose precision to Float
+val tubeDriveString = cache.get(R.string.key_tube_drive, "2.0")
+
+// 2) Parse to Double (fallback to 2.0 if weird)
+val tubeDrive: Double = tubeDriveString.toDoubleOrNull() ?: 2.0
+
+
 
             cache.select(Constants.PREF_DDC)
             val ddcEnabled = cache.get(R.string.key_ddc_enable, false)
@@ -175,7 +182,10 @@ abstract class JamesDspBaseEngine(
                     Constants.PREF_REVERB -> setReverb(reverbEnabled, reverbPreset)
                     Constants.PREF_STEREOWIDE -> setStereoEnhancement(swEnabled, swMode)
                     Constants.PREF_CROSSFEED -> setCrossfeed(crossfeedEnabled, crossfeedMode)
-                    Constants.PREF_TUBE -> setVacuumTube(tubeEnabled, tubeDrive)
+               
+// 3) Call the engine with Double
+Constants.PREF_TUBE -> setVacuumTube(tubeEnabled, tubeDrive)
+
                     Constants.PREF_DDC -> setVdc(ddcEnabled, ddcFile)
                     Constants.PREF_LIVEPROG -> setLiveprog(liveProgEnabled, liveprogFile)
                     Constants.PREF_CONVOLVER -> setConvolver(
@@ -406,7 +416,7 @@ fun setStereoArbEqFlags(
     abstract fun setCrossfeedCustom(enable: Boolean, fcut: Int, feed: Int): Boolean
     abstract fun setBassBoost(enable: Boolean, maxGain: Float): Boolean
     abstract fun setStereoEnhancement(enable: Boolean, level: Float): Boolean
-    abstract fun setVacuumTube(enable: Boolean, level: Float): Boolean
+    abstract fun setVacuumTube(enable: Boolean, level: Double): Boolean
 
     protected abstract fun setMultiEqualizerInternal(
         enable: Boolean,
