@@ -128,7 +128,9 @@ val tubeEnabled = cache.get(R.string.key_tube_enable, false)
 
 // Read as Float from cache, then convert to Double
 val tubeDrive = cache.get(R.string.key_tube_drive, 2f).toDouble()
-
+//
+Log.e("TubeDebug", "syncWithPreferences: enabled=$tubeEnabled drive=$tubeDrive")
+//
 
             cache.select(Constants.PREF_DDC)
             val ddcEnabled = cache.get(R.string.key_ddc_enable, false)
