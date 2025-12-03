@@ -47,35 +47,36 @@ class PreferenceCache(val context: Context) {
     fun markChangesAsCommitted() {
         changedNamespaces.clear()
     }
-// 
-fun getDoubleTube(@StringRes keyRes: Int, default: Double): Double {
-    val key = context.getString(keyRes)
-    val prefs = getPreferences(context, selectedNamespace!!)
-
-    val raw = prefs.all[key] ?: return default
-
-    return when (raw) {
-        is Float -> raw.toDouble()
-        is Int   -> raw.toDouble()
-        is String -> raw.toDoubleOrNull() ?: default
-        else -> default
-    }
-}
 //
-fun putDouble(@StringRes keyRes: Int, value: Double) {
+fun getDoubleTube(@StringRes nameRes: Int, default: Double): Double {
     if (selectedNamespace == null)
         throw IllegalStateException("No active namespace selected")
 
-    val key = context.getString(keyRes)
+    val key = context.getString(nameRes)
     val prefs = getPreferences(context, selectedNamespace!!)
 
-    // Store as string to preserve full precision (up to the 15–17 digits Double supports)
-    prefs.edit()
-        .putString(key, value.toString())
-        .apply()
+    return try {
+        // Normal case: value stored as float by MaterialSeekbarPreference
+        val storedFloat = prefs.getFloat(key, default.toFloat())
 
-    // Update in-memory cache so readback matches
-    cache[key] = value
+        // Pretend the user *saw* this value in the dialog and hit OK:
+        // 1) format it like the dialog would
+        // 2) parse that string back to a Double
+        //
+        // Use 17 decimals to match your “sounds best at 17 places” tests.
+        val asString = String.format(Locale.ROOT, "%.17f", storedFloat.toDouble())
+        asString.toDouble()
+    } catch (e: ClassCastException) {
+        // Legacy / experimental cases where we might have stored a String
+        val asString = prefs.getString(key, null)
+        asString?.toDoubleOrNull() ?: default
+    }
+}
+// 
+fun putDouble(@StringRes keyRes: Int, value: Double) {
+    val key = context.getString(keyRes)
+    val prefs = getPreferences(context, selectedNamespace!!)
+    prefs.edit().putString(key, value.toString()).apply()
 }
 // 
     companion object {
