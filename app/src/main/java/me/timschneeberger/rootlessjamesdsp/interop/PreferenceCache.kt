@@ -48,6 +48,19 @@ class PreferenceCache(val context: Context) {
         changedNamespaces.clear()
     }
 // 
+fun getDoubleTube(@StringRes keyRes: Int, default: Double): Double {
+    val key = context.getString(keyRes)
+    val prefs = getPreferences(context, selectedNamespace ?: error("No active namespace selected"))
+
+    val raw = prefs.getString(key, null)
+        ?: return default
+
+    // Parse as Double first, fallback to Float if old version stored it as float
+    return raw.toDoubleOrNull()
+        ?: raw.toFloatOrNull()?.toDouble()
+        ?: default
+}
+//
 fun putDouble(@StringRes keyRes: Int, value: Double) {
     if (selectedNamespace == null)
         throw IllegalStateException("No active namespace selected")
