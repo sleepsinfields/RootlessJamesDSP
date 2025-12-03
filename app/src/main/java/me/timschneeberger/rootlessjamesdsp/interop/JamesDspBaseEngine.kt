@@ -213,8 +213,10 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                     Constants.PREF_STEREOWIDE -> setStereoEnhancement(swEnabled, swMode)
                     Constants.PREF_CROSSFEED -> setCrossfeed(crossfeedEnabled, crossfeedMode)
                
-// 3) Call the engine with Double
-Constants.PREF_TUBE -> setVacuumTube(tubeEnabled, tubeDrive)
+Constants.PREF_TUBE -> {
+    // Tube is handled earlier via applyTubeIfChanged(...)
+    true
+}
 
                     Constants.PREF_DDC -> setVdc(ddcEnabled, ddcFile)
                     Constants.PREF_LIVEPROG -> setLiveprog(liveProgEnabled, liveprogFile)
