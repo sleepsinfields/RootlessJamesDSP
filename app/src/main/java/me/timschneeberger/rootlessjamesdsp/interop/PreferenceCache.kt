@@ -54,23 +54,20 @@ fun getDoubleTube(@StringRes keyRes: Int, default: Double): Double {
     }
 
     val key = context.getString(keyRes)
-    val prefs = Companion.getPreferences(context, selectedNamespace!!)
+    val prefs = getPreferences(context, selectedNamespace!!)
 
     return try {
-        // New style: stored as String
-        val raw = prefs.getString(key, null) ?: return default
-
-        raw.toDoubleOrNull()
-            ?: raw.toFloatOrNull()?.toDouble()
-            ?: default
+        // Normal path: stored as Float
+        prefs.getFloat(key, default.toFloat()).toDouble()
     } catch (e: ClassCastException) {
-        // Old style: was stored as a Float
-        val f = prefs.getFloat(key, default.toFloat())
+        // Migration path: it was stored as String in a previous build
+        val s = prefs.getString(key, default.toString()) ?: default.toString()
+        val d = s.toDoubleOrNull() ?: default
 
-        // Migrate it to String so next read won't crash
-        prefs.edit().putString(key, f.toString()).apply()
+        // Rewrite as Float so UI (getPersistedFloat) stops crashing
+        prefs.edit().putFloat(key, d.toFloat()).apply()
 
-        f.toDouble()
+        d
     }
 }
 //
