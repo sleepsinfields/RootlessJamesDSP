@@ -108,7 +108,7 @@ class JamesDspLocalEngine(
     }
 
    override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
-    return JdspWrapper.setVacuumTube(handle, enable, level.toFloat())
+    return JamesDspWrapper.setVacuumTube(handle, enable, level.toFloat())
 }
     override fun setMultiEqualizerInternal(
         enable: Boolean,
