@@ -170,7 +170,10 @@
     <string name="liveprog_edit">Open active script in built-in editor</string>
 
     <string name="tube_enable">Analog modelling</string>
+
     <string name="tube_drive">Preamp</string>
+
+<string name="key_tube_drive_precise">tube_drive_precise</string>
 
     <string name="output_control_header">Output control</string>
     <string name="output_limiter_threshold">Limiter threshold</string>
