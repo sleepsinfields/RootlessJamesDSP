@@ -10,6 +10,7 @@ import timber.log.Timber
 import java.util.Timer
 import kotlin.concurrent.schedule
 import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
+import android.util.Log
 
 class JamesDspLocalEngine(
     context: Context,
