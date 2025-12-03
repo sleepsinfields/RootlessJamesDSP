@@ -151,12 +151,16 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
 
             cache.select(Constants.PREF_TUBE)
 val tubeEnabled = cache.get(R.string.key_tube_enable, false)
-val tubeDrive   = cache.getDoubleTube(R.string.key_tube_drive, 2.0)
+val tubeDrive = cache.getDoubleTube(R.string.key_tube_drive, 2.0)
+
 Log.e(
     "TubeDebug",
-    "syncWithPreferences(engine=${System.identityHashCode(this)} " +
-    "ns=${cache.selectedNamespace} enabled=$tubeEnabled drive=$tubeDrive"
+    "syncWithPreferences(engine=${System.identityHashCode(this)}): " +
+    "enabled=$tubeEnabled drive=$tubeDrive"
 )
+
+// NEW:
+applyTubeIfChanged(tubeEnabled, tubeDrive)
 
 //
 
