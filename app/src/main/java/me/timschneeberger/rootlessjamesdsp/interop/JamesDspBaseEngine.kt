@@ -49,6 +49,31 @@ abstract class JamesDspBaseEngine(
         private const val ADV_DB_SCALE = 100000.0   // 0.00001 dB steps for thresholds
         private const val SHIFT_SCALE = 1000.0     // samples -> fixed-point
     }
+// 
+
+private var lastTubeEnabled: Boolean? = null
+private var lastTubeDrive: Double? = null
+
+private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
+    if (lastTubeEnabled == enabled && lastTubeDrive == drive) {
+        // No effective change, skip DSP call
+        Log.e(
+            "TubeDebug",
+            "applyTubeIfChanged: skipping DSP call (same as last) enabled=$enabled drive=$drive"
+        )
+        return
+    }
+
+    lastTubeEnabled = enabled
+    lastTubeDrive = drive
+
+    Log.e(
+        "TubeDebug",
+        "applyTubeIfChanged: calling setVacuumTube enabled=$enabled drive=$drive"
+    )
+    setVacuumTube(enabled, drive)
+}
+// 
 
     // ---- Lifecycle ----
 
