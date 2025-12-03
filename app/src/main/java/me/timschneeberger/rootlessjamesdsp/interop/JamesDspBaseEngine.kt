@@ -48,13 +48,14 @@ abstract class JamesDspBaseEngine(
         // Scaling constants for advanced convolver parameters
         private const val ADV_DB_SCALE = 100000.0   // 0.00001 dB steps for thresholds
         private const val SHIFT_SCALE = 1000.0     // samples -> fixed-point
+private const val TUBE_EPS = 1e-8  // or even 1e-7 if you want it stricter
     }
 // 
 
 private var lastTubeEnabled: Boolean? = null
 private var lastTubeDrive: Double? = null
 
-private const val TUBE_EPS = 1e-6  // or even 1e-7 if you want it stricter
+
 
 private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
     val unchanged =
