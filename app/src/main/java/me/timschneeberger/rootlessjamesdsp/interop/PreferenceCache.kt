@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.annotation.StringRes
 import me.timschneeberger.rootlessjamesdsp.flavor.CrashlyticsImpl
 import kotlin.reflect.KClass
+import java.util.Locale
 
 class PreferenceCache(val context: Context) {
     val changedNamespaces = ArrayList<String>()
