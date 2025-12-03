@@ -126,18 +126,13 @@ abstract class JamesDspBaseEngine(
 
             cache.select(Constants.PREF_TUBE)
 val tubeEnabled = cache.get(R.string.key_tube_enable, false)
-val tubeDrive   = cache.get(R.string.key_tube_drive, 2.0)  // Double
-
+val tubeDrive   = cache.getDoubleTube(R.string.key_tube_drive, 2.0)
 Log.e(
     "TubeDebug",
-    "syncWithPreferences(engine=${System.identityHashCode(this)}): " +
-        "enabled=$tubeEnabled drive=$tubeDrive"
+    "syncWithPreferences(engine=${System.identityHashCode(this)} " +
+    "ns=${cache.selectedNamespace} enabled=$tubeEnabled drive=$tubeDrive"
 )
 
-Log.e(
-    "TubeDebug",
-    "syncWithPreferences(engine=${System.identityHashCode(this)}): enabled=$tubeEnabled drive=$tubeDrive"
-)
 //
 
             cache.select(Constants.PREF_DDC)
