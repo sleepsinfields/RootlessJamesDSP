@@ -14,6 +14,7 @@ import me.timschneeberger.rootlessjamesdsp.utils.extensions.ContextExtensions.un
 import me.timschneeberger.rootlessjamesdsp.utils.preferences.Preferences
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import android.util.Log
 
 abstract class JamesDspBasePlugin : KoinComponent, AutoCloseable {
     protected val context: Context by inject()
