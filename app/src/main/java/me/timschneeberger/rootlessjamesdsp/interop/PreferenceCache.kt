@@ -49,16 +49,29 @@ class PreferenceCache(val context: Context) {
     }
 // 
 fun getDoubleTube(@StringRes keyRes: Int, default: Double): Double {
+    if (selectedNamespace == null) {
+        throw IllegalStateException("No active namespace selected")
+    }
+
     val key = context.getString(keyRes)
-    val prefs = getPreferences(context, selectedNamespace ?: error("No active namespace selected"))
+    val prefs = Companion.getPreferences(context, selectedNamespace!!)
 
-    val raw = prefs.getString(key, null)
-        ?: return default
+    return try {
+        // New style: stored as String
+        val raw = prefs.getString(key, null) ?: return default
 
-    // Parse as Double first, fallback to Float if old version stored it as float
-    return raw.toDoubleOrNull()
-        ?: raw.toFloatOrNull()?.toDouble()
-        ?: default
+        raw.toDoubleOrNull()
+            ?: raw.toFloatOrNull()?.toDouble()
+            ?: default
+    } catch (e: ClassCastException) {
+        // Old style: was stored as a Float
+        val f = prefs.getFloat(key, default.toFloat())
+
+        // Migrate it to String so next read won't crash
+        prefs.edit().putString(key, f.toString()).apply()
+
+        f.toDouble()
+    }
 }
 //
 fun putDouble(@StringRes keyRes: Int, value: Double) {
