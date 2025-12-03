@@ -81,6 +81,46 @@ fun putDouble(@StringRes keyRes: Int, value: Double) {
 }
 // 
     companion object {
+//
+// High-precision tube helpers: keep UI float separate from DSP double
+fun getTubeDouble(
+    context: Context,
+    @StringRes floatKeyRes: Int,
+    @StringRes preciseKeyRes: Int,
+    default: Double
+): Double {
+    val prefs = getPreferences(context, Constants.PREF_TUBE)
+
+    val floatKey = context.getString(floatKeyRes)
+    val preciseKey = context.getString(preciseKeyRes)
+
+    // 1) If we ever stored a precise value as String, prefer that
+    prefs.getString(preciseKey, null)?.let { s ->
+        s.toDoubleOrNull()?.let { return it }
+    }
+
+    // 2) Fallback to the slider's float value
+    return try {
+        prefs.getFloat(floatKey, default.toFloat()).toDouble()
+    } catch (_: ClassCastException) {
+        // In case legacy installs had a weird type in there
+        default
+    }
+}
+
+fun putTubeDouble(
+    context: Context,
+    @StringRes preciseKeyRes: Int,
+    value: Double
+) {
+    val prefs = getPreferences(context, Constants.PREF_TUBE)
+    val preciseKey = context.getString(preciseKeyRes)
+
+    // Store as high-precision string, UI still uses float on the original key
+    val formatted = String.format(Locale.ROOT, "%.17f", value)
+    prefs.edit().putString(preciseKey, formatted).apply()
+}
+//
         @Suppress("DEPRECATION")
         fun getPreferences(
             context: Context,
