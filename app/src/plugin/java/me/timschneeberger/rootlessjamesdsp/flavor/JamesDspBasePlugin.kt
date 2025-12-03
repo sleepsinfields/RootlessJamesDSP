@@ -33,15 +33,23 @@ abstract class JamesDspBasePlugin : KoinComponent, AutoCloseable {
 
     // General purpose broadcast receiver
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                Constants.ACTION_SAMPLE_RATE_UPDATED -> engine.syncWithPreferences(arrayOf(Constants.PREF_CONVOLVER))
-                Constants.ACTION_PREFERENCES_UPDATED -> engine.syncWithPreferences()
-                Constants.ACTION_SERVICE_RELOAD_LIVEPROG -> engine.syncWithPreferences(arrayOf(Constants.PREF_LIVEPROG))
+    override fun onReceive(context: Context, intent: Intent) {
+        when (intent.action) {
+            Constants.ACTION_SAMPLE_RATE_UPDATED -> {
+                android.util.Log.e("TubeDebug", "BasePlugin: ACTION_SAMPLE_RATE_UPDATED -> syncWithPreferences(CONVOLVER)")
+                engine.syncWithPreferences(arrayOf(Constants.PREF_CONVOLVER))
+            }
+            Constants.ACTION_PREFERENCES_UPDATED -> {
+                android.util.Log.e("TubeDebug", "BasePlugin: ACTION_PREFERENCES_UPDATED -> syncWithPreferences(ALL)")
+                engine.syncWithPreferences()
+            }
+            Constants.ACTION_SERVICE_RELOAD_LIVEPROG -> {
+                android.util.Log.e("TubeDebug", "BasePlugin: ACTION_SERVICE_RELOAD_LIVEPROG -> syncWithPreferences(LIVEPROG)")
+                engine.syncWithPreferences(arrayOf(Constants.PREF_LIVEPROG))
             }
         }
     }
-
+}
     init {
         preferences.registerOnSharedPreferenceChangeListener(onPreferenceChanged)
         // Setup general-purpose broadcast receiver
@@ -54,8 +62,11 @@ abstract class JamesDspBasePlugin : KoinComponent, AutoCloseable {
         })
         context.registerReceiver(broadcastReceiver, IntentFilter())
         engine.enabled = preferences.get<Boolean>(R.string.key_powered_on)
-        engine.syncWithPreferences()
-    }
+        init {
+    ...
+    android.util.Log.e("TubeDebug", "BasePlugin: init() -> syncWithPreferences()")
+    engine.syncWithPreferences()
+}
 
     override fun close() {
         context.unregisterLocalReceiver(broadcastReceiver)
