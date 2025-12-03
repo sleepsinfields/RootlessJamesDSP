@@ -108,6 +108,7 @@ class JamesDspLocalEngine(
     }
 
    override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
+    Log.e("TubeDebug", "LocalEngine.setVacuumTube enable=$enable levelDouble=$level levelFloat=${level.toFloat()}")
     return JamesDspWrapper.setVacuumTube(handle, enable, level.toFloat())
 }
     override fun setMultiEqualizerInternal(
