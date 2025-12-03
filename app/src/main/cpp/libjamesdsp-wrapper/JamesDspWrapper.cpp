@@ -703,20 +703,23 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(JNIEnv *env, jobject obj, jlong self,
-                                                                              jboolean enable, jfloat level)
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
+    JNIEnv *env, jobject obj, jlong self,
+    jboolean enable, jdouble level)   // ⬅ jfloat → jdouble
 {
     DECLARE_DSP_B
-    if(enable)
+    if (enable)
     {
-        VacuumTubeSetGain(dsp, level / 100.0f);
+        // level is now a double, keep the same scaling
+        VacuumTubeSetGain(dsp, level / 100.0);   // ⬅ drop the 'f' so this is double math
         VacuumTubeEnable(dsp);
     }
     else
     {
-        VacuumTubeDisable(dsp);
+        VacuumTubeDisable(dsp);  // if you already had this, keep it; if not, optional
     }
-    return true;
+
+    return JNI_TRUE;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
