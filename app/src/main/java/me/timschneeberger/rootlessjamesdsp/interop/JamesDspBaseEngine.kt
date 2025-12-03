@@ -159,7 +159,14 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
 
             cache.select(Constants.PREF_TUBE)
 val tubeEnabled = cache.get(R.string.key_tube_enable, false)
-val tubeDrive = cache.getDoubleTube(R.string.key_tube_drive, 2.0)
+
+// Get double: prefer precise string, fallback to slider float
+val tubeDrive = PreferenceCache.getTubeDouble(
+    context,
+    R.string.key_tube_drive,           // slider's float key
+    R.string.key_tube_drive_precise,   // hidden precise key
+    2.0
+)
 
 Log.e(
     "TubeDebug",
@@ -169,6 +176,13 @@ Log.e(
 
 // NEW:
 applyTubeIfChanged(tubeEnabled, tubeDrive)
+
+// Every time we decide this is the canonical drive, remember it precisely
+PreferenceCache.putTubeDouble(
+    context,
+    R.string.key_tube_drive_precise,
+    tubeDrive
+)
 
 //
 
