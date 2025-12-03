@@ -142,8 +142,14 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
             val eqBands = cache.get(R.string.key_eq_bands, Constants.DEFAULT_EQ)
 
             cache.select(Constants.PREF_GEQ)
-            val geqEnabled = cache.get(R.string.key_geq_enable, false)
-            val geqBands = cache.get(R.string.key_geq_nodes, Constants.DEFAULT_GEQ_INTERNAL)
+val geqEnabled = cache.get(R.string.key_geq_enable, false)
+val geqBands = cache.get(R.string.key_geq_nodes, Constants.DEFAULT_GEQ_INTERNAL)
+
+Log.e(
+    "GeqDebug",
+    "syncWithPreferences(engine=${System.identityHashCode(this)}): " +
+        "geqEnabled=$geqEnabled bands=${geqBands.take(80)}..."
+)
 
             cache.select(Constants.PREF_REVERB)
             val reverbEnabled = cache.get(R.string.key_reverb_enable, false)
