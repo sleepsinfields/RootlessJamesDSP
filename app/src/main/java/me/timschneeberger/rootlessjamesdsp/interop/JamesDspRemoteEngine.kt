@@ -177,17 +177,17 @@ class JamesDspRemoteEngine(
 
 
    override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
+    // Scale Double → Short once, always
+    val scaled = (level * 1000.0).roundToInt().toShort()
+
+    Log.d("Tube", "Remote setVacuumTube enable=$enable level=$level scaled=$scaled")
+
     var ret = true
     if (enable) {
-        ret = effect.setParameter(
-            150,
-            (level * 1000.0).roundToInt().toShort()
-        ) == AudioEffect.SUCCESS 
-Log.e("TubeDebug", "RemoteEngine → DSP: level=$level scaled=$scaled")
+        ret = effect.setParameter(150, scaled) == AudioEffect.SUCCESS
     }
     return ret && (effect.setParameter(1206, enable.toShort()) == AudioEffect.SUCCESS)
 }
-
 
     override fun setMultiEqualizerInternal(
         enable: Boolean,
