@@ -8,15 +8,16 @@
         android:icon="@drawable/ic_baseline_led_outline_24dp"
         app:iconSpaceReserved="false">
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-            android:key="@string/key_tube_drive"
-            android:title="@string/tube_drive"
-            android:defaultValue="1.57"
-            app:minValue="-3"
-            app:maxValue="12"
-            app:unit="dB"
-            app:allowDividerAbove="false"
-            app:updatesContinuously="true"
-            app:showSeekBarValue="true"
-            app:iconSpaceReserved="false"/>
+    android:key="@string/key_tube_drive"
+    android:title="@string/tube_drive"
+    android:defaultValue="1.57"
+    app:minValue="-3"
+    app:maxValue="12"
+    app:unit="dB"
+    app:precision="17"
+    app:allowDividerAbove="false"
+    app:updatesContinuously="true"
+    app:showSeekBarValue="true"
+    app:iconSpaceReserved="false"/>
     </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
 </PreferenceScreen>
