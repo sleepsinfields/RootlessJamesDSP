@@ -113,7 +113,7 @@ external fun setCrossfeed(
 
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
-    external fun setVacuumTube(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
+    external fun setVacuumTube(self: JamesDspHandle, enable: Boolean, level: Double): Boolean
     external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
 
     // EEL VM utilities
