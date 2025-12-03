@@ -54,12 +54,19 @@ abstract class JamesDspBaseEngine(
 private var lastTubeEnabled: Boolean? = null
 private var lastTubeDrive: Double? = null
 
+private const val TUBE_EPS = 1e-6  // or even 1e-7 if you want it stricter
+
 private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
-    if (lastTubeEnabled == enabled && lastTubeDrive == drive) {
-        // No effective change, skip DSP call
+    val unchanged =
+        lastTubeEnabled == enabled &&
+        lastTubeDrive != null &&
+        kotlin.math.abs(lastTubeDrive!! - drive) < TUBE_EPS
+
+    if (unchanged) {
         Log.e(
             "TubeDebug",
-            "applyTubeIfChanged: skipping DSP call (same as last) enabled=$enabled drive=$drive"
+            "applyTubeIfChanged: skipping DSP call (same as last within eps) " +
+            "enabled=$enabled drive=$drive last=$lastTubeDrive"
         )
         return
     }
