@@ -133,6 +133,11 @@ Log.e(
     "syncWithPreferences(engine=${System.identityHashCode(this)}): " +
         "enabled=$tubeEnabled drive=$tubeDrive"
 )
+
+Log.e(
+    "TubeDebug",
+    "syncWithPreferences(engine=${System.identityHashCode(this)}): enabled=$tubeEnabled drive=$tubeDrive"
+)
 //
 
             cache.select(Constants.PREF_DDC)
