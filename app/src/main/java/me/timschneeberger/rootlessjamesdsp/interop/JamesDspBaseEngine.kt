@@ -18,7 +18,12 @@ import timber.log.Timber
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileReader
-import android.util.Log
+import android.util.Log 
+import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
+
+//
+
+
 
 abstract class JamesDspBaseEngine(
     val context: Context,
@@ -81,8 +86,55 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
     )
     setVacuumTube(enabled, drive)
 }
-// 
 
+    // ---- New helper: apply stereo GEQ the same way the UI does ----
+
+    private fun applyStereoGeqFromPrefs(geqEnabled: Boolean): Boolean {
+        // If GEQ is off, just disable it at the DSP and bail out
+        if (!geqEnabled) {
+            Timber.e("GeqDebug", "applyStereoGeqFromPrefs: GEQ disabled -> setGraphicEq(false)")
+            // Fallback: call the existing single-bank path with enable=false
+            return setGraphicEq(false, Constants.DEFAULT_GEQ_INTERNAL)
+        }
+
+        val prefs = PreferenceCache.getPreferences(context, Constants.PREF_GEQ)
+
+        // These keys are defined as const vals in GraphicEqualizerFragment
+        val masterRaw = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_MASTER, null)
+        val leftRaw   = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_LEFT,   null)
+        val rightRaw  = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_RIGHT,  null)
+
+        Timber.e(
+            "GeqDebug",
+            "applyStereoGeqFromPrefs: enabled=$geqEnabled\n" +
+            "  masterRaw=${masterRaw?.take(64)}\n" +
+            "  leftRaw=${leftRaw?.take(64)}\n" +
+            "  rightRaw=${rightRaw?.take(64)}"
+        )
+
+        // If the LocalEngine is active, use the stereo helper
+        if (this is JamesDspLocalEngine) {
+            // This will go through JamesDspWrapper.updateStereoGraphicEq(...)
+            val ok = this.updateStereoGraphicEq(masterRaw, leftRaw, rightRaw)
+            if (!ok) {
+                Timber.e("GeqDebug", "applyStereoGeqFromPrefs: updateStereoGraphicEq() failed")
+            }
+            return ok
+        }
+
+        // Fallback for other engines (root flavor etc.): use single-bank
+        val fallback = masterRaw
+            ?: prefs.getString(
+                context.getString(R.string.key_geq_nodes),
+                Constants.DEFAULT_GEQ_INTERNAL
+            )!!
+
+        Timber.e(
+            "GeqDebug",
+            "applyStereoGeqFromPrefs: non-local engine, falling back to setGraphicEq(true, fallback)"
+        )
+        return setGraphicEq(true, fallback)
+    }
     // ---- Lifecycle ----
 
     override fun close() {
@@ -222,7 +274,7 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                         eqBands
                     )
 
-                    Constants.PREF_GEQ -> setGraphicEq(geqEnabled, geqBands)
+                    Constants.PREF_GEQ -> applyStereoGeqFromPrefs(geqEnabled)
                     Constants.PREF_REVERB -> setReverb(reverbEnabled, reverbPreset)
                     Constants.PREF_STEREOWIDE -> setStereoEnhancement(swEnabled, swMode)
                     Constants.PREF_CROSSFEED -> setCrossfeed(crossfeedEnabled, crossfeedMode)
