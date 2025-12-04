@@ -114,6 +114,20 @@ external fun setCrossfeed(
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
     external fun setVacuumTube(self: JamesDspHandle, enable: Boolean, level: Double): Boolean
+//
+
+// NEW: set tube shape (0f = square, 1f = cube)
+external fun setVacuumTubeShape(
+    self: JamesDspHandle,
+    mix: Float
+): Boolean
+
+// Optional convenience wrapper
+fun setTubeShape(self: JamesDspHandle, mix: Float): Boolean {
+    val clamped = mix.coerceIn(0f, 1f)
+    return setVacuumTubeShape(self, clamped)
+}
+//
     external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
 
     // EEL VM utilities
