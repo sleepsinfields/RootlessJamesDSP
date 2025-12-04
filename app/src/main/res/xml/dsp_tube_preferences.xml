@@ -14,7 +14,7 @@
     app:minValue="-3"
     app:maxValue="12"
     app:unit="dB"
-    app:precision="17"
+    app:precision="20"
     app:allowDividerAbove="false"
     app:updatesContinuously="true"
     app:showSeekBarValue="true"
