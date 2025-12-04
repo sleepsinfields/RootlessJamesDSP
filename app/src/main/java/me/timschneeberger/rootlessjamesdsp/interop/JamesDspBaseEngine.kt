@@ -171,17 +171,20 @@ Log.e(
 
             cache.select(Constants.PREF_TUBE)
 val tubeEnabled = cache.get(R.string.key_tube_enable, false)
-val tubeDrive = cache.getDoubleTube(R.string.key_tube_drive, 2.0)
+val tubeDrive = PreferenceCache.getTubeDouble(
+    context,
+    floatKeyRes   = R.string.key_tube_drive,
+    preciseKeyRes = R.string.key_tube_drive_precise,
+    default       = 2.0
+)
 
 Log.e(
     "TubeDebug",
     "syncWithPreferences(engine=${System.identityHashCode(this)}): " +
-    "enabled=$tubeEnabled drive=$tubeDrive"
+        "enabled=$tubeEnabled drive=$tubeDrive"
 )
 
-// NEW:
 applyTubeIfChanged(tubeEnabled, tubeDrive)
-
 //
 
             cache.select(Constants.PREF_DDC)
