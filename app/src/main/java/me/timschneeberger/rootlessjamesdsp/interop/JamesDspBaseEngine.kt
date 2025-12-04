@@ -20,6 +20,7 @@ import java.io.FileNotFoundException
 import java.io.FileReader
 import android.util.Log 
 import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
+import me.timschneeberger.rootlessjamesdsp.interop.JamesDspLocalEngine
 
 //
 
@@ -112,17 +113,20 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
             "  rightRaw=${rightRaw?.take(64)}"
         )
 
-        // If the LocalEngine is active, use the stereo helper
-        if (this is JamesDspLocalEngine) {
-            // This will go through JamesDspWrapper.updateStereoGraphicEq(...)
-            val ok = this.updateStereoGraphicEq(masterRaw, leftRaw, rightRaw)
-            if (!ok) {
-                Timber.e("GeqDebug", "applyStereoGeqFromPrefs: updateStereoGraphicEq() failed")
-            }
-            return ok
+      
+
+        // For the local engine, do the same thing the UI does:
+        // pretend user just applied the current M/L/R banks.
+        val local = this as? JamesDspLocalEngine
+        if (local != null) {
+            Timber.e(
+                "GeqDebug",
+                "applyStereoGeqFromPrefs: using stereo M/L/R via updateStereoGraphicEq()"
+            )
+            return local.updateStereoGraphicEq(masterRaw, leftRaw, rightRaw)
         }
 
-        // Fallback for other engines (root flavor etc.): use single-bank
+        // Safety fallback for non-local engines (if any ever exist)
         val fallback = masterRaw
             ?: prefs.getString(
                 context.getString(R.string.key_geq_nodes),
@@ -274,7 +278,16 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                         eqBands
                     )
 
-                    Constants.PREF_GEQ -> applyStereoGeqFromPrefs(geqEnabled)
+                    
+Constants.PREF_GEQ -> {
+    if (this is JamesDspLocalEngine) {
+        // Use the new “pretend the user applied M/L/R” path
+        applyStereoGeqFromPrefs(geqEnabled)
+    } else {
+        // Remote/other engines: fall back to single-bank behavior
+        setGraphicEq(geqEnabled, geqBands)
+    }
+}
                     Constants.PREF_REVERB -> setReverb(reverbEnabled, reverbPreset)
                     Constants.PREF_STEREOWIDE -> setStereoEnhancement(swEnabled, swMode)
                     Constants.PREF_CROSSFEED -> setCrossfeed(crossfeedEnabled, crossfeedMode)
