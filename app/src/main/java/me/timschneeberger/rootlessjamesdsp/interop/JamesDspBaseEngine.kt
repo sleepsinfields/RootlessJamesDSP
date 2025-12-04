@@ -280,13 +280,17 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
 
                     
 Constants.PREF_GEQ -> {
-    if (this is JamesDspLocalEngine) {
-        // Use stereo M/L/R behavior like the UI
-        this.applyStereoGraphicEqFromPrefs(geqEnabled, geqBands)
+    val ok = if (this is JamesDspLocalEngine) {
+        // Use the LocalEngine helper that reads M/L/R from prefs
+        this.applyStereoGraphicEqFromPrefs(
+            geqEnabled = geqEnabled,
+            fallbackBands = geqBands
+        )
     } else {
-        // Other engines (if any) keep old single-bank behavior
+        // Non-local engines keep old mono behavior
         setGraphicEq(geqEnabled, geqBands)
     }
+    ok
 }
                     Constants.PREF_REVERB -> setReverb(reverbEnabled, reverbPreset)
                     Constants.PREF_STEREOWIDE -> setStereoEnhancement(swEnabled, swMode)
