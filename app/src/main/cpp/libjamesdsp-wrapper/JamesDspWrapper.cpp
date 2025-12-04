@@ -722,6 +722,24 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     return JNI_TRUE;
 }
 
+//
+extern "C" JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeShape(
+        JNIEnv *env, jclass, jlong self,
+        jfloat mix)
+{
+    auto *jdsp = reinterpret_cast<JamesDSPLib *>(self);
+    if (!jdsp) return JNI_FALSE;
+
+    // Clamp and forward to C API
+    double m = (double)mix;
+    if (m < 0.0) m = 0.0;
+    if (m > 1.0) m = 1.0;
+
+    VacuumTubeSetShape(jdsp, m);
+    return JNI_TRUE;
+}
+//
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setLiveprog(JNIEnv *env, jobject obj, jlong self,
                                                                             jboolean enable, jstring id, jstring liveprogContent)
