@@ -201,8 +201,8 @@ fun updateStereoGraphicEq(
 ): Boolean {
     Timber.e(
         "GeqDebug",
-        "LocalEngine.updateStereoGraphicEq: " +
-        "master=${master?.take(64)} left=${left?.take(64)} right=${right?.take(64)}"
+        "LocalEngine.updateStereoGraphicEq: master=${master?.take(64)} " +
+        "left=${left?.take(64)} right=${right?.take(64)}"
     )
     return JamesDspWrapper.updateStereoGraphicEq(handle, master, left, right)
 }
