@@ -5,15 +5,31 @@
 #include <float.h>
 #include "../jdsp_header.h"
 
+#define VT_NORM_SQ 2.0                         // 1 / 0.5
+#define VT_NORM_CU 1.3333333333333333          // 1 / 0.75
+
+static inline double vt_nonlinear(double x, double mix)
+{
+    // x^2 and x^3
+    double sq = x * x;
+    double cu = sq * x;
+
+    // normalize RMS: square ~0.5, cube ~0.75
+    double sq_norm = sq * VT_NORM_SQ;
+    double cu_norm = cu * VT_NORM_CU;
+
+    // crossfade
+    return (1.0 - mix) * sq_norm + mix * cu_norm;
+}
+
 void VTInit(VacuumTube *tb, double fs)
 {
     tb->pregain = 1.0f;
     tb->postgain = 1.0f;
     tb->needOversample = 0;
+    tb->shapeMix = 0.0f;  // default: square-only (original behavior)
 
-    // NEW: blend default
-    tb->shapeMix = 0.125; // 0 = square, 1 = cube
-
+//
     if (fs >= 65000.0)
     {
         oversample_makeSmp(&tb->smp[0], 2);
@@ -73,51 +89,38 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
 				bandCh2[3] = -bandCh2[3];
 				bandCh2[5] = -bandCh2[5];
 //
-				double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+		double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
 double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
-// --- squared (original tube flavor) ---
-double h2_2_sq = bandCh1[1] * bandCh1[1];
-double h3_2_sq = bandCh1[2] * bandCh1[2];
-double h4_2_sq = bandCh1[3] * bandCh1[3];
-double h5_2_sq = bandCh1[4] * bandCh1[4];
-double evenSumCh1 = h2_2_sq + h3_2_sq + h4_2_sq + h5_2_sq;
+double mix = (double)tb->shapeMix;
 
-double h2_2_sq_R = bandCh2[1] * bandCh2[1];
-double h3_2_sq_R = bandCh2[2] * bandCh2[2];
-double h4_2_sq_R = bandCh2[3] * bandCh2[3];
-double h5_2_sq_R = bandCh2[4] * bandCh2[4];
-double evenSumCh2 = h2_2_sq_R + h3_2_sq_R + h4_2_sq_R + h5_2_sq_R;
+// Per-band nonlinear (blend of x^2 and x^3, normalized)
+double nl2Ch1 = vt_nonlinear(bandCh1[1], mix);
+double nl3Ch1 = vt_nonlinear(bandCh1[2], mix);
+double nl4Ch1 = vt_nonlinear(bandCh1[3], mix);
+double nl5Ch1 = vt_nonlinear(bandCh1[4], mix);
 
-// --- cubic (more aggressive / “electric”) ---
-double h2_3_cu = h2_2_sq * bandCh1[1];
-double h3_3_cu = h3_2_sq * bandCh1[2];
-double h4_3_cu = h4_2_sq * bandCh1[3];
-double h5_3_cu = h5_2_sq * bandCh1[4];
-double oddSumCh1  = h2_3_cu + h3_3_cu + h4_3_cu + h5_3_cu;
+double nl2Ch2 = vt_nonlinear(bandCh2[1], mix);
+double nl3Ch2 = vt_nonlinear(bandCh2[2], mix);
+double nl4Ch2 = vt_nonlinear(bandCh2[3], mix);
+double nl5Ch2 = vt_nonlinear(bandCh2[4], mix);
 
-double h2_3_cu_R = h2_2_sq_R * bandCh2[1];
-double h3_3_cu_R = h3_2_sq_R * bandCh2[2];
-double h4_3_cu_R = h4_2_sq_R * bandCh2[3];
-double h5_3_cu_R = h5_2_sq_R * bandCh2[4];
-double oddSumCh2  = h2_3_cu_R + h3_3_cu_R + h4_3_cu_R + h5_3_cu_R;
-
-// --- blend square vs cube ----
-double mix = tb->shapeMix;           // 0 = square, 1 = cube
-double harmCh1 = (1.0 - mix) * evenSumCh1 + mix * oddSumCh1;
-double harmCh2 = (1.0 - mix) * evenSumCh2 + mix * oddSumCh2;
+// Sum the nonlinears like original sum of harmonics
+double nonlinearCh1 = (nl2Ch1 + nl3Ch1 + nl4Ch1 + nl5Ch1) * 0.2;
+double nonlinearCh2 = (nl2Ch2 + nl3Ch2 + nl4Ch2 + nl5Ch2) * 0.2;
 
 upsample[0][j] = (float)(
-    bandCh1[0]
-    + harmCh1 * 0.2
-    + allpassCh1
-    + bandCh1[5]
+    bandCh1[0] +
+    nonlinearCh1 +
+    allpassCh1 +
+    bandCh1[5]
 );
+
 upsample[1][j] = (float)(
-    bandCh2[0]
-    + harmCh2 * 0.2
-    + allpassCh2
-    + bandCh2[5]
+    bandCh2[0] +
+    nonlinearCh2 +
+    allpassCh2 +
+    bandCh2[5]
 );
 //
 			}
@@ -138,52 +141,36 @@ upsample[1][j] = (float)(
 			bandCh2[3] = -bandCh2[3];
 			bandCh2[5] = -bandCh2[5];
 //
-			double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+		double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
 double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
-// squared
-double h2_2_sq = bandCh1[1] * bandCh1[1];
-double h3_2_sq = bandCh1[2] * bandCh1[2];
-double h4_2_sq = bandCh1[3] * bandCh1[3];
-double h5_2_sq = bandCh1[4] * bandCh1[4];
-double evenSumCh1 = h2_2_sq + h3_2_sq + h4_2_sq + h5_2_sq;
+double mix = (double)tb->shapeMix;
 
-double h2_2_sq_R = bandCh2[1] * bandCh2[1];
-double h3_2_sq_R = bandCh2[2] * bandCh2[2];
-double h4_2_sq_R = bandCh2[3] * bandCh2[3];
-double h5_2_sq_R = bandCh2[4] * bandCh2[4];
-double evenSumCh2 = h2_2_sq_R + h3_2_sq_R + h4_2_sq_R + h5_2_sq_R;
+double nl2Ch1 = vt_nonlinear(bandCh1[1], mix);
+double nl3Ch1 = vt_nonlinear(bandCh1[2], mix);
+double nl4Ch1 = vt_nonlinear(bandCh1[3], mix);
+double nl5Ch1 = vt_nonlinear(bandCh1[4], mix);
 
-// cubic
-double h2_3_cu = h2_2_sq * bandCh1[1];
-double h3_3_cu = h3_2_sq * bandCh1[2];
-double h4_3_cu = h4_2_sq * bandCh1[3];
-double h5_3_cu = h5_2_sq * bandCh1[4];
-double oddSumCh1  = h2_3_cu + h3_3_cu + h4_3_cu + h5_3_cu;
+double nl2Ch2 = vt_nonlinear(bandCh2[1], mix);
+double nl3Ch2 = vt_nonlinear(bandCh2[2], mix);
+double nl4Ch2 = vt_nonlinear(bandCh2[3], mix);
+double nl5Ch2 = vt_nonlinear(bandCh2[4], mix);
 
-double h2_3_cu_R = h2_2_sq_R * bandCh2[1];
-double h3_3_cu_R = h3_2_sq_R * bandCh2[2];
-double h4_3_cu_R = h4_2_sq_R * bandCh2[3];
-double h5_3_cu_R = h5_2_sq_R * bandCh2[4];
-double oddSumCh2  = h2_3_cu_R + h3_3_cu_R + h4_3_cu_R + h5_3_cu_R;
-
-// blend
-double mix = tb->shapeMix;
-double harmCh1 = (1.0 - mix) * evenSumCh1 + mix * oddSumCh1;
-double harmCh2 = (1.0 - mix) * evenSumCh2 + mix * oddSumCh2;
+double nonlinearCh1 = (nl2Ch1 + nl3Ch1 + nl4Ch1 + nl5Ch1) * 0.25;
+double nonlinearCh2 = (nl2Ch2 + nl3Ch2 + nl4Ch2 + nl5Ch2) * 0.25;
 
 out1[j] = (float)(
-    bandCh1[0]
-    + harmCh1 * 0.25f
-    + allpassCh1
-    + bandCh1[5]
+    bandCh1[0] +
+    nonlinearCh1 +
+    allpassCh1 +
+    bandCh1[5]
 ) * tb->postgain;
 
 out2[j] = (float)(
-    bandCh2[0]
-    + harmCh2 * 0.25f
-    + allpassCh2
-    + bandCh2[5]
+    bandCh2[0] +
+    nonlinearCh2 +
+    allpassCh2 +
+    bandCh2[5]
 ) * tb->postgain;
 //
 		}
@@ -207,6 +194,17 @@ void VacuumTubeSetGain(JamesDSPLib *jdsp, double dbGain)
 	jdsp->tube.pregain = db2magf(dbGain);
 	jdsp->tube.postgain = 1.0f / jdsp->tube.pregain;
 }
+//
+void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
+{
+    if (mix < 0.0)
+        mix = 0.0;
+    if (mix > 1.0)
+        mix = 1.0;
+
+    jdsp->tube.shapeMix = (float)mix;
+}
+//
 void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n)
 {
 	VTProcess(&jdsp->tube, jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
