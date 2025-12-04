@@ -202,53 +202,81 @@ if (key == context.getString(R.string.key_tube_drive)) {
 }
 
         this.setOnPreferenceClickListener {
-            context.showInputAlert(
-                LayoutInflater.from(context), 
-                context.getString(R.string.slider_dialog_title),
-                title?.toString(),
-                "%.${mPrecision}f".format(Locale.ROOT, getValue()),
-                true,
-                mUnit
-            ) {
-                it ?: return@showInputAlert
-                try {
-    val enteredFloat = it.toFloat()
-    val enteredDouble = it.toDouble()
+    val prefs = sharedPreferences
 
-    if (mSeekBar.stepSize <= 0 || valueLandsOnTick(enteredFloat)) {
-        // 1) Persist high-precision string for tube drive
-        if (key == context.getString(R.string.key_tube_drive)) {
-            val prefs = sharedPreferences
-            if (prefs != null) {
-                val preciseKey = context.getString(R.string.key_tube_drive_precise)
-                val formatted = String.format(Locale.ROOT, "%.17f", enteredDouble)
-                prefs.edit().putString(preciseKey, formatted).apply()
-            }
-        }
+    // Decide what text to show in the dialog
+    val initialText: String = if (key == context.getString(R.string.key_tube_drive) && prefs != null) {
+        // For tube drive: prefer the precise stored string, if present
+        val preciseKey = context.getString(R.string.key_tube_drive_precise)
+        val precise = prefs.getString(preciseKey, null)
 
-        // 2) Normal float persistence so slider still works
-        setValue(enteredFloat)
-    } else {
-        context.toast(
-            context.getString(
-                R.string.slider_dialog_step_error,
-                mSeekBar.stepSize.roundToInt()
-            ),
-            false
+        precise ?: String.format(
+            Locale.ROOT,
+            "%.20f",
+            getValue().toDouble()
         )
+    } else {
+        // All other sliders: same as before
+        "%.${mPrecision}f".format(Locale.ROOT, getValue())
     }
-}
-catch (ex: Exception) {
-    Timber.e("Failed to parse number input")
-    Timber.d(ex)
-    context.toast(
-        context.getString(R.string.slider_dialog_format_error),
-        false
-    )
-}
+
+    context.showInputAlert(
+        LayoutInflater.from(context),
+        context.getString(R.string.slider_dialog_title),
+        title?.toString(),
+        initialText,
+        true,
+        mUnit
+    ) { input ->
+        input ?: return@showInputAlert
+        try {
+            if (key == context.getString(R.string.key_tube_drive)) {
+                // --- Tube drive path: full precision Double, plus precise string key ---
+
+                // Parse as Double
+                var d = input.toDouble()
+
+                // Clamp to min/max of the slider
+                d = d.coerceIn(mMin.toDouble(), mMax.toDouble())
+
+                // Save precise string to PREF_TUBE / key_tube_drive_precise
+                val prefsTube = sharedPreferences
+                if (prefsTube != null) {
+                    val preciseKey = context.getString(R.string.key_tube_drive_precise)
+                    val formatted = String.format(Locale.ROOT, "%.20f", d)
+                    prefsTube.edit().putString(preciseKey, formatted).apply()
+                }
+
+                // Also update the slider’s float value so UI stays in sync
+                setValue(d.toFloat())
+            } else {
+                // --- Default path: same behavior as before ---
+
+                val asFloat = input.toFloat()
+
+                if (mSeekBar.stepSize <= 0 || valueLandsOnTick(asFloat)) {
+                    setValue(asFloat)
+                } else {
+                    context.toast(
+                        context.getString(
+                            R.string.slider_dialog_step_error,
+                            mSeekBar.stepSize.roundToInt()
+                        ),
+                        false
+                    )
+                }
             }
-            true
+        } catch (ex: Exception) {
+            Timber.e("Failed to parse number input")
+            Timber.d(ex)
+            context.toast(
+                context.getString(R.string.slider_dialog_format_error),
+                false
+            )
         }
+    }
+    true
+}
     }
 
     override fun onSetInitialValue(defaultValue: Any?) {
