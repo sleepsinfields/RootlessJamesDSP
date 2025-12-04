@@ -142,6 +142,9 @@ typedef struct
     samplerateTool smp[2];
     SixBandsCrossover subband[2];
     float pregain, postgain;
+// Harmonic normalizer state (per channel)
+    double normAvgCh1;
+    double normAvgCh2;
     float shapeMix;      // 0.0 = square (x^2), 1.0 = cube (x^3)
 } VacuumTube;
 
