@@ -193,6 +193,21 @@ class JamesDspLocalEngine(
         right = right
     )
 }
+//
+fun updateStereoGraphicEq(
+    master: String?,
+    left: String?,
+    right: String?
+): Boolean {
+    Timber.e(
+        "GeqDebug",
+        "LocalEngine.updateStereoGraphicEq: " +
+        "master=${master?.take(64)} left=${left?.take(64)} right=${right?.take(64)}"
+    )
+    return JamesDspWrapper.updateStereoGraphicEq(handle, master, left, right)
+}
+//
+
 
 /**
      * Normalize a side curve (LEFT/RIGHT) relative to the master.
