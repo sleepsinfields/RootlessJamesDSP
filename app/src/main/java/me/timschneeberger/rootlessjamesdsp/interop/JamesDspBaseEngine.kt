@@ -281,10 +281,10 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                     
 Constants.PREF_GEQ -> {
     if (this is JamesDspLocalEngine) {
-        // Use the new “pretend the user applied M/L/R” path
-        applyStereoGeqFromPrefs(geqEnabled)
+        // Use stereo M/L/R behavior like the UI
+        this.applyStereoGraphicEqFromPrefs(geqEnabled, geqBands)
     } else {
-        // Remote/other engines: fall back to single-bank behavior
+        // Other engines (if any) keep old single-bank behavior
         setGraphicEq(geqEnabled, geqBands)
     }
 }
