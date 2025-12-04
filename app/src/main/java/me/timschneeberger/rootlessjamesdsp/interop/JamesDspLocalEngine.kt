@@ -158,18 +158,46 @@ override fun setGraphicEqInternal(enable: Boolean, bands: String): Boolean {
 }
 
 // 
-fun updateStereoGraphicEq(
-    master: String?,
-    left: String?,
-    right: String?
+fun applyStereoGraphicEqFromPrefs(
+    geqEnabled: Boolean,
+    fallbackBands: String
 ): Boolean {
+    // If disabled, turn stereo GEQ off in DSP and bail
+    if (!geqEnabled) {
+        Timber.e("GeqDebug", "applyStereoGraphicEqFromPrefs: disabled -> setStereoGraphicEq(false)")
+        return JamesDspWrapper.setStereoGraphicEq(
+            handle,
+            false,
+            "",
+            "",
+            ""
+        )
+    }
+
+    val prefs = context.getSharedPreferences(Constants.PREF_GEQ, Context.MODE_PRIVATE)
+
+    val masterRaw = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_MASTER, null)
+    val leftRaw   = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_LEFT,   null)
+    val rightRaw  = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_RIGHT,  null)
+
+    // MASTER must be non-null for the wrapper call
+    val masterSafe = (masterRaw ?: fallbackBands)
+
     Timber.e(
         "GeqDebug",
-        "LocalEngine.updateStereoGraphicEq: " +
-            "master=${master?.take(80)} " +
-            "left=${left?.take(80)} right=${right?.take(80)}"
+        "applyStereoGraphicEqFromPrefs: enabled=$geqEnabled\n" +
+            "  master=${masterSafe.take(64)}\n" +
+            "  left=${leftRaw?.take(64)}\n" +
+            "  right=${rightRaw?.take(64)}"
     )
-    return JamesDspWrapper.updateStereoGraphicEq(handle, master, left, right)
+
+    return JamesDspWrapper.updateStereoGraphicEq(
+        self = handle,
+        enable = true,          // you want it ON if we're here
+        master = masterSafe,
+        left = leftRaw,
+        right = rightRaw
+    )
 }
 
 // ---- Stereo ArbEq flags (global / M / L / R) ----
