@@ -88,57 +88,7 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
     setVacuumTube(enabled, drive)
 }
 
-    // ---- New helper: apply stereo GEQ the same way the UI does ----
-
-    private fun applyStereoGeqFromPrefs(geqEnabled: Boolean): Boolean {
-        // If GEQ is off, just disable it at the DSP and bail out
-        if (!geqEnabled) {
-            Timber.e("GeqDebug", "applyStereoGeqFromPrefs: GEQ disabled -> setGraphicEq(false)")
-            // Fallback: call the existing single-bank path with enable=false
-            return setGraphicEq(false, Constants.DEFAULT_GEQ_INTERNAL)
-        }
-
-        val prefs = PreferenceCache.getPreferences(context, Constants.PREF_GEQ)
-
-        // These keys are defined as const vals in GraphicEqualizerFragment
-        val masterRaw = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_MASTER, null)
-        val leftRaw   = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_LEFT,   null)
-        val rightRaw  = prefs.getString(GraphicEqualizerFragment.PREF_GEQ_RIGHT,  null)
-
-        Timber.e(
-            "GeqDebug",
-            "applyStereoGeqFromPrefs: enabled=$geqEnabled\n" +
-            "  masterRaw=${masterRaw?.take(64)}\n" +
-            "  leftRaw=${leftRaw?.take(64)}\n" +
-            "  rightRaw=${rightRaw?.take(64)}"
-        )
-
-      
-
-        // For the local engine, do the same thing the UI does:
-        // pretend user just applied the current M/L/R banks.
-        val local = this as? JamesDspLocalEngine
-        if (local != null) {
-            Timber.e(
-                "GeqDebug",
-                "applyStereoGeqFromPrefs: using stereo M/L/R via updateStereoGraphicEq()"
-            )
-            return local.updateStereoGraphicEq(masterRaw, leftRaw, rightRaw)
-        }
-
-        // Safety fallback for non-local engines (if any ever exist)
-        val fallback = masterRaw
-            ?: prefs.getString(
-                context.getString(R.string.key_geq_nodes),
-                Constants.DEFAULT_GEQ_INTERNAL
-            )!!
-
-        Timber.e(
-            "GeqDebug",
-            "applyStereoGeqFromPrefs: non-local engine, falling back to setGraphicEq(true, fallback)"
-        )
-        return setGraphicEq(true, fallback)
-    }
+    
     // ---- Lifecycle ----
 
     override fun close() {
