@@ -119,6 +119,7 @@
 
     <string name="key_tube_enable" translatable="false">tube_enable</string>
     <string name="key_tube_drive" translatable="false">tube_drive</string>
+<string name="key_tube_drive_precise" translatable="false">tube_drive_precise</string>
 
     <string name="key_ddc_enable" translatable="false">ddc_enable</string>
     <string name="key_ddc_file" translatable="false">ddc_file</string>
