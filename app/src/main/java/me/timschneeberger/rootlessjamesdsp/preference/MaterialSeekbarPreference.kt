@@ -212,7 +212,7 @@ if (key == context.getString(R.string.key_tube_drive)) {
 
         precise ?: String.format(
             Locale.ROOT,
-            "%.15f",
+            "%.20f",
             getValue().toDouble()
         )
     } else {
