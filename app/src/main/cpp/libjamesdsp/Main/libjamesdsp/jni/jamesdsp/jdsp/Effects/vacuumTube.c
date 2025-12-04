@@ -12,7 +12,7 @@ void VTInit(VacuumTube *tb, double fs)
     tb->needOversample = 0;
 
     // NEW: blend default
-    tb->shapeMix = 0.5; // 0 = square, 1 = cube
+    tb->shapeMix = 0.4; // 0 = square, 1 = cube
 
     if (fs >= 65000.0)
     {
