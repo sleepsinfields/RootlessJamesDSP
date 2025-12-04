@@ -115,6 +115,15 @@ class JamesDspLocalEngine(
     )
     return JamesDspWrapper.setVacuumTube(handle, enable, level)
 }
+//
+
+// Optional helper to adjust shape from Kotlin:
+fun setVacuumTubeShape(mix: Float): Boolean {
+    Log.e("TubeDebug", "LocalEngine.setVacuumTubeShape mix=$mix")
+    return JamesDspWrapper.setVacuumTubeShape(handle, mix)
+}
+//
+
     override fun setMultiEqualizerInternal(
         enable: Boolean,
         filterType: Int,
