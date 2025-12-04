@@ -193,24 +193,40 @@ class MaterialSeekbarPreference : Preference {
             ) {
                 it ?: return@showInputAlert
                 try {
-                    if(mSeekBar.stepSize <= 0 || valueLandsOnTick(it.toFloat())) {
-                        setValue(it.toFloat())
-                    }
-                    else {
-                        context.toast(
-                            context.getString(R.string.slider_dialog_step_error, mSeekBar.stepSize.roundToInt()),
-                            false
-                        )
-                    }
-                }
-                catch (ex: Exception) {
-                    Timber.e("Failed to parse number input")
-                    Timber.d(ex)
-                    context.toast(
-                        context.getString(R.string.slider_dialog_format_error),
-                        false
-                    )
-                }
+    val enteredFloat = it.toFloat()
+    val enteredDouble = it.toDouble()
+
+    if (mSeekBar.stepSize <= 0 || valueLandsOnTick(enteredFloat)) {
+        // 1) Persist high-precision string for tube drive
+        if (key == context.getString(R.string.key_tube_drive)) {
+            val prefs = sharedPreferences
+            if (prefs != null) {
+                val preciseKey = context.getString(R.string.key_tube_drive_precise)
+                val formatted = String.format(Locale.ROOT, "%.17f", enteredDouble)
+                prefs.edit().putString(preciseKey, formatted).apply()
+            }
+        }
+
+        // 2) Normal float persistence so slider still works
+        setValue(enteredFloat)
+    } else {
+        context.toast(
+            context.getString(
+                R.string.slider_dialog_step_error,
+                mSeekBar.stepSize.roundToInt()
+            ),
+            false
+        )
+    }
+}
+catch (ex: Exception) {
+    Timber.e("Failed to parse number input")
+    Timber.d(ex)
+    context.toast(
+        context.getString(R.string.slider_dialog_format_error),
+        false
+    )
+}
             }
             true
         }
