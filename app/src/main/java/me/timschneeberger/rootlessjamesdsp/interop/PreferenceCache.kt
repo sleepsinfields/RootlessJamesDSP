@@ -50,48 +50,6 @@ class PreferenceCache(val context: Context) {
         changedNamespaces.clear()
     }
 
-    // ---------------------------------------------------------------------
-    // High-precision tube getter: "pretend the user just typed it"
-    // ---------------------------------------------------------------------
-    fun getDoubleTube(@StringRes nameRes: Int, default: Double): Double {
-        if (selectedNamespace == null)
-            throw IllegalStateException("No active namespace selected")
-
-        val key = context.getString(nameRes)
-        val prefs = getPreferences(context, selectedNamespace!!)
-
-        return try {
-            // Normal case: value stored as float by MaterialSeekbarPreference
-            val storedFloat = prefs.getFloat(key, default.toFloat())
-
-            // Emulate dialog -> string -> Double path at 17 decimals
-            val asString = String.format(Locale.ROOT, "%.17f", storedFloat.toDouble())
-            asString.toDouble()
-        } catch (_: ClassCastException) {
-            // Legacy case where it might have been stored as String
-            val asString = prefs.getString(key, null)
-            asString?.toDoubleOrNull() ?: default
-        }
-    }
-
-    // Optional generic double writer (not critical for tube right now)
-    fun putDouble(@StringRes keyRes: Int, value: Double) {
-        if (selectedNamespace == null)
-            throw IllegalStateException("No active namespace selected")
-
-        val key = context.getString(keyRes)
-        val prefs = getPreferences(context, selectedNamespace!!)
-
-        val formatted = String.format(Locale.ROOT, "%.17f", value)
-        prefs.edit().putString(key, formatted).apply()
-
-        // Keep cache + change tracking consistent
-        cache[key] = value
-        if (!changedNamespaces.contains(selectedNamespace)) {
-            selectedNamespace?.let { changedNamespaces.add(it) }
-        }
-    }
-
     companion object {
         @Suppress("DEPRECATION")
         fun getPreferences(
@@ -114,9 +72,9 @@ class PreferenceCache(val context: Context) {
 
             val current: T = when (type) {
                 Boolean::class -> prefs.getBoolean(name, default as Boolean) as T
-                String::class -> prefs.getString(name, default as String) as T
-                Int::class -> prefs.getInt(name, default as Int) as T
-                Float::class -> prefs.getFloat(name, default as Float) as T
+                String::class  -> prefs.getString(name, default as String) as T
+                Int::class     -> prefs.getInt(name, default as Int) as T
+                Float::class   -> prefs.getFloat(name, default as Float) as T
                 else -> throw IllegalArgumentException("Unknown type")
             }
             return current
@@ -128,5 +86,44 @@ class PreferenceCache(val context: Context) {
             @StringRes nameRes: Int,
             default: T
         ) = uncachedGet(context, namespace, nameRes, default, T::class)
+
+        // ---- Tube helpers (precise string + float fallback) ----
+
+        fun getTubeDouble(
+            context: Context,
+            @StringRes floatKeyRes: Int,
+            @StringRes preciseKeyRes: Int,
+            default: Double
+        ): Double {
+            val prefs = getPreferences(context, Constants.PREF_TUBE)
+
+            val floatKey = context.getString(floatKeyRes)
+            val preciseKey = context.getString(preciseKeyRes)
+
+            // 1) Prefer precise stored string if present
+            prefs.getString(preciseKey, null)?.let { s ->
+                s.toDoubleOrNull()?.let { return it }
+            }
+
+            // 2) Fallback to slider float
+            return try {
+                prefs.getFloat(floatKey, default.toFloat()).toDouble()
+            } catch (_: ClassCastException) {
+                default
+            }
+        }
+
+        fun putTubeDouble(
+            context: Context,
+            @StringRes preciseKeyRes: Int,
+            value: Double
+        ) {
+            val prefs = getPreferences(context, Constants.PREF_TUBE)
+            val preciseKey = context.getString(preciseKeyRes)
+
+            // 20 decimals is fine – we only care that it’s stable and text-based
+            val formatted = String.format(Locale.ROOT, "%.20f", value)
+            prefs.edit().putString(preciseKey, formatted).apply()
+        }
     }
 }
