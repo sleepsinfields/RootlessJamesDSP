@@ -182,6 +182,25 @@ class MaterialSeekbarPreference : Preference {
         updateLabelValue(mSeekBarValue)
         mSeekBar.isEnabled = isEnabled
 
+if (key == context.getString(R.string.key_tube_drive)) {
+    valueLabelOverride = { _ ->
+        val prefs = sharedPreferences
+        val preciseKey = context.getString(R.string.key_tube_drive_precise)
+        val precise = prefs?.getString(preciseKey, null)
+
+        if (!precise.isNullOrBlank()) {
+            // Show the exact 17-digit string + unit
+            "$precise$mUnit"
+        } else {
+            // Fallback to normal float formatting
+            "%.${mPrecision}f$mUnit".format(Locale.ROOT, getValue())
+        }
+    }
+
+    // Force refresh the label using the override
+    updateLabelValue(mSeekBarValue)
+}
+
         this.setOnPreferenceClickListener {
             context.showInputAlert(
                 LayoutInflater.from(context), 
@@ -426,17 +445,26 @@ catch (ex: Exception) {
      * Persist the [SeekBar]'s SeekBar value if callChangeListener returns true, otherwise
      * set the [SeekBar]'s value to the stored value.
      */
-    fun  /* synthetic access */syncValueInternal(seekBar: Slider) {
-        val seekBarValue = seekBar.value
-        if (seekBarValue != mSeekBarValue) {
-            if (callChangeListener(seekBarValue)) {
-                setValueInternal(seekBarValue, false)
-            } else {
-                seekBar.value = validateValue(mSeekBarValue)
-                updateLabelValue(mSeekBarValue)
+    fun /* synthetic access */syncValueInternal(seekBar: Slider) {
+    val seekBarValue = seekBar.value
+    if (seekBarValue != mSeekBarValue) {
+        if (callChangeListener(seekBarValue)) {
+            setValueInternal(seekBarValue, false)
+
+            // If user dragged the tube slider, clear precise string since this is float-based now
+            if (key == context.getString(R.string.key_tube_drive)) {
+                val prefs = sharedPreferences
+                if (prefs != null) {
+                    val preciseKey = context.getString(R.string.key_tube_drive_precise)
+                    prefs.edit().remove(preciseKey).apply()
+                }
             }
+        } else {
+            seekBar.value = validateValue(mSeekBarValue)
+            updateLabelValue(mSeekBarValue)
         }
     }
+}
 
     /**
      * Attempts to update the TextView label that displays the current value.
