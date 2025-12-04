@@ -627,6 +627,7 @@ extern void StereoEnhancementProcess(JamesDSPLib *jdsp, size_t n);
 extern void VacuumTubeEnable(JamesDSPLib *jdsp);
 extern void VacuumTubeDisable(JamesDSPLib *jdsp);
 extern void VacuumTubeSetGain(JamesDSPLib *jdsp, double dbGain);
+extern void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix);
 extern void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n);
 // Live programmable effect
 extern const char* checkErrorCode(int errCode);
