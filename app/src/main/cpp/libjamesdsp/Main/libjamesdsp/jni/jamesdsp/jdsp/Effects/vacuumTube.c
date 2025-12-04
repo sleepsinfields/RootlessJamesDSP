@@ -64,117 +64,140 @@ void VTInit(VacuumTube *tb, double fs)
     memset(tb->subband, 0, sizeof(tb->subband));
     init6BandsCrossover(&tb->subband[0], fs, 300.0, 950.0, 2200.0, 4000.0, 6000.0);
     init6BandsCrossover(&tb->subband[1], fs, 300.0, 950.0, 2200.0, 4000.0, 6000.0);
+
+    // --- Harmonic normalizer init ---
+    tb->normAvgCh1 = 1.0;
+    tb->normAvgCh2 = 1.0;
 }
 
 void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, size_t n)
 {
 	float upsample[2][5];
 	double bandCh1[6], bandCh2[6];
-	if (tb->needOversample)
-	{
-		for (size_t i = 0; i < n; i++)
-		{
-			char state1[6] = { 0 };
-			char state2[6] = { 0 };
-			oversample_stepupSmp(&tb->smp[0], x1[i] * tb->pregain, upsample[0]);
-			oversample_stepupSmp(&tb->smp[1], x2[i] * tb->pregain, upsample[1]);
-			for (int j = 0; j < tb->smp[0].factor; j++)
-			{
-				process6BandsCrossover(&tb->subband[0], upsample[0][j], &bandCh1[0], &bandCh1[1], &bandCh1[2], &bandCh1[3], &bandCh1[4], &bandCh1[5]);
-				process6BandsCrossover(&tb->subband[1], upsample[1][j], &bandCh2[0], &bandCh2[1], &bandCh2[2], &bandCh2[3], &bandCh2[4], &bandCh2[5]);
-				bandCh1[1] = -bandCh1[1];
-				bandCh1[3] = -bandCh1[3];
-				bandCh1[5] = -bandCh1[5];
-				bandCh2[1] = -bandCh2[1];
-				bandCh2[3] = -bandCh2[3];
-				bandCh2[5] = -bandCh2[5];
-//
-		double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
-double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
-double mix = (double)tb->shapeMix;
+// oversample branch
+if (tb->needOversample)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        char state1[6] = { 0 };
+        char state2[6] = { 0 };
+        oversample_stepupSmp(&tb->smp[0], x1[i] * tb->pregain, upsample[0]);
+        oversample_stepupSmp(&tb->smp[1], x2[i] * tb->pregain, upsample[1]);
+        for (int j = 0; j < tb->smp[0].factor; j++)
+        {
+            process6BandsCrossover(&tb->subband[0], upsample[0][j], &bandCh1[0], &bandCh1[1], &bandCh1[2], &bandCh1[3], &bandCh1[4], &bandCh1[5]);
+            process6BandsCrossover(&tb->subband[1], upsample[1][j], &bandCh2[0], &bandCh2[1], &bandCh2[2], &bandCh2[3], &bandCh2[4], &bandCh2[5]);
+            bandCh1[1] = -bandCh1[1];
+            bandCh1[3] = -bandCh1[3];
+            bandCh1[5] = -bandCh1[5];
+            bandCh2[1] = -bandCh2[1];
+            bandCh2[3] = -bandCh2[3];
+            bandCh2[5] = -bandCh2[5];
+            double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+            double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+            double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+            double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+            double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+            double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+            double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+            double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+            double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+            double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-// Per-band nonlinear (blend of x^2 and x^3, normalized)
-double nl2Ch1 = vt_nonlinear(bandCh1[1], mix);
-double nl3Ch1 = vt_nonlinear(bandCh1[2], mix);
-double nl4Ch1 = vt_nonlinear(bandCh1[3], mix);
-double nl5Ch1 = vt_nonlinear(bandCh1[4], mix);
+            // ---- NEW: build base + harmonics separately ----
+            double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
+            double harmSumCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.2;
 
-double nl2Ch2 = vt_nonlinear(bandCh2[1], mix);
-double nl3Ch2 = vt_nonlinear(bandCh2[2], mix);
-double nl4Ch2 = vt_nonlinear(bandCh2[3], mix);
-double nl5Ch2 = vt_nonlinear(bandCh2[4], mix);
+            double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
+            double harmSumCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.2;
 
-// Sum the nonlinears like original sum of harmonics
-double nonlinearCh1 = (nl2Ch1 + nl3Ch1 + nl4Ch1 + nl5Ch1) * 0.2;
-double nonlinearCh2 = (nl2Ch2 + nl3Ch2 + nl4Ch2 + nl5Ch2) * 0.2;
+            double wetCh1 = baseCh1 + harmSumCh1;
+            double wetCh2 = baseCh2 + harmSumCh2;
 
-upsample[0][j] = (float)(
-    bandCh1[0] +
-    nonlinearCh1 +
-    allpassCh1 +
-    bandCh1[5]
-);
+            // ---- NEW: harmonic normalizer (per channel) ----
+            // small epsilon to avoid div-by-zero
+            const double eps = 1e-18;
 
-upsample[1][j] = (float)(
-    bandCh2[0] +
-    nonlinearCh2 +
-    allpassCh2 +
-    bandCh2[5]
-);
-//
-			}
-			out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
-			out2[i] = oversample_stepdownSmpFloat(&tb->smp[1], upsample[1]) * tb->postgain;
-		}
-	}
+            double dryE1 = baseCh1 * baseCh1 + eps;
+            double wetE1 = wetCh1 * wetCh1 + eps;
+            double ratio1 = wetE1 / dryE1;
+
+            double dryE2 = baseCh2 * baseCh2 + eps;
+            double wetE2 = wetCh2 * wetCh2 + eps;
+            double ratio2 = wetE2 / dryE2;
+
+            // Exponential smoothing (very slow, ~0.1% update per sample)
+            // You can tweak 0.001 to adjust how fast it responds
+            tb->normAvgCh1 = 0.999 * tb->normAvgCh1 + 0.001 * ratio1;
+            tb->normAvgCh2 = 0.999 * tb->normAvgCh2 + 0.001 * ratio2;
+
+            double normGain1 = 1.0 / sqrt(tb->normAvgCh1);
+            double normGain2 = 1.0 / sqrt(tb->normAvgCh2);
+
+            // Apply normalized gain
+            upsample[0][j] = (float)(wetCh1 * normGain1);
+            upsample[1][j] = (float)(wetCh2 * normGain2);
+        }
+        out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
+        out2[i] = oversample_stepdownSmpFloat(&tb->smp[1], upsample[1]) * tb->postgain;
+    }
+}
+
+// non oversampling branch
 	else
-	{
-		for (size_t j = 0; j < n; j++)
-		{
-			process6BandsCrossover(&tb->subband[0], x1[j] * tb->pregain, &bandCh1[0], &bandCh1[1], &bandCh1[2], &bandCh1[3], &bandCh1[4], &bandCh1[5]);
-			process6BandsCrossover(&tb->subband[1], x2[j] * tb->pregain, &bandCh2[0], &bandCh2[1], &bandCh2[2], &bandCh2[3], &bandCh2[4], &bandCh2[5]);
-			bandCh1[1] = -bandCh1[1];
-			bandCh1[3] = -bandCh1[3];
-			bandCh1[5] = -bandCh1[5];
-			bandCh2[1] = -bandCh2[1];
-			bandCh2[3] = -bandCh2[3];
-			bandCh2[5] = -bandCh2[5];
-//
-		double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
-double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+{
+    for (size_t j = 0; j < n; j++)
+    {
+        process6BandsCrossover(&tb->subband[0], x1[j] * tb->pregain, &bandCh1[0], &bandCh1[1], &bandCh1[2], &bandCh1[3], &bandCh1[4], &bandCh1[5]);
+        process6BandsCrossover(&tb->subband[1], x2[j] * tb->pregain, &bandCh2[0], &bandCh2[1], &bandCh2[2], &bandCh2[3], &bandCh2[4], &bandCh2[5]);
+        bandCh1[1] = -bandCh1[1];
+        bandCh1[3] = -bandCh1[3];
+        bandCh1[5] = -bandCh1[5];
+        bandCh2[1] = -bandCh2[1];
+        bandCh2[3] = -bandCh2[3];
+        bandCh2[5] = -bandCh2[5];
+        double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+        double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+        double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+        double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+        double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+        double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+        double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+        double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+        double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+        double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-double mix = (double)tb->shapeMix;
+        // --- base + harmonics ---
+        double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
+        double harmSumCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.25;
 
-double nl2Ch1 = vt_nonlinear(bandCh1[1], mix);
-double nl3Ch1 = vt_nonlinear(bandCh1[2], mix);
-double nl4Ch1 = vt_nonlinear(bandCh1[3], mix);
-double nl5Ch1 = vt_nonlinear(bandCh1[4], mix);
+        double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
+        double harmSumCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.25;
 
-double nl2Ch2 = vt_nonlinear(bandCh2[1], mix);
-double nl3Ch2 = vt_nonlinear(bandCh2[2], mix);
-double nl4Ch2 = vt_nonlinear(bandCh2[3], mix);
-double nl5Ch2 = vt_nonlinear(bandCh2[4], mix);
+        double wetCh1 = baseCh1 + harmSumCh1;
+        double wetCh2 = baseCh2 + harmSumCh2;
 
-double nonlinearCh1 = (nl2Ch1 + nl3Ch1 + nl4Ch1 + nl5Ch1) * 0.25;
-double nonlinearCh2 = (nl2Ch2 + nl3Ch2 + nl4Ch2 + nl5Ch2) * 0.25;
+        const double eps = 1e-18;
 
-out1[j] = (float)(
-    bandCh1[0] +
-    nonlinearCh1 +
-    allpassCh1 +
-    bandCh1[5]
-) * tb->postgain;
+        double dryE1 = baseCh1 * baseCh1 + eps;
+        double wetE1 = wetCh1 * wetCh1 + eps;
+        double ratio1 = wetE1 / dryE1;
 
-out2[j] = (float)(
-    bandCh2[0] +
-    nonlinearCh2 +
-    allpassCh2 +
-    bandCh2[5]
-) * tb->postgain;
-//
-		}
-	}
+        double dryE2 = baseCh2 * baseCh2 + eps;
+        double wetE2 = wetCh2 * wetCh2 + eps;
+        double ratio2 = wetE2 / dryE2;
+
+        tb->normAvgCh1 = 0.999 * tb->normAvgCh1 + 0.001 * ratio1;
+        tb->normAvgCh2 = 0.999 * tb->normAvgCh2 + 0.001 * ratio2;
+
+        double normGain1 = 1.0 / sqrt(tb->normAvgCh1);
+        double normGain2 = 1.0 / sqrt(tb->normAvgCh2);
+
+        out1[j] = (float)(wetCh1 * normGain1) * tb->postgain;
+        out2[j] = (float)(wetCh2 * normGain2) * tb->postgain;
+    }
+}
 }
 void VacuumTubeEnable(JamesDSPLib *jdsp)
 {
