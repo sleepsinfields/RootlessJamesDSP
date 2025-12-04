@@ -135,13 +135,20 @@ typedef struct str_dynfreqdomain
 	float specHannReal[2][PREPAD + HALFWNDLEN_DRS + POSPAD - 1], specHannImag[2][PREPAD + HALFWNDLEN_DRS + POSPAD - 1];
 	cplx tmp[2][PREPAD + HALFWNDLEN_DRS + POSPAD - 1];
 } FFTCompander;
-typedef struct
-{
-	int needOversample;
-	samplerateTool smp[2];
-	SixBandsCrossover subband[2];
-	float pregain, postgain;
+
+typedef struct {
+    float pregain;
+    float postgain;
+    int needOversample;
+    Oversample smp[2];
+// samplerateTool smp[2]; 
+    SixBandCrossover subband[2];
+
+    // NEW: blend between square and cube
+    // 0.0 = pure square, 1.0 = pure cube
+    double shapeMix;
 } VacuumTube;
+
 typedef struct
 {
 	float inputs[1024];
