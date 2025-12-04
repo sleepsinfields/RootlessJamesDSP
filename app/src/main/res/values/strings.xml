@@ -173,8 +173,6 @@
 
     <string name="tube_drive">Preamp</string>
 
-<string name="key_tube_drive_precise">tube_drive_precise</string>
-
     <string name="output_control_header">Output control</string>
     <string name="output_limiter_threshold">Limiter threshold</string>
     <string name="output_limiter_release">Limiter release</string>
