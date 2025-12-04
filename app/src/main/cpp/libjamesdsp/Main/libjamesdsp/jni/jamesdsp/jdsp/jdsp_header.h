@@ -142,10 +142,7 @@ typedef struct
     samplerateTool smp[2];
     SixBandsCrossover subband[2];
     float pregain, postgain;
-
-    // NEW: blend between square and cube harmonics
-    // 0.0 = pure square, 1.0 = pure cube
-    double shapeMix;
+    float shapeMix;      // 0.0 = square (x^2), 1.0 = cube (x^3)
 } VacuumTube;
 
 typedef struct
