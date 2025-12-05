@@ -316,3 +316,12 @@ void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n)
               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
 }
+
+void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
+{
+    if (even < 0.0) even = 0.0;
+    if (odd  < 0.0) odd  = 0.0;
+
+    jdsp->tube.evenGain = (float)even;
+    jdsp->tube.oddGain  = (float)odd;
+}
