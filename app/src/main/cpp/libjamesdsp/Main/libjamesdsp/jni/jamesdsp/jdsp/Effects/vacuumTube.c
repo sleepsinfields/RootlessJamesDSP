@@ -31,7 +31,7 @@ void VTInit(VacuumTube *tb, double fs)
     tb->pregain = 1.0f;
     tb->postgain = 1.0f;
     tb->needOversample = 0;
-    tb->shapeMix = 0.0f;  // default: square-only, matches original sound
+    tb->shapeMix = 0.3f;  // default: square-only, matches original sound
 
     // Original oversampling scheme (kept logic, just slightly clarified)
     if (fs >= 30000.0 && fs < 65000.0)
