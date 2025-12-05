@@ -142,6 +142,7 @@ typedef struct
     samplerateTool smp[2];
     SixBandsCrossover subband[2];
     float pregain, postgain;
+    float shapeMix;   // 0 = square-only (legacy), 1 = cube-heavier
 } VacuumTube;
 
 typedef struct
