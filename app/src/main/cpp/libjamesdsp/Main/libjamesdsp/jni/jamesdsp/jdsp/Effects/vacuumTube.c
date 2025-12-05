@@ -5,66 +5,41 @@
 #include <float.h>
 #include "../jdsp_header.h"
 
-// Simple triode-ish curve: soft, asymmetric, DC-corrected
-static inline double vt_triodeshape(double x, double mix)
+// ------------------------------------------------------------
+// Simple triode-like soft clipper
+// ------------------------------------------------------------
+static inline double vt_triodeshape(double x)
 {
-    // mix in [0,1] from UI (shapeMix)
-    // More mix => more asymmetry and saturation
+    // These are "feel" constants – you can tune later.
+    const double drive = 2.5;   // how hard we hit the virtual tube
+    const double bias  = 0.0;   // DC offset (0 for now)
+    const double scale = 0.5;   // trims output so level stays reasonable
 
-    // Amount of asymmetry: shift input before tanh
-    double asym = mix;                  // 0 = symmetric, 1 = max bias
-    double bias = asym * 0.4;           // tweakable; 0.4 is mild bias
-
-    // Overall “drive” into the saturator – tweak by ear
-    double drive = 2.5;
-
-    // Shifted input
-    double xb = x + bias;
-
-    // Soft clip
-    double y = tanh(drive * xb);
-
-    // Remove the DC offset created by bias so it stays centered
-    double y0 = tanh(drive * bias);
-    y -= y0;
-
-    // Small linear blend to keep things from getting too mushy
-    const double linMix = 0.2;          // 0 = all saturated, 1 = all dry
-    double out = (1.0 - linMix) * y + linMix * x;
-
-    return out;
+    double v = (x + bias) * drive;
+    double y = tanh(v);
+    return y * scale;
 }
 
-// Normalization so square and cube shapes have roughly similar RMS
-#define VT_NORM_SQ 2.0                         // ~1 / 0.5
-#define VT_NORM_CU 1.3333333333333333          // ~1 / 0.75
-
-// x in [-1,1], mix in [0,1]
-// mix = 0 -> mostly squared (more even harmonics)
-// mix = 1 -> more cubed (more odd harmonics)
-static inline double vt_nonlinear(double x, double mix)
-{
-    // x^2 and x^3
-    double sq = x * x;
-    double cu = sq * x;
-
-    // normalize RMS
-    double sq_norm = sq * VT_NORM_SQ;
-    double cu_norm = cu * VT_NORM_CU;
-
-    // crossfade
-    return (1.0 - mix) * sq_norm + mix * cu_norm;
-}
-
+// ------------------------------------------------------------
+// Init
+// ------------------------------------------------------------
 void VTInit(VacuumTube *tb, double fs)
 {
     tb->pregain = 1.0f;
     tb->postgain = 1.0f;
     tb->needOversample = 0;
-    tb->shapeMix = 0.0f;  // default: square-only, matches original sound
 
-    // Original oversampling scheme (kept logic, just slightly clarified)
-    if (fs >= 30000.0 && fs < 65000.0)
+    // 0.0 = completely original behavior, 1.0 = fully triode-blended
+    tb->shapeMix = 0.3f;
+
+    // Oversampling setup (same logic you had, plus 2x at very high fs)
+    if (fs >= 65000.0)
+    {
+        oversample_makeSmp(&tb->smp[0], 2);
+        oversample_makeSmp(&tb->smp[1], 2);
+        tb->needOversample = 1;
+    }
+    else if (fs >= 30000.0 && fs < 65000.0)
     {
         oversample_makeSmp(&tb->smp[0], 2);
         oversample_makeSmp(&tb->smp[1], 2);
@@ -82,7 +57,7 @@ void VTInit(VacuumTube *tb, double fs)
         oversample_makeSmp(&tb->smp[1], 4);
         tb->needOversample = 1;
     }
-    else if (fs < 14000.0)
+    else // fs < 14000
     {
         oversample_makeSmp(&tb->smp[0], 5);
         oversample_makeSmp(&tb->smp[1], 5);
@@ -94,31 +69,111 @@ void VTInit(VacuumTube *tb, double fs)
     init6BandsCrossover(&tb->subband[1], fs, 300.0, 950.0, 2200.0, 4000.0, 6000.0);
 }
 
+// ------------------------------------------------------------
+// Process
+// ------------------------------------------------------------
 void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, size_t n)
 {
-    float upsample[2][5];
+    float  upsample[2][5];  // up to 5x oversample
     double bandCh1[6], bandCh2[6];
 
-    // ---------- Oversampled path ----------
     if (tb->needOversample)
-{
-    for (size_t i = 0; i < n; i++)
     {
-        char state1[6] = { 0 };
-        char state2[6] = { 0 };
-        oversample_stepupSmp(&tb->smp[0], x1[i] * tb->pregain, upsample[0]);
-        oversample_stepupSmp(&tb->smp[1], x2[i] * tb->pregain, upsample[1]);
-
-        for (int j = 0; j < tb->smp[0].factor; j++)
+        // -------- Oversampled branch --------
+        for (size_t i = 0; i < n; i++)
         {
-            process6BandsCrossover(&tb->subband[0], upsample[0][j],
-                                   &bandCh1[0], &bandCh1[1], &bandCh1[2],
-                                   &bandCh1[3], &bandCh1[4], &bandCh1[5]);
-            process6BandsCrossover(&tb->subband[1], upsample[1][j],
-                                   &bandCh2[0], &bandCh2[1], &bandCh2[2],
-                                   &bandCh2[3], &bandCh2[4], &bandCh2[5]);
+            char state1[6] = { 0 };
+            char state2[6] = { 0 };
 
-            // sign flips – same as original
+            oversample_stepupSmp(&tb->smp[0], x1[i] * tb->pregain, upsample[0]);
+            oversample_stepupSmp(&tb->smp[1], x2[i] * tb->pregain, upsample[1]);
+
+            for (int j = 0; j < tb->smp[0].factor; j++)
+            {
+                process6BandsCrossover(
+                    &tb->subband[0],
+                    upsample[0][j],
+                    &bandCh1[0], &bandCh1[1], &bandCh1[2],
+                    &bandCh1[3], &bandCh1[4], &bandCh1[5]
+                );
+                process6BandsCrossover(
+                    &tb->subband[1],
+                    upsample[1][j],
+                    &bandCh2[0], &bandCh2[1], &bandCh2[2],
+                    &bandCh2[3], &bandCh2[4], &bandCh2[5]
+                );
+
+                // original sign flips
+                bandCh1[1] = -bandCh1[1];
+                bandCh1[3] = -bandCh1[3];
+                bandCh1[5] = -bandCh1[5];
+                bandCh2[1] = -bandCh2[1];
+                bandCh2[3] = -bandCh2[3];
+                bandCh2[5] = -bandCh2[5];
+
+                // sum of middle bands
+                double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+                double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+
+                // original harmonic “exciter” part
+                double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+                double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+                double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+                double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+
+                double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+                double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+                double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+                double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
+
+                double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.2;
+                double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.2;
+
+                // ---- Tube core shaping on mid band sum ----
+                double coreInCh1 = allpassCh1;
+                double coreInCh2 = allpassCh2;
+
+                double triodeCh1 = vt_triodeshape(coreInCh1);
+                double triodeCh2 = vt_triodeshape(coreInCh2);
+
+                double coreOutCh1 =
+                    (1.0 - tb->shapeMix) * coreInCh1 +
+                    tb->shapeMix * triodeCh1;
+
+                double coreOutCh2 =
+                    (1.0 - tb->shapeMix) * coreInCh2 +
+                    tb->shapeMix * triodeCh2;
+
+                // final wet signal: low + shaped mid core + highs + harmonic “sparkle”
+                double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
+                double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
+
+                upsample[0][j] = (float)wetCh1;
+                upsample[1][j] = (float)wetCh2;
+            }
+
+            out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
+            out2[i] = oversample_stepdownSmpFloat(&tb->smp[1], upsample[1]) * tb->postgain;
+        }
+    }
+    else
+    {
+        // -------- Non-oversampled branch (single rate) --------
+        for (size_t j = 0; j < n; j++)
+        {
+            process6BandsCrossover(
+                &tb->subband[0],
+                x1[j] * tb->pregain,
+                &bandCh1[0], &bandCh1[1], &bandCh1[2],
+                &bandCh1[3], &bandCh1[4], &bandCh1[5]
+            );
+            process6BandsCrossover(
+                &tb->subband[1],
+                x2[j] * tb->pregain,
+                &bandCh2[0], &bandCh2[1], &bandCh2[2],
+                &bandCh2[3], &bandCh2[4], &bandCh2[5]
+            );
+
             bandCh1[1] = -bandCh1[1];
             bandCh1[3] = -bandCh1[3];
             bandCh1[5] = -bandCh1[5];
@@ -126,11 +181,9 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
             bandCh2[3] = -bandCh2[3];
             bandCh2[5] = -bandCh2[5];
 
-            // sum of mid bands
             double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
             double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
-            // original harmonic “exciter” part
             double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
             double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
             double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
@@ -141,87 +194,36 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
             double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
             double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-            double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.2;
-            double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.2;
+            // original factor here was 0.25 instead of 0.2
+            double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.25;
+            double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.25;
 
-            // --- NEW “tube core” shaping on mid band sum ---
-            double tubeCoreCh1 = allpassCh1;
-            double tubeCoreCh2 = allpassCh2;
+            double coreInCh1 = allpassCh1;
+            double coreInCh2 = allpassCh2;
 
-            double triodeCh1 = vt_triodeshape(tubeCoreCh1, tb->shapeMix);
-            double triodeCh2 = vt_triodeshape(tubeCoreCh2, tb->shapeMix);
+            double triodeCh1 = vt_triodeshape(coreInCh1);
+            double triodeCh2 = vt_triodeshape(coreInCh2);
 
-            double shapedCoreCh1 =
-                (1.0 - tb->shapeMix) * tubeCoreCh1 + tb->shapeMix * triodeCh1;
-            double shapedCoreCh2 =
-                (1.0 - tb->shapeMix) * tubeCoreCh2 + tb->shapeMix * triodeCh2;
+            double coreOutCh1 =
+                (1.0 - tb->shapeMix) * coreInCh1 +
+                tb->shapeMix * triodeCh1;
 
-            // final “wet” sample:
-            double wetCh1 = bandCh1[0] + shapedCoreCh1 + bandCh1[5] + harmCh1;
-            double wetCh2 = bandCh2[0] + shapedCoreCh2 + bandCh2[5] + harmCh2;
+            double coreOutCh2 =
+                (1.0 - tb->shapeMix) * coreInCh2 +
+                tb->shapeMix * triodeCh2;
 
-            upsample[0][j] = (float)wetCh1;
-            upsample[1][j] = (float)wetCh2;
-        }
+            double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
+            double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
 
-        out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
-        out2[i] = oversample_stepdownSmpFloat(&tb->smp[1], upsample[1]) * tb->postgain;
-    }
-}
-    // ---------- Non-oversampled path ----------
-    else
-    {
-        for (size_t j = 0; j < n; j++)
-        {
-            process6BandsCrossover(&tb->subband[0], x1[j] * tb->pregain,
-                                   &bandCh1[0], &bandCh1[1], &bandCh1[2],
-                                   &bandCh1[3], &bandCh1[4], &bandCh1[5]);
-            process6BandsCrossover(&tb->subband[1], x2[j] * tb->pregain,
-                                   &bandCh2[0], &bandCh2[1], &bandCh2[2],
-                                   &bandCh2[3], &bandCh2[4], &bandCh2[5]);
-
-            bandCh1[1] = -bandCh1[1];
-            bandCh1[3] = -bandCh1[3];
-            bandCh1[5] = -bandCh1[5];
-            bandCh2[1] = -bandCh2[1];
-            bandCh2[3] = -bandCh2[3];
-            bandCh2[5] = -bandCh2[5];
-
-           double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
-double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
-double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
-double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
-double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
-double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
-double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
-double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
-double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
-double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
-
-double tubeCoreCh1 = allpassCh1;
-double tubeCoreCh2 = allpassCh2;
-
-double triodeCh1 = vt_triodeshape(tubeCoreCh1, tb->shapeMix);
-double triodeCh2 = vt_triodeshape(tubeCoreCh2, tb->shapeMix);
-
-double shapedCoreCh1 = (1.0 - tb->shapeMix) * tubeCoreCh1 + tb->shapeMix * triodeCh1;
-double shapedCoreCh2 = (1.0 - tb->shapeMix) * tubeCoreCh2 + tb->shapeMix * triodeCh2;
-
-double baseCh1 = bandCh1[0] + shapedCoreCh1 + bandCh1[5];
-double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.25;
-
-double baseCh2 = bandCh2[0] + shapedCoreCh2 + bandCh2[5];
-double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.25;
-
-double wetCh1 = baseCh1 + harmCh1;
-double wetCh2 = baseCh2 + harmCh2;
-
-out1[j] = (float)wetCh1 * tb->postgain;
-out2[j] = (float)wetCh2 * tb->postgain;
+            out1[j] = (float)(wetCh1) * tb->postgain;
+            out2[j] = (float)(wetCh2) * tb->postgain;
         }
     }
 }
 
+// ------------------------------------------------------------
+// Public API
+// ------------------------------------------------------------
 void VacuumTubeEnable(JamesDSPLib *jdsp)
 {
     VTInit(&jdsp->tube, jdsp->fs);
@@ -240,11 +242,10 @@ void VacuumTubeSetGain(JamesDSPLib *jdsp, double dbGain)
     if (dbGain < -3.0)
         dbGain = -3.0;
 
-    jdsp->tube.pregain = db2magf(dbGain);
+    jdsp->tube.pregain  = db2magf(dbGain);
     jdsp->tube.postgain = 1.0f / jdsp->tube.pregain;
 }
 
-// Shape mix setter: 0 -> square-like, 1 -> cube-like
 void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
 {
     if (mix < 0.0)
@@ -259,6 +260,5 @@ void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n)
 {
     VTProcess(&jdsp->tube,
               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
-              jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
-              n);
+              jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
 }
