@@ -122,12 +122,11 @@ external fun setVacuumTubeShape(
     mix: Double
 ): Boolean
 
-// Optional convenience wrapper
-/* fun setTubeShape(self: JamesDspHandle, mix: Float): Boolean {
+fun setTubeShape(self: JamesDspHandle, mix: Float): Boolean {
     val clamped = mix.coerceIn(0f, 1f)
-    return setVacuumTubeShape(self, clamped)
-} */
-//
+    return setVacuumTubeShape(self, clamped.toDouble())
+}
+
     external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
 
     // EEL VM utilities
