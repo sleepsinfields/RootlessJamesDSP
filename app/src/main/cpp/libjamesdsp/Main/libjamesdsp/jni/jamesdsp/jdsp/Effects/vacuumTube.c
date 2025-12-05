@@ -101,67 +101,73 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
 
     // ---------- Oversampled path ----------
     if (tb->needOversample)
+{
+    for (size_t i = 0; i < n; i++)
     {
-        for (size_t i = 0; i < n; i++)
+        char state1[6] = { 0 };
+        char state2[6] = { 0 };
+        oversample_stepupSmp(&tb->smp[0], x1[i] * tb->pregain, upsample[0]);
+        oversample_stepupSmp(&tb->smp[1], x2[i] * tb->pregain, upsample[1]);
+
+        for (int j = 0; j < tb->smp[0].factor; j++)
         {
-            char state1[6] = { 0 };
-            char state2[6] = { 0 };
-            (void)state1;
-            (void)state2;
+            process6BandsCrossover(&tb->subband[0], upsample[0][j],
+                                   &bandCh1[0], &bandCh1[1], &bandCh1[2],
+                                   &bandCh1[3], &bandCh1[4], &bandCh1[5]);
+            process6BandsCrossover(&tb->subband[1], upsample[1][j],
+                                   &bandCh2[0], &bandCh2[1], &bandCh2[2],
+                                   &bandCh2[3], &bandCh2[4], &bandCh2[5]);
 
-            oversample_stepupSmp(&tb->smp[0], x1[i] * tb->pregain, upsample[0]);
-            oversample_stepupSmp(&tb->smp[1], x2[i] * tb->pregain, upsample[1]);
+            // sign flips – same as original
+            bandCh1[1] = -bandCh1[1];
+            bandCh1[3] = -bandCh1[3];
+            bandCh1[5] = -bandCh1[5];
+            bandCh2[1] = -bandCh2[1];
+            bandCh2[3] = -bandCh2[3];
+            bandCh2[5] = -bandCh2[5];
 
-            for (int j = 0; j < tb->smp[0].factor; j++)
-            {
-                process6BandsCrossover(&tb->subband[0], upsample[0][j],
-                                       &bandCh1[0], &bandCh1[1], &bandCh1[2],
-                                       &bandCh1[3], &bandCh1[4], &bandCh1[5]);
-                process6BandsCrossover(&tb->subband[1], upsample[1][j],
-                                       &bandCh2[0], &bandCh2[1], &bandCh2[2],
-                                       &bandCh2[3], &bandCh2[4], &bandCh2[5]);
+            // sum of mid bands
+            double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+            double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
-                // sign flips like original code
-                bandCh1[1] = -bandCh1[1];
-                bandCh1[3] = -bandCh1[3];
-                bandCh1[5] = -bandCh1[5];
-                bandCh2[1] = -bandCh2[1];
-                bandCh2[3] = -bandCh2[3];
-                bandCh2[5] = -bandCh2[5];
+            // original harmonic “exciter” part
+            double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+            double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+            double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+            double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
 
-                double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
-                double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+            double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+            double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+            double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+            double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-                // Instead of pure squares, run the bands through the blended nonlinearity
-                double harmonic2Ch1 = vt_nonlinear(bandCh1[1], tb->shapeMix);
-                double harmonic3Ch1 = vt_nonlinear(bandCh1[2], tb->shapeMix);
-                double harmonic4Ch1 = vt_nonlinear(bandCh1[3], tb->shapeMix);
-                double harmonic5Ch1 = vt_nonlinear(bandCh1[4], tb->shapeMix);
+            double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.2;
+            double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.2;
 
-                // “Core” that we’ll tube-shape: the mid bands (1..4)
-double tubeCoreCh1 = allpassCh1;
-double tubeCoreCh2 = allpassCh2;
+            // --- NEW “tube core” shaping on mid band sum ---
+            double tubeCoreCh1 = allpassCh1;
+            double tubeCoreCh2 = allpassCh2;
 
-// Triode-ish shaped
-double triodeCh1 = vt_triodeshape(tubeCoreCh1, tb->shapeMix);
-double triodeCh2 = vt_triodeshape(tubeCoreCh2, tb->shapeMix);
+            double triodeCh1 = vt_triodeshape(tubeCoreCh1, tb->shapeMix);
+            double triodeCh2 = vt_triodeshape(tubeCoreCh2, tb->shapeMix);
 
-// Crossfade between original and triode-shaped midband
-double shapedCoreCh1 = (1.0 - tb->shapeMix) * tubeCoreCh1 + tb->shapeMix * triodeCh1;
-double shapedCoreCh2 = (1.0 - tb->shapeMix) * tubeCoreCh2 + tb->shapeMix * triodeCh2;
+            double shapedCoreCh1 =
+                (1.0 - tb->shapeMix) * tubeCoreCh1 + tb->shapeMix * triodeCh1;
+            double shapedCoreCh2 =
+                (1.0 - tb->shapeMix) * tubeCoreCh2 + tb->shapeMix * triodeCh2;
 
-// Final mix: bass + (shaped mid) + treble + the old exciter harmonics
-double wetCh1 = bandCh1[0] + shapedCoreCh1 + bandCh1[5] + harmCh1;
-double wetCh2 = bandCh2[0] + shapedCoreCh2 + bandCh2[5] + harmCh2;
+            // final “wet” sample:
+            double wetCh1 = bandCh1[0] + shapedCoreCh1 + bandCh1[5] + harmCh1;
+            double wetCh2 = bandCh2[0] + shapedCoreCh2 + bandCh2[5] + harmCh2;
 
-upsample[0][j] = (float)wetCh1;
-upsample[1][j] = (float)wetCh2;
-            }
-
-            out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
-            out2[i] = oversample_stepdownSmpFloat(&tb->smp[1], upsample[1]) * tb->postgain;
+            upsample[0][j] = (float)wetCh1;
+            upsample[1][j] = (float)wetCh2;
         }
+
+        out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
+        out2[i] = oversample_stepdownSmpFloat(&tb->smp[1], upsample[1]) * tb->postgain;
     }
+}
     // ---------- Non-oversampled path ----------
     else
     {
