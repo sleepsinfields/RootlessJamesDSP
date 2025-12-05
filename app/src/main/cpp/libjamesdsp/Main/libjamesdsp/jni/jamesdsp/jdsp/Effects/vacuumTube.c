@@ -5,6 +5,9 @@
 #include <float.h>
 #include "../jdsp_header.h"
 
+#define VT_EVEN_GAIN 1.0   // global gain for even harmonics (2,4)
+#define VT_ODD_GAIN  1.0   // global gain for odd harmonics  (3,5)
+
 // ------------------------------------------------------------
 // Simple triode-like soft clipper
 // ------------------------------------------------------------
@@ -143,8 +146,16 @@ if (tb->shapeMix > 0.0f)
                 double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
                 double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-                double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.2;
-                double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.2;
+                // Even vs odd split
+double evenSumCh1 = harmonic2Ch1 + harmonic4Ch1;   // even harmonics
+double oddSumCh1  = harmonic3Ch1 + harmonic5Ch1;   // odd harmonics
+
+double evenSumCh2 = harmonic2Ch2 + harmonic4Ch2;
+double oddSumCh2  = harmonic3Ch2 + harmonic5Ch2;
+
+// Keep your existing overall scaling (0.2 here)
+double harmCh1 = (VT_EVEN_GAIN * evenSumCh1 + VT_ODD_GAIN * oddSumCh1) * 0.2;
+double harmCh2 = (VT_EVEN_GAIN * evenSumCh2 + VT_ODD_GAIN * oddSumCh2) * 0.2;
 
                 // ---- Tube core shaping on mid band sum ----
                 double coreInCh1 = allpassCh1;
@@ -227,9 +238,16 @@ if (tb->shapeMix > 0.0f)
             double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
             double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-            // original factor here was 0.25 instead of 0.2
-            double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.25;
-            double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.25;
+         // Even vs odd split
+double evenSumCh1 = harmonic2Ch1 + harmonic4Ch1;   // even (2nd + 4th)
+double oddSumCh1  = harmonic3Ch1 + harmonic5Ch1;   // odd  (3rd + 5th)
+
+double evenSumCh2 = harmonic2Ch2 + harmonic4Ch2;
+double oddSumCh2  = harmonic3Ch2 + harmonic5Ch2;
+
+// Keep your original 0.25 scale here
+double harmCh1 = (VT_EVEN_GAIN * evenSumCh1 + VT_ODD_GAIN * oddSumCh1) * 0.25;
+double harmCh2 = (VT_EVEN_GAIN * evenSumCh2 + VT_ODD_GAIN * oddSumCh2) * 0.25;
 
             double coreInCh1 = allpassCh1;
             double coreInCh2 = allpassCh2;
