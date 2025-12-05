@@ -5,6 +5,36 @@
 #include <float.h>
 #include "../jdsp_header.h"
 
+// Simple triode-ish curve: soft, asymmetric, DC-corrected
+static inline double vt_triodeshape(double x, double mix)
+{
+    // mix in [0,1] from UI (shapeMix)
+    // More mix => more asymmetry and saturation
+
+    // Amount of asymmetry: shift input before tanh
+    double asym = mix;                  // 0 = symmetric, 1 = max bias
+    double bias = asym * 0.4;           // tweakable; 0.4 is mild bias
+
+    // Overall “drive” into the saturator – tweak by ear
+    double drive = 2.5;
+
+    // Shifted input
+    double xb = x + bias;
+
+    // Soft clip
+    double y = tanh(drive * xb);
+
+    // Remove the DC offset created by bias so it stays centered
+    double y0 = tanh(drive * bias);
+    y -= y0;
+
+    // Small linear blend to keep things from getting too mushy
+    const double linMix = 0.2;          // 0 = all saturated, 1 = all dry
+    double out = (1.0 - linMix) * y + linMix * x;
+
+    return out;
+}
+
 // Normalization so square and cube shapes have roughly similar RMS
 #define VT_NORM_SQ 2.0                         // ~1 / 0.5
 #define VT_NORM_CU 1.3333333333333333          // ~1 / 0.75
@@ -31,7 +61,7 @@ void VTInit(VacuumTube *tb, double fs)
     tb->pregain = 1.0f;
     tb->postgain = 1.0f;
     tb->needOversample = 0;
-    tb->shapeMix = 0.3f;  // default: square-only, matches original sound
+    tb->shapeMix = 0.0f;  // default: square-only, matches original sound
 
     // Original oversampling scheme (kept logic, just slightly clarified)
     if (fs >= 30000.0 && fs < 65000.0)
@@ -108,22 +138,24 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
                 double harmonic4Ch1 = vt_nonlinear(bandCh1[3], tb->shapeMix);
                 double harmonic5Ch1 = vt_nonlinear(bandCh1[4], tb->shapeMix);
 
-                double harmonic2Ch2 = vt_nonlinear(bandCh2[1], tb->shapeMix);
-                double harmonic3Ch2 = vt_nonlinear(bandCh2[2], tb->shapeMix);
-                double harmonic4Ch2 = vt_nonlinear(bandCh2[3], tb->shapeMix);
-                double harmonic5Ch2 = vt_nonlinear(bandCh2[4], tb->shapeMix);
+                // “Core” that we’ll tube-shape: the mid bands (1..4)
+double tubeCoreCh1 = allpassCh1;
+double tubeCoreCh2 = allpassCh2;
 
-                // Same structure as original: dry band[0] + boosted harmonics + allpass + band[5]
-                double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
-                double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 +
-                                  harmonic4Ch1 + harmonic5Ch1) * 0.2;
+// Triode-ish shaped
+double triodeCh1 = vt_triodeshape(tubeCoreCh1, tb->shapeMix);
+double triodeCh2 = vt_triodeshape(tubeCoreCh2, tb->shapeMix);
 
-                double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
-                double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 +
-                                  harmonic4Ch2 + harmonic5Ch2) * 0.2;
+// Crossfade between original and triode-shaped midband
+double shapedCoreCh1 = (1.0 - tb->shapeMix) * tubeCoreCh1 + tb->shapeMix * triodeCh1;
+double shapedCoreCh2 = (1.0 - tb->shapeMix) * tubeCoreCh2 + tb->shapeMix * triodeCh2;
 
-                upsample[0][j] = (float)(baseCh1 + harmCh1);
-                upsample[1][j] = (float)(baseCh2 + harmCh2);
+// Final mix: bass + (shaped mid) + treble + the old exciter harmonics
+double wetCh1 = bandCh1[0] + shapedCoreCh1 + bandCh1[5] + harmCh1;
+double wetCh2 = bandCh2[0] + shapedCoreCh2 + bandCh2[5] + harmCh2;
+
+upsample[0][j] = (float)wetCh1;
+upsample[1][j] = (float)wetCh2;
             }
 
             out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
@@ -149,29 +181,37 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
             bandCh2[3] = -bandCh2[3];
             bandCh2[5] = -bandCh2[5];
 
-            double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
-            double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+           double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-            double harmonic2Ch1 = vt_nonlinear(bandCh1[1], tb->shapeMix);
-            double harmonic3Ch1 = vt_nonlinear(bandCh1[2], tb->shapeMix);
-            double harmonic4Ch1 = vt_nonlinear(bandCh1[3], tb->shapeMix);
-            double harmonic5Ch1 = vt_nonlinear(bandCh1[4], tb->shapeMix);
+double tubeCoreCh1 = allpassCh1;
+double tubeCoreCh2 = allpassCh2;
 
-            double harmonic2Ch2 = vt_nonlinear(bandCh2[1], tb->shapeMix);
-            double harmonic3Ch2 = vt_nonlinear(bandCh2[2], tb->shapeMix);
-            double harmonic4Ch2 = vt_nonlinear(bandCh2[3], tb->shapeMix);
-            double harmonic5Ch2 = vt_nonlinear(bandCh2[4], tb->shapeMix);
+double triodeCh1 = vt_triodeshape(tubeCoreCh1, tb->shapeMix);
+double triodeCh2 = vt_triodeshape(tubeCoreCh2, tb->shapeMix);
 
-            double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
-            double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 +
-                              harmonic4Ch1 + harmonic5Ch1) * 0.25;
+double shapedCoreCh1 = (1.0 - tb->shapeMix) * tubeCoreCh1 + tb->shapeMix * triodeCh1;
+double shapedCoreCh2 = (1.0 - tb->shapeMix) * tubeCoreCh2 + tb->shapeMix * triodeCh2;
 
-            double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
-            double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 +
-                              harmonic4Ch2 + harmonic5Ch2) * 0.25;
+double baseCh1 = bandCh1[0] + shapedCoreCh1 + bandCh1[5];
+double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.25;
 
-            out1[j] = (float)(baseCh1 + harmCh1) * tb->postgain;
-            out2[j] = (float)(baseCh2 + harmCh2) * tb->postgain;
+double baseCh2 = bandCh2[0] + shapedCoreCh2 + bandCh2[5];
+double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.25;
+
+double wetCh1 = baseCh1 + harmCh1;
+double wetCh2 = baseCh2 + harmCh2;
+
+out1[j] = (float)wetCh1 * tb->postgain;
+out2[j] = (float)wetCh2 * tb->postgain;
         }
     }
 }
