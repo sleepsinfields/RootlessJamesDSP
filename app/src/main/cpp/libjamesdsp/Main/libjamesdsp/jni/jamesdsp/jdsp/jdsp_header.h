@@ -27,9 +27,11 @@ extern int lower_bound(double *a, int n, double x);
 extern size_t fast_upper_bound(double *a, size_t n, double x);
 extern size_t fast_lower_bound(double *a, size_t n, double x);
 extern void fhtsinHalfTblFloat(float *dst, unsigned int n);
-extern void LLdiscreteHartleyFloat(float *A, const int nPoints, const float *sinTab);
+extern void LLdiscreteHartleyFloat(oat *A, const int nPoints, const float *sinTab);
 extern double randXorshift(uint64_t s[2]);
 // Misc end
+
+typedef struct dspsys dspsys;
 typedef struct
 {
 	float threshold;
@@ -453,16 +455,16 @@ typedef struct
 	FFTConvolver2x4x2 *conv[3];
 	TwoStageFFTConvolver2x4x2 *convLong_T_S;
 	FFTConvolver2x4x2 *convLong_S_S;
-	void(*process)(struct dspsys *, size_t);
+	void(*process)(dspsys *, size_t);
 } Crossfeed;
-typedef struct dspsys dspsys;
+
 typedef struct
 {
 	FFTConvolver2x2 *conv1d2x2_S_S;
 	TwoStageFFTConvolver2x2 *conv1d2x2_T_S;
 	FFTConvolver2x4x2 *conv1d2x4x2_S_S;
 	TwoStageFFTConvolver2x4x2 *conv1d2x4x2_T_S;
-	void(*process)(struct dspsys*, size_t);
+	void(*process)(dspsys*, size_t);
 } Convolver1D;
 typedef struct
 {
@@ -556,16 +558,16 @@ struct dspsys
 	int32_t(*i32_from_p24)(const uint8_t *);
 	void (*p24_from_i32)(int32_t, uint8_t *);
 	// I/O function pointer
-	void(*processInt16Deinterleaved)(struct dspsys*, int16_t*, int16_t*, int16_t*, int16_t*, size_t);
-	void(*processInt32Deinterleaved)(struct dspsys*, int32_t*, int32_t*, int32_t*, int32_t*, size_t);
-	void(*processInt8_24Deinterleaved)(struct dspsys *, int32_t*, int32_t*, int32_t*, int32_t*, size_t);
-	void(*processInt24PackedDeinterleaved)(struct dspsys *, uint8_t*, uint8_t*, uint8_t*, uint8_t*, size_t);
-	void(*processFloatDeinterleaved)(struct dspsys*, float*, float*, float*, float*, size_t);
-	void(*processInt16Multiplexd)(struct dspsys*, int16_t*, int16_t*, size_t);
-	void(*processInt32Multiplexd)(struct dspsys*, int32_t*, int32_t*, size_t);
-	void(*processInt8_24Multiplexd)(struct dspsys*, int32_t*, int32_t*, size_t);
-	void(*processInt24PackedMultiplexd)(struct dspsys*, uint8_t*, uint8_t*, size_t);
-	void(*processFloatMultiplexd)(struct dspsys*, float*, float*, size_t);
+	void(*processInt16Deinterleaved)(dspsys*, int16_t*, int16_t*, int16_t*, int16_t*, size_t);
+	void(*processInt32Deinterleaved)(dspsys*, int32_t*, int32_t*, int32_t*, int32_t*, size_t);
+	void(*processInt8_24Deinterleaved)(dspsys *, int32_t*, int32_t*, int32_t*, int32_t*, size_t);
+	void(*processInt24PackedDeinterleaved)(dspsys *, uint8_t*, uint8_t*, uint8_t*, uint8_t*, size_t);
+	void(*processFloatDeinterleaved)(dspsys*, float*, float*, float*, float*, size_t);
+	void(*processInt16Multiplexd)(dspsys*, int16_t*, int16_t*, size_t);
+	void(*processInt32Multiplexd)(dspsys*, int32_t*, int32_t*, size_t);
+	void(*processInt8_24Multiplexd)(dspsys*, int32_t*, int32_t*, size_t);
+	void(*processInt24PackedMultiplexd)(dspsys*, uint8_t*, uint8_t*, size_t);
+	void(*processFloatMultiplexd)(dspsys*, float*, float*, size_t);
 	// Blobs(resampled)
 	int blobsResampledLen;
 	float *blobsCh1[3];
