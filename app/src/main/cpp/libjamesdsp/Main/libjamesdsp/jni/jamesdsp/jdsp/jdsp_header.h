@@ -582,7 +582,7 @@ struct dspsys
 	pthread_mutex_t m_in_processing;
 	// Random number and related
 	uint64_t rndstate[2];
-} 
+};
 
 typedef struct dspsys JamesDSPLib;
 
