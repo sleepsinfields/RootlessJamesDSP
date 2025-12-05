@@ -117,10 +117,13 @@ class JamesDspLocalEngine(
 }
 //
 
-// Optional helper to adjust shape from Kotlin:
 fun setVacuumTubeShape(mix: Float): Boolean {
-    Log.e("TubeDebug", "LocalEngine.setVacuumTubeShape mix=$mix")
-    return JamesDspWrapper.setVacuumTubeShape(handle, mix)
+    val clamped = mix.coerceIn(0f, 1f)
+    val d = clamped.toDouble()
+
+    Log.e("TubeDebug", "LocalEngine.setVacuumTubeShape mixFloat=$clamped mixDouble=$d")
+
+    return JamesDspWrapper.setVacuumTubeShape(handle, d)
 }
 //
 
