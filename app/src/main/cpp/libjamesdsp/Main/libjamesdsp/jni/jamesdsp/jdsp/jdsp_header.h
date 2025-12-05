@@ -27,7 +27,7 @@ extern int lower_bound(double *a, int n, double x);
 extern size_t fast_upper_bound(double *a, size_t n, double x);
 extern size_t fast_lower_bound(double *a, size_t n, double x);
 extern void fhtsinHalfTblFloat(float *dst, unsigned int n);
-extern void LLdiscreteHartleyFloat(oat *A, const int nPoints, const float *sinTab);
+extern void LLdiscreteHartleyFloat(float *A, const int nPoints, const float *sinTab);
 extern double randXorshift(uint64_t s[2]);
 // Misc end
 
@@ -582,7 +582,10 @@ struct dspsys
 	pthread_mutex_t m_in_processing;
 	// Random number and related
 	uint64_t rndstate[2];
-} JamesDSPLib;
+} 
+
+typedef struct dspsys JamesDSPLib;
+
 // JamesDSP controller
 extern void JamesDSPGlobalMemoryAllocation();
 extern void JamesDSPGlobalMemoryDeallocation();
