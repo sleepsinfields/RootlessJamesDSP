@@ -506,7 +506,7 @@ typedef struct
 	float *impulseResponse;
 	unsigned int impChannels, impulseLengthActual;
 } tmpIRData;
-typedef struct dspsys
+struct dspsys
 {
 	// Sys var
 	char enableASRC;
@@ -552,7 +552,7 @@ typedef struct dspsys
 	size_t blockSize, blockSizeMax, pw2BlockMemSize;
 	float *tmpBuffer[6];
 	// Internal function pointer
-	void(*processInternal)(struct dspsys *, size_t);
+	void(*processInternal)(dspsys *, size_t);
 	int32_t(*i32_from_p24)(const uint8_t *);
 	void (*p24_from_i32)(int32_t, uint8_t *);
 	// I/O function pointer
