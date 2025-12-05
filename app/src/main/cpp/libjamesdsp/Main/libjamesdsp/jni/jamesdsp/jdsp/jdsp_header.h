@@ -641,6 +641,7 @@ extern void VacuumTubeDisable(JamesDSPLib *jdsp);
 extern void VacuumTubeSetGain(JamesDSPLib *jdsp, double dbGain);
 extern void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix);   // <--- add this
 extern void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n);
+extern void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd);
 // Live programmable effect
 extern const char* checkErrorCode(int errCode);
 extern void LiveProgConstructor(JamesDSPLib *jdsp);
