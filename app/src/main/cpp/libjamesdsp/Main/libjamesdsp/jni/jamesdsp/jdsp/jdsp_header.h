@@ -143,6 +143,16 @@ typedef struct
     SixBandsCrossover subband[2];
     float pregain, postgain;
     float shapeMix;   // 0 = square-only (legacy), 1 = cube-heavier
+typedef struct
+{
+    int needOversample;
+    samplerateTool smp[2];
+    SixBandsCrossover subband[2];
+    float pregain, postgain;
+    float shapeMix;    // 0 = old allpass core, 1 = triode core
+    // New: harmonic balance controls (even vs odd)
+    float evenGain;    // scales 2nd+4th
+    float oddGain;     // scales 3rd+5th
 } VacuumTube;
 
 typedef struct
