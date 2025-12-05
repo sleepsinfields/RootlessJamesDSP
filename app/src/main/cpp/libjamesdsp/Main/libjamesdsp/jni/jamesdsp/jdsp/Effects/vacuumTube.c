@@ -141,46 +141,38 @@ if (tb->shapeMix > 0.0f)
 
                 // original harmonic “exciter” part
                 double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
-                double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
-                double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
-                double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
 
-                double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
-                double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
-                double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
-                double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
+double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-                // Even vs odd split
-double evenSumCh1 = harmonic2Ch1 + harmonic4Ch1;   // even harmonics
-double oddSumCh1  = harmonic3Ch1 + harmonic5Ch1;   // odd harmonics
+// split even / odd for oversampled core too
+double harmEvenCh1 = (harmonic2Ch1 + harmonic4Ch1) * tb->evenGain;
+double harmOddCh1  = (harmonic3Ch1 + harmonic5Ch1) * tb->oddGain;
 
-double evenSumCh2 = harmonic2Ch2 + harmonic4Ch2;
-double oddSumCh2  = harmonic3Ch2 + harmonic5Ch2;
+double harmEvenCh2 = (harmonic2Ch2 + harmonic4Ch2) * tb->evenGain;
+double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 
-// Keep your existing overall scaling (0.2 here)
-double harmCh1 = (tb->evenGain * evenSumCh1 + tb->oddGain * oddSumCh1) * 0.2;
-double harmCh2 = (tb->evenGain * evenSumCh2 + tb->oddGain * oddSumCh2) * 0.2;
-                // ---- Tube core shaping on mid band sum ----
-                double coreInCh1 = allpassCh1;
-                double coreInCh2 = allpassCh2;
+// slightly conservative scale in OS path as well
+const double harmScaleOS = 0.20;
 
-                double triodeCh1 = vt_triodeshape(coreInCh1);
-                double triodeCh2 = vt_triodeshape(coreInCh2);
+double harmCh1 = (harmEvenCh1 + harmOddCh1) * harmScaleOS;
+double harmCh2 = (harmEvenCh2 + harmOddCh2) * harmScaleOS;
 
-                double coreOutCh1 =
-                    (1.0 - tb->shapeMix) * coreInCh1 +
-                    tb->shapeMix * triodeCh1;
+// base (same structure as before)
+double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
+double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
 
-                double coreOutCh2 =
-                    (1.0 - tb->shapeMix) * coreInCh2 +
-                    tb->shapeMix * triodeCh2;
+// final oversampled sample before downsampling
+double wetCh1 = baseCh1 + harmCh1;
+double wetCh2 = baseCh2 + harmCh2;
 
-                // final wet signal: low + shaped mid core + highs + harmonic “sparkle”
-                double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
-                double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
-
-                upsample[0][j] = (float)wetCh1;
-                upsample[1][j] = (float)wetCh2;
+upsample[0][j] = (float)wetCh1;
+upsample[1][j] = (float)wetCh2;
             }
 
             out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
@@ -231,46 +223,52 @@ if (tb->shapeMix > 0.0f)
             double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
             double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
-            double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
-            double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
-            double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
-            double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+            // --- harmonic energy per band ---
+double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
 
-            double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
-            double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
-            double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
-            double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
+double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-         // Even vs odd split
-double evenSumCh1 = harmonic2Ch1 + harmonic4Ch1;   // even (2nd + 4th)
-double oddSumCh1  = harmonic3Ch1 + harmonic5Ch1;   // odd  (3rd + 5th)
+// --- EVEN / ODD SPLIT ---
+// even: 2nd + 4th, odd: 3rd + 5th
+double harmEvenCh1 = (harmonic2Ch1 + harmonic4Ch1) * tb->evenGain;
+double harmOddCh1  = (harmonic3Ch1 + harmonic5Ch1) * tb->oddGain;
 
-double evenSumCh2 = harmonic2Ch2 + harmonic4Ch2;
-double oddSumCh2  = harmonic3Ch2 + harmonic5Ch2;
+double harmEvenCh2 = (harmonic2Ch2 + harmonic4Ch2) * tb->evenGain;
+double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 
-// Keep your original 0.25 scale here
-double harmCh1 = (tb->evenGain * evenSumCh1 + tb->oddGain * oddSumCh1) * 0.25;
-double harmCh2 = (tb->evenGain * evenSumCh2 + tb->oddGain * oddSumCh2) * 0.25;
+// base scaling for harmonic contribution
+const double harmScale = 0.20;  // start a bit lower than 0.25
 
-            double coreInCh1 = allpassCh1;
-            double coreInCh2 = allpassCh2;
+double harmCh1 = (harmEvenCh1 + harmOddCh1) * harmScale;
+double harmCh2 = (harmEvenCh2 + harmOddCh2) * harmScale;
 
-            double triodeCh1 = vt_triodeshape(coreInCh1);
-            double triodeCh2 = vt_triodeshape(coreInCh2);
+// --- triode core mix (unchanged) ---
+double coreInCh1 = allpassCh1;
+double coreInCh2 = allpassCh2;
 
-            double coreOutCh1 =
-                (1.0 - tb->shapeMix) * coreInCh1 +
-                tb->shapeMix * triodeCh1;
+double triodeCh1 = vt_triodeshape(coreInCh1);
+double triodeCh2 = vt_triodeshape(coreInCh2);
 
-            double coreOutCh2 =
-                (1.0 - tb->shapeMix) * coreInCh2 +
-                tb->shapeMix * triodeCh2;
+double coreOutCh1 =
+    (1.0 - tb->shapeMix) * coreInCh1 +
+    tb->shapeMix * triodeCh1;
 
-            double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
-            double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
+double coreOutCh2 =
+    (1.0 - tb->shapeMix) * coreInCh2 +
+    tb->shapeMix * triodeCh2;
 
-            out1[j] = (float)(wetCh1) * tb->postgain;
-            out2[j] = (float)(wetCh2) * tb->postgain;
+// final wet sample
+double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
+double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
+
+out1[j] = (float)wetCh1 * tb->postgain;
+out2[j] = (float)wetCh2 * tb->postgain;
         }
     }
 }
