@@ -26,14 +26,18 @@ static inline double vt_triodeshape(double x)
 // ------------------------------------------------------------
 // Init
 // ------------------------------------------------------------
+
+
 void VTInit(VacuumTube *tb, double fs)
 {
     tb->pregain = 1.0f;
     tb->postgain = 1.0f;
     tb->needOversample = 0;
+    tb->shapeMix = 0.3f;   // your triode mix
 
-    // 0.0 = completely original behavior, 1.0 = fully triode-blended
-    tb->shapeMix = 0.3f;
+    // New: start with neutral even/odd balance
+    tb->evenGain = (float)VT_EVEN_GAIN;
+    tb->oddGain  = (float)VT_ODD_GAIN;
 
     // Oversampling setup (same logic you had, plus 2x at very high fs)
     if (fs >= 65000.0)
@@ -154,9 +158,8 @@ double evenSumCh2 = harmonic2Ch2 + harmonic4Ch2;
 double oddSumCh2  = harmonic3Ch2 + harmonic5Ch2;
 
 // Keep your existing overall scaling (0.2 here)
-double harmCh1 = (VT_EVEN_GAIN * evenSumCh1 + VT_ODD_GAIN * oddSumCh1) * 0.2;
-double harmCh2 = (VT_EVEN_GAIN * evenSumCh2 + VT_ODD_GAIN * oddSumCh2) * 0.2;
-
+double harmCh1 = (tb->evenGain * evenSumCh1 + tb->oddGain * oddSumCh1) * 0.2;
+double harmCh2 = (tb->evenGain * evenSumCh2 + tb->oddGain * oddSumCh2) * 0.2;
                 // ---- Tube core shaping on mid band sum ----
                 double coreInCh1 = allpassCh1;
                 double coreInCh2 = allpassCh2;
@@ -246,8 +249,8 @@ double evenSumCh2 = harmonic2Ch2 + harmonic4Ch2;
 double oddSumCh2  = harmonic3Ch2 + harmonic5Ch2;
 
 // Keep your original 0.25 scale here
-double harmCh1 = (VT_EVEN_GAIN * evenSumCh1 + VT_ODD_GAIN * oddSumCh1) * 0.25;
-double harmCh2 = (VT_EVEN_GAIN * evenSumCh2 + VT_ODD_GAIN * oddSumCh2) * 0.25;
+double harmCh1 = (tb->evenGain * evenSumCh1 + tb->oddGain * oddSumCh1) * 0.25;
+double harmCh2 = (tb->evenGain * evenSumCh2 + tb->oddGain * oddSumCh2) * 0.25;
 
             double coreInCh1 = allpassCh1;
             double coreInCh2 = allpassCh2;
