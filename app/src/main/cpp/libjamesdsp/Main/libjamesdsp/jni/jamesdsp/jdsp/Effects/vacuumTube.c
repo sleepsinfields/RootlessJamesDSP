@@ -94,51 +94,56 @@ if (tb->needOversample)
             bandCh2[1] = -bandCh2[1];
             bandCh2[3] = -bandCh2[3];
             bandCh2[5] = -bandCh2[5];
-            double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
-            double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
-            double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
-            double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
-            double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
-            double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
-            double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
-            double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
-            double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
-            double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
+//
+            
+            // inside: for (int j = 0; j < tb->smp[0].factor; j++)
+double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
+double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
+double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-            // ---- NEW: build base + harmonics separately ----
-            double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
-            double harmSumCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.2;
+// base + harmonics (unchanged structure)
+double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
+double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.2;
 
-            double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
-            double harmSumCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.2;
+double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
+double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.2;
 
-            double wetCh1 = baseCh1 + harmSumCh1;
-            double wetCh2 = baseCh2 + harmSumCh2;
+double wetCh1 = baseCh1 + harmCh1;
+double wetCh2 = baseCh2 + harmCh2;
 
-            // ---- NEW: harmonic normalizer (per channel) ----
-            // small epsilon to avoid div-by-zero
-            const double eps = 1e-18;
+// ---- SAFER NORMALIZER v2 ----
+const double eps = 1e-18;
+const double targetEnergy = 1.0;  // you can tune if needed
 
-            double dryE1 = baseCh1 * baseCh1 + eps;
-            double wetE1 = wetCh1 * wetCh1 + eps;
-            double ratio1 = wetE1 / dryE1;
+// Instantaneous energy of *wet* sample
+double e1 = wetCh1 * wetCh1 + eps;
+double e2 = wetCh2 * wetCh2 + eps;
 
-            double dryE2 = baseCh2 * baseCh2 + eps;
-            double wetE2 = wetCh2 * wetCh2 + eps;
-            double ratio2 = wetE2 / dryE2;
+// Smooth it. 0.9999 gives a *very* slow, transparent response.
+tb->normAvgCh1 = 0.9999 * tb->normAvgCh1 + 0.0001 * e1;
+tb->normAvgCh2 = 0.9999 * tb->normAvgCh2 + 0.0001 * e2;
 
-            // Exponential smoothing (very slow, ~0.1% update per sample)
-            // You can tweak 0.001 to adjust how fast it responds
-            tb->normAvgCh1 = 0.999 * tb->normAvgCh1 + 0.001 * ratio1;
-            tb->normAvgCh2 = 0.999 * tb->normAvgCh2 + 0.001 * ratio2;
+// Clamp (avoid weird behavior if something goes crazy)
+if (tb->normAvgCh1 < 0.01) tb->normAvgCh1 = 0.01;
+if (tb->normAvgCh1 > 100.0) tb->normAvgCh1 = 100.0;
+if (tb->normAvgCh2 < 0.01) tb->normAvgCh2 = 0.01;
+if (tb->normAvgCh2 > 100.0) tb->normAvgCh2 = 100.0;
 
-            double normGain1 = 1.0 / sqrt(tb->normAvgCh1);
-            double normGain2 = 1.0 / sqrt(tb->normAvgCh2);
+// Gain to bring current long-term energy near targetEnergy
+double normGain1 = sqrt(targetEnergy / tb->normAvgCh1);
+double normGain2 = sqrt(targetEnergy / tb->normAvgCh2);
 
-            // Apply normalized gain
-            upsample[0][j] = (float)(wetCh1 * normGain1);
-            upsample[1][j] = (float)(wetCh2 * normGain2);
+upsample[0][j] = (float)(wetCh1 * normGain1);
+upsample[1][j] = (float)(wetCh2 * normGain2);
         }
+//
         out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
         out2[i] = oversample_stepdownSmpFloat(&tb->smp[1], upsample[1]) * tb->postgain;
     }
@@ -168,31 +173,31 @@ if (tb->needOversample)
         double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
         double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-        // --- base + harmonics ---
         double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
-        double harmSumCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.25;
+        double harmCh1 = (harmonic2Ch1 + harmonic3Ch1 + harmonic4Ch1 + harmonic5Ch1) * 0.25;
 
         double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
-        double harmSumCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.25;
+        double harmCh2 = (harmonic2Ch2 + harmonic3Ch2 + harmonic4Ch2 + harmonic5Ch2) * 0.25;
 
-        double wetCh1 = baseCh1 + harmSumCh1;
-        double wetCh2 = baseCh2 + harmSumCh2;
+        double wetCh1 = baseCh1 + harmCh1;
+        double wetCh2 = baseCh2 + harmCh2;
 
         const double eps = 1e-18;
+        const double targetEnergy = 1.0;
 
-        double dryE1 = baseCh1 * baseCh1 + eps;
-        double wetE1 = wetCh1 * wetCh1 + eps;
-        double ratio1 = wetE1 / dryE1;
+        double e1 = wetCh1 * wetCh1 + eps;
+        double e2 = wetCh2 * wetCh2 + eps;
 
-        double dryE2 = baseCh2 * baseCh2 + eps;
-        double wetE2 = wetCh2 * wetCh2 + eps;
-        double ratio2 = wetE2 / dryE2;
+        tb->normAvgCh1 = 0.9999 * tb->normAvgCh1 + 0.0001 * e1;
+        tb->normAvgCh2 = 0.9999 * tb->normAvgCh2 + 0.0001 * e2;
 
-        tb->normAvgCh1 = 0.999 * tb->normAvgCh1 + 0.001 * ratio1;
-        tb->normAvgCh2 = 0.999 * tb->normAvgCh2 + 0.001 * ratio2;
+        if (tb->normAvgCh1 < 0.01) tb->normAvgCh1 = 0.01;
+        if (tb->normAvgCh1 > 100.0) tb->normAvgCh1 = 100.0;
+        if (tb->normAvgCh2 < 0.01) tb->normAvgCh2 = 0.01;
+        if (tb->normAvgCh2 > 100.0) tb->normAvgCh2 = 100.0;
 
-        double normGain1 = 1.0 / sqrt(tb->normAvgCh1);
-        double normGain2 = 1.0 / sqrt(tb->normAvgCh2);
+        double normGain1 = sqrt(targetEnergy / tb->normAvgCh1);
+        double normGain2 = sqrt(targetEnergy / tb->normAvgCh2);
 
         out1[j] = (float)(wetCh1 * normGain1) * tb->postgain;
         out2[j] = (float)(wetCh2 * normGain2) * tb->postgain;
