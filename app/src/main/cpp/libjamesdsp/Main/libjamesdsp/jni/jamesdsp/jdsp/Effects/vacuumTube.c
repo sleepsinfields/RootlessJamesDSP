@@ -111,6 +111,23 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
                 bandCh2[3] = -bandCh2[3];
                 bandCh2[5] = -bandCh2[5];
 
+// Per-band tube shaping on ALL bands using shapeMix
+if (tb->shapeMix > 0.0f)
+{
+    double mix = 0.5 * (double)tb->shapeMix;
+    for (int b = 0; b < 6; ++b)
+    {
+        double dry1 = bandCh1[b];
+        double dry2 = bandCh2[b];
+
+        double tri1 = vt_triodeshape(dry1);
+        double tri2 = vt_triodeshape(dry2);
+
+        bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
+        bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
+    }
+}
+//
                 // sum of middle bands
                 double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
                 double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
@@ -180,7 +197,23 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
             bandCh2[1] = -bandCh2[1];
             bandCh2[3] = -bandCh2[3];
             bandCh2[5] = -bandCh2[5];
+// Per-band tube shaping on ALL bands using shapeMix
+if (tb->shapeMix > 0.0f)
+{
+    double mix = 0.5 * (double)tb->shapeMix;
+    for (int b = 0; b < 6; ++b)
+    {
+        double dry1 = bandCh1[b];
+        double dry2 = bandCh2[b];
 
+        double tri1 = vt_triodeshape(dry1);
+        double tri2 = vt_triodeshape(dry2);
+
+        bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
+        bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
+    }
+}
+//
             double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
             double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
