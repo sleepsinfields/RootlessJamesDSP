@@ -723,18 +723,18 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
 }
 
 //
-extern "C" JNIEXPORT void JNICALL
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeShape(
-        JNIEnv* env,
+        JNIEnv *env,
         jclass,
         jlong self,
         jdouble mix
 ) {
-    (void)env;
-    if (!self) return;
+    auto *dsp = reinterpret_cast<JamesDSPLib *>(self);
+    if (!dsp) return JNI_FALSE;
 
-    JamesDSPLib* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    VacuumTubeSetShape(jdsp, static_cast<double>(mix));
+    VacuumTubeSetShape(dsp, (double)mix);
+    return JNI_TRUE;
 }
 //
 extern "C" JNIEXPORT jboolean JNICALL
