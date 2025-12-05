@@ -114,7 +114,7 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
 // Per-band tube shaping on ALL bands using shapeMix
 if (tb->shapeMix > 0.0f)
 {
-    double mix = 0.5 * (double)tb->shapeMix;
+    double mix = 1 * (double)tb->shapeMix;
     for (int b = 0; b < 6; ++b)
     {
         double dry1 = bandCh1[b];
@@ -200,7 +200,7 @@ if (tb->shapeMix > 0.0f)
 // Per-band tube shaping on ALL bands using shapeMix
 if (tb->shapeMix > 0.0f)
 {
-    double mix = 0.5 * (double)tb->shapeMix;
+    double mix = 1 * (double)tb->shapeMix;
     for (int b = 0; b < 6; ++b)
     {
         double dry1 = bandCh1[b];
