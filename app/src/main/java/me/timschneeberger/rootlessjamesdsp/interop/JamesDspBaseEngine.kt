@@ -253,10 +253,9 @@ Constants.PREF_TUBE -> {
     // 1) Keep the old enable + gain behavior
     applyTubeIfChanged(tubeEnabled, tubeDrive)
 
-    // 2) NEW: advanced tube controls – only for local engine
+    // 2) NEW: independent advanced tube controls, but only for local engine
     val local = this as? JamesDspLocalEngine
     if (local != null && tubeEnabled) {
-
         val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
 
         fun readDouble(key: String, def: Double): Double {
@@ -300,21 +299,24 @@ Constants.PREF_TUBE -> {
             0.1, 2.0
         )
 
-        Timber.e(
-            "TubeDebug: shape=%.4f harmScale=%.4f even=%.4f odd=%.4f drive=%.4f bias=%.4f scale=%.4f",
-            shapeMix, harmScale, evenGain, oddGain, triodeDrive, triodeBias, triodeScale
+        val coreTriodesOn = tubePrefs.getBoolean("tube_core_triodes", true)
+
+        Log.e(
+            "TubeDebug",
+            "tubeShape=$shapeMix harmScale=$harmScale even=$evenGain odd=$oddGain " +
+                "drive=$triodeDrive bias=$triodeBias scale=$triodeScale " +
+                "coreTriodesOn=$coreTriodesOn"
         )
 
-        // Push to engine
         local.setVacuumTubeShape(shapeMix)
         local.setVacuumTubeHarmScale(harmScale)
         local.setVacuumTubeHarmonics(evenGain, oddGain)
         local.setVacuumTubeTriodeParams(triodeDrive, triodeBias, triodeScale)
+        local.setVacuumTubeCoreTriode(coreTriodesOn)
     }
 
     true
 }
-
                     Constants.PREF_DDC -> setVdc(ddcEnabled, ddcFile)
                     Constants.PREF_LIVEPROG -> setLiveprog(liveProgEnabled, liveprogFile)
                     Constants.PREF_CONVOLVER -> setConvolver(
