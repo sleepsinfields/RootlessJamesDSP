@@ -8,15 +8,16 @@
 #define VT_EVEN_GAIN 1.0   // global gain for even harmonics (2,4)
 #define VT_ODD_GAIN  1.0   // global gain for odd harmonics  (3,5)
 
+// 
 // ------------------------------------------------------------
-// Simple triode-like soft clipper
+// Triode-like soft clipper using tube params
 // ------------------------------------------------------------
-static inline double vt_triodeshape(double x)
+static inline double vt_triodeshape(double x, const VacuumTube *tb)
 {
-    // These are "feel" constants – you can tune later.
-    const double drive = 2.5;   // how hard we hit the virtual tube
-    const double bias  = 0.0;   // DC offset (0 for now)
-    const double scale = 0.5;   // trims output so level stays reasonable
+    // these come from VTInit defaults and can be changed at runtime
+    const double drive = (double)tb->triodeDrive;
+    const double bias  = (double)tb->triodeBias;
+    const double scale = (double)tb->triodeScale;
 
     double v = (x + bias) * drive;
     double y = tanh(v);
