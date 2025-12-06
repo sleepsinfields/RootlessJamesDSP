@@ -369,3 +369,7 @@ void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp, double drive, double bias, dou
     jdsp->tube.triodeBias  = (float)bias;
     jdsp->tube.triodeScale = (float)scale;
 }
+void VacuumTubeSetCoreTriode(JamesDSPLib *jdsp, int enabled)
+{
+    jdsp->tube.coreTriodeEnabled = (enabled != 0);
+}
