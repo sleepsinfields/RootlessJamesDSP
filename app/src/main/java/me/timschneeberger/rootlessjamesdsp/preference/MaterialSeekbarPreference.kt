@@ -274,6 +274,8 @@ context.showInputAlert(
     }
 }
 true
+}
+}
 
     override fun onSetInitialValue(defaultValue: Any?) {
         setValue(getPersistedFloat((defaultValue as? Float ?: 0f)))
