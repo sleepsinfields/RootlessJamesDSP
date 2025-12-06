@@ -116,6 +116,9 @@ external fun setCrossfeed(
 
 
    
+//
+//
+// --- Vacuum tube JNI -------------------------------------------------------
 
 external fun setVacuumTube(
     self: JamesDspHandle,
@@ -134,9 +137,6 @@ external fun setVacuumTubeHarmonics(
     odd: Double
 ): Boolean
 
-// Optional extra native hooks – only keep if you added C-side API:
-//   void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double scale);
-//   void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp, double drive, double bias, double scale);
 external fun setVacuumTubeHarmScale(
     self: JamesDspHandle,
     scale: Double
@@ -149,9 +149,7 @@ external fun setVacuumTubeTriodeParams(
     scale: Double
 ): Boolean
 
-// ------------------------------------------------------------------
-// Kotlin-side “nice” wrappers (optional, but keeps LocalEngine tidy)
-// ------------------------------------------------------------------
+// --- Kotlin helpers (optional) ---------------------------------------------
 
 fun setTubeShape(self: JamesDspHandle, mix: Double): Boolean {
     val clamped = mix.coerceIn(0.0, 1.0)
@@ -165,7 +163,6 @@ fun setTubeHarmonics(self: JamesDspHandle, even: Double, odd: Double): Boolean {
 }
 
 fun setTubeHarmScale(self: JamesDspHandle, scale: Double): Boolean {
-    // 0 = no extra harmonic boost, 1 = “max” (you can tune)
     val s = scale.coerceIn(0.0, 1.0)
     return setVacuumTubeHarmScale(self, s)
 }
@@ -176,34 +173,12 @@ fun setTubeTriodeParams(
     bias: Double,
     scale: Double
 ): Boolean {
-    // Reasonable starter ranges – you can adjust later:
-    val d = drive.coerceIn(0.5, 4.0)   // how hard to hit tanh
-    val b = bias.coerceIn(-0.5, 0.5)   // small DC shift
-    val s = scale.coerceIn(0.1, 1.5)   // output trim
-
+    val d = drive.coerceIn(0.5, 4.0)
+    val b = bias.coerceIn(-0.5, 0.5)
+    val s = scale.coerceIn(0.1, 1.5)
     return setVacuumTubeTriodeParams(self, d, b, s)
 }
-
-    external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
-
-external fun setVacuumTubeTriodeParams(
-    self: JamesDspHandle,
-    drive: Double,
-    bias: Double,
-    scale: Double
-): Boolean
-
-external fun setVacuumTubeHarmScale(
-    self: JamesDspHandle,
-    harmScale: Double
-): Boolean
-
-external fun setVacuumTubeHarmonics(
-    self: JamesDspHandle,
-    even: Double,
-    odd: Double
-): Boolean
-
+//
     // EEL VM utilities
     external fun enumerateEelVariables(self: JamesDspHandle): ArrayList<EelVmVariable>
     external fun manipulateEelVariable(self: JamesDspHandle, name: String, value: Float): Boolean
