@@ -306,7 +306,7 @@ Constants.PREF_TUBE -> {
         )
 
         // Push to engine
-        local.setVacuumTubeShape(shapeMix.toFloat())
+        local.setVacuumTubeShape(shapeMix)
         local.setVacuumTubeHarmScale(harmScale)
         local.setVacuumTubeHarmonics(evenGain, oddGain)
         local.setVacuumTubeTriodeParams(triodeDrive, triodeBias, triodeScale)
