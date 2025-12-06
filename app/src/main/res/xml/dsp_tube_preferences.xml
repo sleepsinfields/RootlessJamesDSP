@@ -63,5 +63,11 @@
         android:title="Triode scale"
         android:summary="Default 0.5"
         android:defaultValue="0.5" />
+
+<SwitchPreferenceCompat
+        android:key="tube_core_triodes"
+        android:title="Triode core on mid bands"
+        android:defaultValue="true"
+        app:iconSpaceReserved="false" />
 </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
 </PreferenceScreen>
