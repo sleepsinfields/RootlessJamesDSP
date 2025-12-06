@@ -650,7 +650,7 @@ extern void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n);
 extern void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd);
 extern void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp,
                                       double drive, double bias, double scale);
-extern void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double harmScale);
+extern void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double scale);
 
 // Live programmable effect
 extern const char* checkErrorCode(int errCode);
