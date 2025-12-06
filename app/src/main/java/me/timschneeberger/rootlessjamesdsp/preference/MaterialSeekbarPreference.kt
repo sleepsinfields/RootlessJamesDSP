@@ -184,20 +184,18 @@ class MaterialSeekbarPreference : Preference {
 
 if (key == context.getString(R.string.key_tube_drive)) {
     valueLabelOverride = { _ ->
-        val prefs = sharedPreferences
+        // Use the same namespace as the engine: PREF_TUBE
+        val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
         val preciseKey = context.getString(R.string.key_tube_drive_precise)
-        val precise = prefs?.getString(preciseKey, null)
+        val precise = tubePrefs.getString(preciseKey, null)
 
         if (!precise.isNullOrBlank()) {
-            // Show the exact 17-digit string + unit
             "$precise$mUnit"
         } else {
-            // Fallback to normal float formatting
             "%.${mPrecision}f$mUnit".format(Locale.ROOT, getValue())
         }
     }
 
-    // Force refresh the label using the override
     updateLabelValue(mSeekBarValue)
 }
 
@@ -239,13 +237,10 @@ if (key == context.getString(R.string.key_tube_drive)) {
                 // Clamp to min/max of the slider
                 d = d.coerceIn(mMin.toDouble(), mMax.toDouble())
 
-                // Save precise string to PREF_TUBE / key_tube_drive_precise
-                val prefsTube = sharedPreferences
-                if (prefsTube != null) {
-                    val preciseKey = context.getString(R.string.key_tube_drive_precise)
-                    val formatted = String.format(Locale.ROOT, "%.20f", d)
-                    prefsTube.edit().putString(preciseKey, formatted).apply()
-                }
+              val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
+val preciseKey = context.getString(R.string.key_tube_drive_precise)
+val formatted = String.format(Locale.ROOT, "%.20f", d)
+tubePrefs.edit().putString(preciseKey, formatted).apply()
 
                 // Also update the slider’s float value so UI stays in sync
                 setValue(d.toFloat())
@@ -480,13 +475,11 @@ if (key == context.getString(R.string.key_tube_drive)) {
             setValueInternal(seekBarValue, false)
 
             // If user dragged the tube slider, clear precise string since this is float-based now
-            if (key == context.getString(R.string.key_tube_drive)) {
-                val prefs = sharedPreferences
-                if (prefs != null) {
-                    val preciseKey = context.getString(R.string.key_tube_drive_precise)
-                    prefs.edit().remove(preciseKey).apply()
-                }
-            }
+          if (key == context.getString(R.string.key_tube_drive)) {
+    val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
+    val preciseKey = context.getString(R.string.key_tube_drive_precise)
+    tubePrefs.edit().remove(preciseKey).apply()
+}
         } else {
             seekBar.value = validateValue(mSeekBarValue)
             updateLabelValue(mSeekBarValue)
