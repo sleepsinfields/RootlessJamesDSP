@@ -182,12 +182,12 @@ class MaterialSeekbarPreference : Preference {
         updateLabelValue(mSeekBarValue)
         mSeekBar.isEnabled = isEnabled
 
+// replaced 1
 if (key == context.getString(R.string.key_tube_drive)) {
     valueLabelOverride = { _ ->
-        // Use the same namespace as the engine: PREF_TUBE
-        val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
+        val prefs = sharedPreferences
         val preciseKey = context.getString(R.string.key_tube_drive_precise)
-        val precise = tubePrefs.getString(preciseKey, null)
+        val precise = prefs?.getString(preciseKey, null)
 
         if (!precise.isNullOrBlank()) {
             "$precise$mUnit"
@@ -196,9 +196,10 @@ if (key == context.getString(R.string.key_tube_drive)) {
         }
     }
 
+    // Force refresh the label using the override
     updateLabelValue(mSeekBarValue)
 }
-
+// end replaced 1
         this.setOnPreferenceClickListener {
     val prefs = sharedPreferences
 
@@ -218,61 +219,61 @@ if (key == context.getString(R.string.key_tube_drive)) {
         "%.${mPrecision}f".format(Locale.ROOT, getValue())
     }
 
-    context.showInputAlert(
-        LayoutInflater.from(context),
-        context.getString(R.string.slider_dialog_title),
-        title?.toString(),
-        initialText,
-        true,
-        mUnit
-    ) { input ->
-        input ?: return@showInputAlert
-        try {
-            if (key == context.getString(R.string.key_tube_drive)) {
-                // --- Tube drive path: full precision Double, plus precise string key ---
+context.showInputAlert(
+    LayoutInflater.from(context),
+    context.getString(R.string.slider_dialog_title),
+    title?.toString(),
+    initialText,
+    true,
+    mUnit
+) { input ->
+    input ?: return@showInputAlert
+    try {
+        if (key == context.getString(R.string.key_tube_drive)) {
+            // --- Tube drive path: full precision Double, plus precise string key ---
 
-                // Parse as Double
-                var d = input.toDouble()
+            // Parse as Double
+            var d = input.toDouble()
 
-                // Clamp to min/max of the slider
-                d = d.coerceIn(mMin.toDouble(), mMax.toDouble())
+            // Clamp to min/max of the slider
+            d = d.coerceIn(mMin.toDouble(), mMax.toDouble())
 
-              val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
-val preciseKey = context.getString(R.string.key_tube_drive_precise)
-val formatted = String.format(Locale.ROOT, "%.20f", d)
-tubePrefs.edit().putString(preciseKey, formatted).apply()
-
-                // Also update the slider’s float value so UI stays in sync
-                setValue(d.toFloat())
-            } else {
-                // --- Default path: same behavior as before ---
-
-                val asFloat = input.toFloat()
-
-                if (mSeekBar.stepSize <= 0 || valueLandsOnTick(asFloat)) {
-                    setValue(asFloat)
-                } else {
-                    context.toast(
-                        context.getString(
-                            R.string.slider_dialog_step_error,
-                            mSeekBar.stepSize.roundToInt()
-                        ),
-                        false
-                    )
-                }
+            // Save precise string under key_tube_drive_precise
+            val prefs = sharedPreferences
+            if (prefs != null) {
+                val preciseKey = context.getString(R.string.key_tube_drive_precise)
+                val formatted = String.format(Locale.ROOT, "%.20f", d)
+                prefs.edit().putString(preciseKey, formatted).apply()
             }
-        } catch (ex: Exception) {
-            Timber.e("Failed to parse number input")
-            Timber.d(ex)
-            context.toast(
-                context.getString(R.string.slider_dialog_format_error),
-                false
-            )
+
+            // Also update the slider’s float value so UI stays in sync
+            setValue(d.toFloat())
+        } else {
+            // --- Default path: same as before ---
+            val asFloat = input.toFloat()
+
+            if (mSeekBar.stepSize <= 0 || valueLandsOnTick(asFloat)) {
+                setValue(asFloat)
+            } else {
+                context.toast(
+                    context.getString(
+                        R.string.slider_dialog_step_error,
+                        mSeekBar.stepSize.roundToInt()
+                    ),
+                    false
+                )
+            }
         }
+    } catch (ex: Exception) {
+        Timber.e("Failed to parse number input")
+        Timber.d(ex)
+        context.toast(
+            context.getString(R.string.slider_dialog_format_error),
+            false
+        )
     }
-    true
 }
-    }
+true
 
     override fun onSetInitialValue(defaultValue: Any?) {
         setValue(getPersistedFloat((defaultValue as? Float ?: 0f)))
@@ -468,18 +469,21 @@ tubePrefs.edit().putString(preciseKey, formatted).apply()
      * Persist the [SeekBar]'s SeekBar value if callChangeListener returns true, otherwise
      * set the [SeekBar]'s value to the stored value.
      */
-    fun /* synthetic access */syncValueInternal(seekBar: Slider) {
+    fun /* synthetic access */ syncValueInternal(seekBar: Slider) {
     val seekBarValue = seekBar.value
     if (seekBarValue != mSeekBarValue) {
         if (callChangeListener(seekBarValue)) {
             setValueInternal(seekBarValue, false)
 
-            // If user dragged the tube slider, clear precise string since this is float-based now
-          if (key == context.getString(R.string.key_tube_drive)) {
-    val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
-    val preciseKey = context.getString(R.string.key_tube_drive_precise)
-    tubePrefs.edit().remove(preciseKey).apply()
-}
+            // If user dragged the tube slider, clear precise string
+            // since this is float-based now
+            if (key == context.getString(R.string.key_tube_drive)) {
+                val prefs = sharedPreferences
+                if (prefs != null) {
+                    val preciseKey = context.getString(R.string.key_tube_drive_precise)
+                    prefs.edit().remove(preciseKey).apply()
+                }
+            }
         } else {
             seekBar.value = validateValue(mSeekBarValue)
             updateLabelValue(mSeekBarValue)
