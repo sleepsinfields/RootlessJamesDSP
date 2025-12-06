@@ -250,7 +250,34 @@ Constants.PREF_GEQ -> {
                     Constants.PREF_CROSSFEED -> setCrossfeed(crossfeedEnabled, crossfeedMode)
                
 Constants.PREF_TUBE -> {
-    // Tube is handled earlier via applyTubeIfChanged(...)
+    // 1) Keep the old enable + gain behavior
+    applyTubeIfChanged(tubeEnabled, tubeDrive)
+
+    // 2) NEW: independent advanced tube controls, but only for local engine
+    val local = this as? JamesDspLocalEngine
+    if (local != null && tubeEnabled) {
+        // Use raw SharedPreferences so we don’t need new string resources yet.
+        val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
+
+        // Each of these keys can later be driven by its own UI slider.
+        // Defaults chosen to roughly match what you liked in C.
+        val shapeMix = tubePrefs.getFloat("tube_shape_mix", 0.30f).toDouble()
+        val harmScale = tubePrefs.getFloat("tube_harm_scale", 0.20f).toDouble()
+
+        val evenGain = tubePrefs.getFloat("tube_even_gain", 1.00f).toDouble()
+        val oddGain  = tubePrefs.getFloat("tube_odd_gain", 1.00f).toDouble()
+
+        val triodeDrive = tubePrefs.getFloat("tube_triode_drive", 2.50f).toDouble()
+        val triodeBias  = tubePrefs.getFloat("tube_triode_bias", 0.00f).toDouble()
+        val triodeScale = tubePrefs.getFloat("tube_triode_scale", 0.50f).toDouble()
+
+        // Push to native (no coupling to tubeDrive anymore)
+        local.setVacuumTubeShape(shapeMix.toFloat())
+        local.setVacuumTubeHarmScale(harmScale)
+        local.setVacuumTubeHarmonics(evenGain, oddGain)
+        local.setVacuumTubeTriodeParams(triodeDrive, triodeBias, triodeScale)
+    }
+
     true
 }
 
