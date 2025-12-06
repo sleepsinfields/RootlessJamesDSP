@@ -253,25 +253,59 @@ Constants.PREF_TUBE -> {
     // 1) Keep the old enable + gain behavior
     applyTubeIfChanged(tubeEnabled, tubeDrive)
 
-    // 2) NEW: independent advanced tube controls, but only for local engine
+    // 2) NEW: advanced tube controls – only for local engine
     val local = this as? JamesDspLocalEngine
     if (local != null && tubeEnabled) {
-        // Use raw SharedPreferences so we don’t need new string resources yet.
+
         val tubePrefs = PreferenceCache.getPreferences(context, Constants.PREF_TUBE)
 
-        // Each of these keys can later be driven by its own UI slider.
-        // Defaults chosen to roughly match what you liked in C.
-        val shapeMix = tubePrefs.getFloat("tube_shape_mix", 0.30f).toDouble()
-        val harmScale = tubePrefs.getFloat("tube_harm_scale", 0.20f).toDouble()
+        fun readDouble(key: String, def: Double): Double {
+            val raw = tubePrefs.getString(key, def.toString())
+            return raw?.toDoubleOrNull() ?: def
+        }
 
-        val evenGain = tubePrefs.getFloat("tube_even_gain", 1.00f).toDouble()
-        val oddGain  = tubePrefs.getFloat("tube_odd_gain", 1.00f).toDouble()
+        fun clamp(v: Double, min: Double, max: Double) =
+            v.coerceIn(min, max)
 
-        val triodeDrive = tubePrefs.getFloat("tube_triode_drive", 2.50f).toDouble()
-        val triodeBias  = tubePrefs.getFloat("tube_triode_bias", 0.00f).toDouble()
-        val triodeScale = tubePrefs.getFloat("tube_triode_scale", 0.50f).toDouble()
+        val shapeMix = clamp(
+            readDouble("tube_shape_mix", 0.30),
+            0.0, 1.0
+        )
 
-        // Push to native (no coupling to tubeDrive anymore)
+        val harmScale = clamp(
+            readDouble("tube_harm_scale", 0.20),
+            0.0, 2.0
+        )
+
+        // even/odd can go a bit wild but cap them
+        val evenGain = clamp(
+            readDouble("tube_even_gain", 1.00),
+            0.0, 4.0
+        )
+        val oddGain = clamp(
+            readDouble("tube_odd_gain", 1.00),
+            0.0, 4.0
+        )
+
+        val triodeDrive = clamp(
+            readDouble("tube_triode_drive", 2.50),
+            0.5, 5.0
+        )
+        val triodeBias = clamp(
+            readDouble("tube_triode_bias", 0.00),
+            -1.0, 1.0
+        )
+        val triodeScale = clamp(
+            readDouble("tube_triode_scale", 0.50),
+            0.1, 2.0
+        )
+
+        Timber.e(
+            "TubeDebug: shape=%.4f harmScale=%.4f even=%.4f odd=%.4f drive=%.4f bias=%.4f scale=%.4f",
+            shapeMix, harmScale, evenGain, oddGain, triodeDrive, triodeBias, triodeScale
+        )
+
+        // Push to engine
         local.setVacuumTubeShape(shapeMix.toFloat())
         local.setVacuumTubeHarmScale(harmScale)
         local.setVacuumTubeHarmonics(evenGain, oddGain)
