@@ -637,15 +637,21 @@ extern void StereoEnhancementSetParam(JamesDSPLib *jdsp, float mix);
 extern void StereoEnhancementEnable(JamesDSPLib *jdsp);
 extern void StereoEnhancementDisable(JamesDSPLib *jdsp);
 extern void StereoEnhancementProcess(JamesDSPLib *jdsp, size_t n);
+
 // Vacuum tube
 extern void VTInit(VacuumTube *tb, double fs);
-extern void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, size_t n);
+extern void VTProcess(VacuumTube *tb, float *x1, float *x2,
+                      float *out1, float *out2, size_t n);
 extern void VacuumTubeEnable(JamesDSPLib *jdsp);
 extern void VacuumTubeDisable(JamesDSPLib *jdsp);
 extern void VacuumTubeSetGain(JamesDSPLib *jdsp, double dbGain);
-extern void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix);   // <--- add this
+extern void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix);
 extern void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n);
 extern void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd);
+extern void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp,
+                                      double drive, double bias, double scale);
+extern void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double harmScale);
+
 // Live programmable effect
 extern const char* checkErrorCode(int errCode);
 extern void LiveProgConstructor(JamesDSPLib *jdsp);
