@@ -43,7 +43,7 @@ void VTInit(VacuumTube *tb, double fs)
     tb->triodeBias   = 0.00f;
     tb->triodeScale  = 0.50f;
     
-    tb->coreTriodeEnabled = 1;
+    tb->coreTriodesOn = 1;
 
     // Oversampling setup (your existing logic)
     if (fs >= 65000.0)
@@ -371,5 +371,5 @@ void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp, double drive, double bias, dou
 }
 void VacuumTubeSetCoreTriode(JamesDSPLib *jdsp, int enabled)
 {
-    jdsp->tube.coreTriodeEnabled = (enabled != 0);
+    jdsp->tube.coreTriodesOn = enabled ? 1 : 0;
 }
