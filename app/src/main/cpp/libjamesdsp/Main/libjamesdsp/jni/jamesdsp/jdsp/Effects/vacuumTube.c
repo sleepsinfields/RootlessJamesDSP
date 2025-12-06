@@ -167,24 +167,24 @@ double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
 double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
 // --- triode core on allpass (second core, toggleable) ---
-double coreOutCh1 = allpassCh1;
-double coreOutCh2 = allpassCh2;
+double coreInCh1 = allpassCh1;
+double coreInCh2 = allpassCh2;
 
-if (tb->coreTriodeEnabled && tb->shapeMix > 0.0f)
+double coreOutCh1 = coreInCh1;
+double coreOutCh2 = coreInCh2;
+
+if (tb->coreTriodesOn && tb->shapeMix > 0.0f)
 {
-    double coreInCh1 = allpassCh1;
-    double coreInCh2 = allpassCh2;
-
     double triodeCh1 = vt_triodeshape(coreInCh1, tb);
     double triodeCh2 = vt_triodeshape(coreInCh2, tb);
 
     coreOutCh1 =
-        (1.0 - (double)tb->shapeMix) * coreInCh1 +
-        (double)tb->shapeMix       * triodeCh1;
+        (1.0 - tb->shapeMix) * coreInCh1 +
+        tb->shapeMix * triodeCh1;
 
     coreOutCh2 =
-        (1.0 - (double)tb->shapeMix) * coreInCh2 +
-        (double)tb->shapeMix       * triodeCh2;
+        (1.0 - tb->shapeMix) * coreInCh2 +
+        tb->shapeMix * triodeCh2;
 }
 
 // final oversampled sample before downsampling
@@ -268,24 +268,24 @@ double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
 double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
 // --- triode core on allpass (second core, toggleable) ---
-double coreOutCh1 = allpassCh1;
-double coreOutCh2 = allpassCh2;
+double coreInCh1 = allpassCh1;
+double coreInCh2 = allpassCh2;
 
-if (tb->coreTriodeEnabled && tb->shapeMix > 0.0f)
+double coreOutCh1 = coreInCh1;
+double coreOutCh2 = coreInCh2;
+
+if (tb->coreTriodesOn && tb->shapeMix > 0.0f)
 {
-    double coreInCh1 = allpassCh1;
-    double coreInCh2 = allpassCh2;
-
     double triodeCh1 = vt_triodeshape(coreInCh1, tb);
     double triodeCh2 = vt_triodeshape(coreInCh2, tb);
 
     coreOutCh1 =
-        (1.0 - (double)tb->shapeMix) * coreInCh1 +
-        (double)tb->shapeMix       * triodeCh1;
+        (1.0 - tb->shapeMix) * coreInCh1 +
+        tb->shapeMix * triodeCh1;
 
     coreOutCh2 =
-        (1.0 - (double)tb->shapeMix) * coreInCh2 +
-        (double)tb->shapeMix       * triodeCh2;
+        (1.0 - tb->shapeMix) * coreInCh2 +
+        tb->shapeMix * triodeCh2;
 }
 
 // final wet sample
