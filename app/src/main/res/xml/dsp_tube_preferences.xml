@@ -2,22 +2,66 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup
-        android:key="@string/key_tube_enable"
-        android:disableDependentsState="false"
-        android:title="@string/tube_enable"
-        android:icon="@drawable/ic_baseline_led_outline_24dp"
-        app:iconSpaceReserved="false">
-        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-    android:key="@string/key_tube_drive"
-    android:title="@string/tube_drive"
-    android:defaultValue="1.57"
-    app:minValue="-3"
-    app:maxValue="12"
-    app:unit="dB"
-    app:precision="20"
-    app:allowDividerAbove="false"
-    app:updatesContinuously="true"
-    app:showSeekBarValue="true"
-    app:iconSpaceReserved="false"/>
-    </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
+    android:key="@string/key_tube_enable"
+    android:disableDependentsState="false"
+    android:title="@string/tube_enable"
+    android:icon="@drawable/ic_baseline_led_outline_24dp"
+    app:iconSpaceReserved="false">
+
+    <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+        android:key="@string/key_tube_drive"
+        android:title="@string/tube_drive"
+        android:defaultValue="1.57"
+        app:minValue="-3"
+        app:maxValue="12"
+        app:unit="dB"
+        app:precision="20"
+        app:allowDividerAbove="false"
+        app:updatesContinuously="true"
+        app:showSeekBarValue="true"
+        app:iconSpaceReserved="false"/>
+
+    <!-- NEW ADVANCED TUBE CONTROLS -->
+    <EditTextPreference
+        android:key="tube_shape_mix"
+        android:title="Triode mix"
+        android:summary="0.0 – 1.0"
+        android:defaultValue="0.3" />
+
+    <EditTextPreference
+        android:key="tube_harm_scale"
+        android:title="Harmonic scale"
+        android:summary="Overall harmonic intensity"
+        android:defaultValue="0.2" />
+
+    <EditTextPreference
+        android:key="tube_even_gain"
+        android:title="Even harmonics gain"
+        android:summary="2nd + 4th"
+        android:defaultValue="1.0" />
+
+    <EditTextPreference
+        android:key="tube_odd_gain"
+        android:title="Odd harmonics gain"
+        android:summary="3rd + 5th"
+        android:defaultValue="1.0" />
+
+    <EditTextPreference
+        android:key="tube_triode_drive"
+        android:title="Triode drive"
+        android:summary="Default 2.5"
+        android:defaultValue="2.5" />
+
+    <EditTextPreference
+        android:key="tube_triode_bias"
+        android:title="Triode bias"
+        android:summary="Default 0.0"
+        android:defaultValue="0.0" />
+
+    <EditTextPreference
+        android:key="tube_triode_scale"
+        android:title="Triode scale"
+        android:summary="Default 0.5"
+        android:defaultValue="0.5" />
+</me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
 </PreferenceScreen>
