@@ -147,20 +147,21 @@ typedef struct
     float pregain;
     float postgain;
 
-    // Triode core mix (0 = original, 1 = fully triode)
+    // 0 = no triode, 1 = full triode, blend allowed
     float shapeMix;
 
-    // Global harmonic balance (applied to 2nd/4th vs 3rd/5th)
-    float evenGain;     // scales 2nd + 4th
-    float oddGain;      // scales 3rd + 5th
+    // harmonic balances
+    float evenGain;      // 2nd + 4th
+    float oddGain;       // 3rd + 5th
+    float harmScale;     // global harmonic strength
 
-    // Overall harmonic strength
-    float harmScale;    // 0..2 (we’ll clamp in setter)
+    // triode core parameters
+    float triodeDrive;
+    float triodeBias;
+    float triodeScale;
 
-    // Triode curve parameters
-    float triodeDrive;  // 0.5..5.0
-    float triodeBias;   // -1.0..1.0
-    float triodeScale;  // 0.1..2.0
+    // NEW: enable/disable the “core triode” on allpassCh
+    int coreTriodeEnabled;   // 0 = off, 1 = on
 } VacuumTube;
 
 typedef struct
