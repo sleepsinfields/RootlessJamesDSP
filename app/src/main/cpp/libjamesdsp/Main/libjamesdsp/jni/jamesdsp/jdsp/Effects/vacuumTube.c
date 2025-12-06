@@ -173,8 +173,8 @@ double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
     double coreInCh1 = allpassCh1;
     double coreInCh2 = allpassCh2;
 
-    double triodeCh1 = vt_triodeshape(coreInCh1);
-    double triodeCh2 = vt_triodeshape(coreInCh2);
+    double triodeCh1 = vt_triodeshape(coreInCh1, tb);
+    double triodeCh2 = vt_triodeshape(coreInCh2, tb);
 
     double coreOutCh1 =
         (1.0 - tb->shapeMix) * coreInCh1 +
