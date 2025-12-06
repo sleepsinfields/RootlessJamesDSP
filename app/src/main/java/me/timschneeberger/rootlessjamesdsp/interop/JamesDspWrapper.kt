@@ -149,6 +149,15 @@ external fun setVacuumTubeTriodeParams(
     scale: Double
 ): Boolean
 
+external fun setVacuumTubeCoreTriode(
+    self: JamesDspHandle,
+    enabled: Boolean
+): Boolean
+
+fun setTubeCoreTriode(self: JamesDspHandle, enabled: Boolean): Boolean {
+    return setVacuumTubeCoreTriode(self, enabled)
+}
+
 // --- Kotlin helpers (optional) ---------------------------------------------
 
 fun setTubeShape(self: JamesDspHandle, mix: Double): Boolean {
@@ -178,6 +187,8 @@ fun setTubeTriodeParams(
     val s = scale.coerceIn(0.1, 1.5)
     return setVacuumTubeTriodeParams(self, d, b, s)
 }
+
+
 //
 
 external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
