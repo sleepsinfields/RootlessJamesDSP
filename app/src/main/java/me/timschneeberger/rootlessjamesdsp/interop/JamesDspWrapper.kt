@@ -179,6 +179,9 @@ fun setTubeTriodeParams(
     return setVacuumTubeTriodeParams(self, d, b, s)
 }
 //
+
+external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
+
     // EEL VM utilities
     external fun enumerateEelVariables(self: JamesDspHandle): ArrayList<EelVmVariable>
     external fun manipulateEelVariable(self: JamesDspHandle, name: String, value: Float): Boolean
