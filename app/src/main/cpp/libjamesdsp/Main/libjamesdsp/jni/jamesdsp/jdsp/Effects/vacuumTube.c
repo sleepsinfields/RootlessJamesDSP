@@ -166,24 +166,30 @@ double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
 double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
-// --- triode core on allpass (second core) ---
+// --- triode core on allpass (second core, toggleable) ---
+double coreOutCh1 = allpassCh1;
+double coreOutCh2 = allpassCh2;
+
+if (tb->coreTriodeEnabled && tb->shapeMix > 0.0f)
+{
     double coreInCh1 = allpassCh1;
     double coreInCh2 = allpassCh2;
 
     double triodeCh1 = vt_triodeshape(coreInCh1, tb);
     double triodeCh2 = vt_triodeshape(coreInCh2, tb);
 
-    double coreOutCh1 =
-        (1.0 - tb->shapeMix) * coreInCh1 +
-        tb->shapeMix * triodeCh1;
+    coreOutCh1 =
+        (1.0 - (double)tb->shapeMix) * coreInCh1 +
+        (double)tb->shapeMix       * triodeCh1;
 
-    double coreOutCh2 =
-        (1.0 - tb->shapeMix) * coreInCh2 +
-        tb->shapeMix * triodeCh2;
+    coreOutCh2 =
+        (1.0 - (double)tb->shapeMix) * coreInCh2 +
+        (double)tb->shapeMix       * triodeCh2;
+}
 
-    // final oversampled sample before downsampling
-    double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
-    double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
+// final oversampled sample before downsampling
+double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
+double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
 
     upsample[0][j] = (float)wetCh1;
     upsample[1][j] = (float)wetCh2;
@@ -261,20 +267,26 @@ double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
 double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
-// --- triode core mix (unchanged) ---
-double coreInCh1 = allpassCh1;
-double coreInCh2 = allpassCh2;
+// --- triode core on allpass (second core, toggleable) ---
+double coreOutCh1 = allpassCh1;
+double coreOutCh2 = allpassCh2;
 
-double triodeCh1 = vt_triodeshape(coreInCh1, tb);
-double triodeCh2 = vt_triodeshape(coreInCh2, tb);
+if (tb->coreTriodeEnabled && tb->shapeMix > 0.0f)
+{
+    double coreInCh1 = allpassCh1;
+    double coreInCh2 = allpassCh2;
 
-double coreOutCh1 =
-    (1.0 - tb->shapeMix) * coreInCh1 +
-    tb->shapeMix * triodeCh1;
+    double triodeCh1 = vt_triodeshape(coreInCh1, tb);
+    double triodeCh2 = vt_triodeshape(coreInCh2, tb);
 
-double coreOutCh2 =
-    (1.0 - tb->shapeMix) * coreInCh2 +
-    tb->shapeMix * triodeCh2;
+    coreOutCh1 =
+        (1.0 - (double)tb->shapeMix) * coreInCh1 +
+        (double)tb->shapeMix       * triodeCh1;
+
+    coreOutCh2 =
+        (1.0 - (double)tb->shapeMix) * coreInCh2 +
+        (double)tb->shapeMix       * triodeCh2;
+}
 
 // final wet sample
 double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
