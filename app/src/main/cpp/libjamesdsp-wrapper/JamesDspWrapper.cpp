@@ -803,6 +803,20 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHa
     );
     return JNI_TRUE;
 }
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeCoreTriode(
+        JNIEnv* /*env*/, jclass /*clazz*/,
+        jlong handle,
+        jboolean enabled
+) {
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
+    if (!jdsp) return JNI_FALSE;
+
+    VacuumTubeSetCoreTriode(jdsp, enabled ? 1 : 0);
+    return JNI_TRUE;
+}
 //
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setLiveprog(JNIEnv *env, jobject obj, jlong self,
