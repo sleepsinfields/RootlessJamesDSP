@@ -169,16 +169,27 @@ double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
 double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
-// base (same structure as before)
-double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
-double baseCh2 = bandCh2[0] + allpassCh2 + bandCh2[5];
+// --- triode core on allpass (second core) ---
+    double coreInCh1 = allpassCh1;
+    double coreInCh2 = allpassCh2;
 
-// final oversampled sample before downsampling
-double wetCh1 = baseCh1 + harmCh1;
-double wetCh2 = baseCh2 + harmCh2;
+    double triodeCh1 = vt_triodeshape(coreInCh1);
+    double triodeCh2 = vt_triodeshape(coreInCh2);
 
-upsample[0][j] = (float)wetCh1;
-upsample[1][j] = (float)wetCh2;
+    double coreOutCh1 =
+        (1.0 - tb->shapeMix) * coreInCh1 +
+        tb->shapeMix * triodeCh1;
+
+    double coreOutCh2 =
+        (1.0 - tb->shapeMix) * coreInCh2 +
+        tb->shapeMix * triodeCh2;
+
+    // final oversampled sample before downsampling
+    double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
+    double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
+
+    upsample[0][j] = (float)wetCh1;
+    upsample[1][j] = (float)wetCh2;
             }
 
             out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
