@@ -8,22 +8,21 @@
 #define VT_EVEN_GAIN 1.0   // global gain for even harmonics (2,4)
 #define VT_ODD_GAIN  1.0   // global gain for odd harmonics  (3,5)
 
-// 
-// ------------------------------------------------------------
-// Triode-like soft clipper using tube params
+//  ------------------------------------------------------------
+// Simple triode-like soft clipper, parameterized by VacuumTube
 // ------------------------------------------------------------
 static inline double vt_triodeshape(double x, const VacuumTube *tb)
 {
-    // these come from VTInit defaults and can be changed at runtime
-    const double drive = (double)tb->triodeDrive;
-    const double bias  = (double)tb->triodeBias;
-    const double scale = (double)tb->triodeScale;
+    // Read parameters from the struct
+    double drive = (double)tb->triodeDrive;
+    double bias  = (double)tb->triodeBias;
+    double scale = (double)tb->triodeScale;
 
     double v = (x + bias) * drive;
     double y = tanh(v);
+
     return y * scale;
 }
-
 // ------------------------------------------------------------
 // Init
 // ------------------------------------------------------------
@@ -33,11 +32,11 @@ void VTInit(VacuumTube *tb, double fs)
     tb->pregain = 1.0f;
     tb->postgain = 1.0f;
     tb->needOversample = 0;
-    tb->shapeMix = 0.3f;   // your triode mix
+    tb->shapeMix = 1.0f;   // your triode mix
 
     // New: start with neutral even/odd balance
-    tb->evenGain = (float)VT_EVEN_GAIN;
-    tb->oddGain  = (float)VT_ODD_GAIN;
+    tb->evenGain = 1.0f;
+    tb->oddGain  = 1.0f;
 
     // Triode shape parameters (your previous constants)
     tb->triodeDrive = 2.5f;
@@ -340,22 +339,28 @@ void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
     jdsp->tube.oddGain  = (float)odd;
 }
 
-void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp,
-                               double drive,
-                               double bias,
-                               double scale)
+void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double scale)
 {
-    // Simple sanity guards, you can tune these ranges later
-    if (drive < 0.0) drive = 0.0;
+    // Clamp to something sane – user-facing UI can still re-map ranges
     if (scale < 0.0) scale = 0.0;
+    if (scale > 2.0) scale = 2.0;   // you can tune this
+
+    jdsp->tube.harmScale = (float)scale;
+}
+
+void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp, double drive, double bias, double scale)
+{
+    // These should match the guard in the Kotlin helper
+    if (drive < 0.5) drive = 0.5;
+    if (drive > 4.0) drive = 4.0;
+
+    if (bias < -0.5) bias = -0.5;
+    if (bias >  0.5) bias =  0.5;
+
+    if (scale < 0.1) scale = 0.1;
+    if (scale > 1.5) scale = 1.5;
 
     jdsp->tube.triodeDrive = (float)drive;
     jdsp->tube.triodeBias  = (float)bias;
     jdsp->tube.triodeScale = (float)scale;
-}
-
-void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double harmScale)
-{
-    if (harmScale < 0.0) harmScale = 0.0;
-    jdsp->tube.harmScale = (float)harmScale;
 }
