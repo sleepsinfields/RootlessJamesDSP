@@ -129,6 +129,24 @@ fun setTubeShape(self: JamesDspHandle, mix: Float): Boolean {
 
     external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
 
+external fun setVacuumTubeTriodeParams(
+    self: JamesDspHandle,
+    drive: Double,
+    bias: Double,
+    scale: Double
+): Boolean
+
+external fun setVacuumTubeHarmScale(
+    self: JamesDspHandle,
+    harmScale: Double
+): Boolean
+
+external fun setVacuumTubeHarmonics(
+    self: JamesDspHandle,
+    even: Double,
+    odd: Double
+): Boolean
+
     // EEL VM utilities
     external fun enumerateEelVariables(self: JamesDspHandle): ArrayList<EelVmVariable>
     external fun manipulateEelVariable(self: JamesDspHandle, name: String, value: Float): Boolean
