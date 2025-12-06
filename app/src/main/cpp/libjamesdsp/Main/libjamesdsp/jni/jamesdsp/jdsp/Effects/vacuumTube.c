@@ -28,7 +28,6 @@ static inline double vt_triodeshape(double x, const VacuumTube *tb)
 // Init
 // ------------------------------------------------------------
 
-
 void VTInit(VacuumTube *tb, double fs)
 {
     tb->pregain = 1.0f;
@@ -39,6 +38,15 @@ void VTInit(VacuumTube *tb, double fs)
     // New: start with neutral even/odd balance
     tb->evenGain = (float)VT_EVEN_GAIN;
     tb->oddGain  = (float)VT_ODD_GAIN;
+
+    // Triode shape parameters (your previous constants)
+    tb->triodeDrive = 2.5f;
+    tb->triodeBias  = 0.0f;
+    tb->triodeScale = 0.5f;
+
+    // Shared harmonic scale factor (replaces separate 0.20 / 0.25)
+    tb->harmScale = 0.20f;
+
 
     // Oversampling setup (same logic you had, plus 2x at very high fs)
     if (fs >= 65000.0)
@@ -128,8 +136,8 @@ if (tb->shapeMix > 0.0f)
         double dry1 = bandCh1[b];
         double dry2 = bandCh2[b];
 
-        double tri1 = vt_triodeshape(dry1);
-        double tri2 = vt_triodeshape(dry2);
+        double tri1 = vt_triodeshape(dry1, tb);
+        double tri2 = vt_triodeshape(dry2, tb);
 
         bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
         bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
@@ -158,11 +166,8 @@ double harmOddCh1  = (harmonic3Ch1 + harmonic5Ch1) * tb->oddGain;
 double harmEvenCh2 = (harmonic2Ch2 + harmonic4Ch2) * tb->evenGain;
 double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 
-// slightly conservative scale in OS path as well
-const double harmScaleOS = 0.20;
-
-double harmCh1 = (harmEvenCh1 + harmOddCh1) * harmScaleOS;
-double harmCh2 = (harmEvenCh2 + harmOddCh2) * harmScaleOS;
+double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
+double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
 // base (same structure as before)
 double baseCh1 = bandCh1[0] + allpassCh1 + bandCh1[5];
@@ -213,8 +218,8 @@ if (tb->shapeMix > 0.0f)
         double dry1 = bandCh1[b];
         double dry2 = bandCh2[b];
 
-        double tri1 = vt_triodeshape(dry1);
-        double tri2 = vt_triodeshape(dry2);
+        double tri1 = vt_triodeshape(dry1, tb);
+        double tri2 = vt_triodeshape(dry2, tb);
 
         bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
         bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
@@ -244,17 +249,16 @@ double harmEvenCh2 = (harmonic2Ch2 + harmonic4Ch2) * tb->evenGain;
 double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 
 // base scaling for harmonic contribution
-const double harmScale = 0.20;  // start a bit lower than 0.25
 
-double harmCh1 = (harmEvenCh1 + harmOddCh1) * harmScale;
-double harmCh2 = (harmEvenCh2 + harmOddCh2) * harmScale;
+double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
+double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
 // --- triode core mix (unchanged) ---
 double coreInCh1 = allpassCh1;
 double coreInCh2 = allpassCh2;
 
-double triodeCh1 = vt_triodeshape(coreInCh1);
-double triodeCh2 = vt_triodeshape(coreInCh2);
+double triodeCh1 = vt_triodeshape(coreInCh1, tb);
+double triodeCh2 = vt_triodeshape(coreInCh2, tb);
 
 double coreOutCh1 =
     (1.0 - tb->shapeMix) * coreInCh1 +
@@ -323,4 +327,24 @@ void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
 
     jdsp->tube.evenGain = (float)even;
     jdsp->tube.oddGain  = (float)odd;
+}
+
+void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp,
+                               double drive,
+                               double bias,
+                               double scale)
+{
+    // Simple sanity guards, you can tune these ranges later
+    if (drive < 0.0) drive = 0.0;
+    if (scale < 0.0) scale = 0.0;
+
+    jdsp->tube.triodeDrive = (float)drive;
+    jdsp->tube.triodeBias  = (float)bias;
+    jdsp->tube.triodeScale = (float)scale;
+}
+
+void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double harmScale)
+{
+    if (harmScale < 0.0) harmScale = 0.0;
+    jdsp->tube.harmScale = (float)harmScale;
 }
