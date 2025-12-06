@@ -23,31 +23,27 @@ static inline double vt_triodeshape(double x, const VacuumTube *tb)
 
     return y * scale;
 }
-// ------------------------------------------------------------
+// -----------------------------------------------------------
 // Init
-// ------------------------------------------------------------
+// -----------------------------------------------------------
 
 void VTInit(VacuumTube *tb, double fs)
 {
-    tb->pregain = 1.0f;
-    tb->postgain = 1.0f;
+    tb->pregain      = 1.0f;
+    tb->postgain     = 1.0f;
     tb->needOversample = 0;
-    tb->shapeMix = 1.0f;   // your triode mix
 
-    // New: start with neutral even/odd balance
-    tb->evenGain = 1.0f;
-    tb->oddGain  = 1.0f;
+    // Default “feel” settings
+    tb->shapeMix     = 0.30f;   // 30% triode mix
+    tb->evenGain     = 1.00f;
+    tb->oddGain      = 1.00f;
+    tb->harmScale    = 0.20f;   // global harmonic strength
 
-    // Triode shape parameters (your previous constants)
-    tb->triodeDrive = 2.5f;
-    tb->triodeBias  = 0.0f;
-    tb->triodeScale = 0.5f;
+    tb->triodeDrive  = 2.50f;
+    tb->triodeBias   = 0.00f;
+    tb->triodeScale  = 0.50f;
 
-    // Shared harmonic scale factor (replaces separate 0.20 / 0.25)
-    tb->harmScale = 0.20f;
-
-
-    // Oversampling setup (same logic you had, plus 2x at very high fs)
+    // Oversampling setup (your existing logic)
     if (fs >= 65000.0)
     {
         oversample_makeSmp(&tb->smp[0], 2);
@@ -72,7 +68,7 @@ void VTInit(VacuumTube *tb, double fs)
         oversample_makeSmp(&tb->smp[1], 4);
         tb->needOversample = 1;
     }
-    else // fs < 14000
+    else  // fs < 14000
     {
         oversample_makeSmp(&tb->smp[0], 5);
         oversample_makeSmp(&tb->smp[1], 5);
@@ -313,27 +309,25 @@ void VacuumTubeSetGain(JamesDSPLib *jdsp, double dbGain)
     jdsp->tube.postgain = 1.0f / jdsp->tube.pregain;
 }
 
-void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
-{
-    if (mix < 0.0)
-        mix = 0.0;
-    if (mix > 1.0)
-        mix = 1.0;
-
-    jdsp->tube.shapeMix = (float)mix;
-}
-
 void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n)
 {
     VTProcess(&jdsp->tube,
               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
 }
+void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
+{
+    if (mix < 0.0) mix = 0.0;
+    if (mix > 1.0) mix = 1.0;
+    jdsp->tube.shapeMix = (float)mix;
+}
 
 void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
 {
     if (even < 0.0) even = 0.0;
+    if (even > 4.0) even = 4.0;
     if (odd  < 0.0) odd  = 0.0;
+    if (odd  > 4.0) odd  = 4.0;
 
     jdsp->tube.evenGain = (float)even;
     jdsp->tube.oddGain  = (float)odd;
@@ -341,24 +335,21 @@ void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
 
 void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double scale)
 {
-    // Clamp to something sane – user-facing UI can still re-map ranges
     if (scale < 0.0) scale = 0.0;
-    if (scale > 2.0) scale = 2.0;   // you can tune this
-
+    if (scale > 2.0) scale = 2.0;
     jdsp->tube.harmScale = (float)scale;
 }
 
 void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp, double drive, double bias, double scale)
 {
-    // These should match the guard in the Kotlin helper
     if (drive < 0.5) drive = 0.5;
-    if (drive > 4.0) drive = 4.0;
+    if (drive > 5.0) drive = 5.0;
 
-    if (bias < -0.5) bias = -0.5;
-    if (bias >  0.5) bias =  0.5;
+    if (bias < -1.0) bias = -1.0;
+    if (bias >  1.0) bias =  1.0;
 
     if (scale < 0.1) scale = 0.1;
-    if (scale > 1.5) scale = 1.5;
+    if (scale > 2.0) scale = 2.0;
 
     jdsp->tube.triodeDrive = (float)drive;
     jdsp->tube.triodeBias  = (float)bias;
