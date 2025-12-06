@@ -113,18 +113,75 @@ external fun setCrossfeed(
 
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
-    external fun setVacuumTube(self: JamesDspHandle, enable: Boolean, level: Double): Boolean
-//
 
-// NEW: set tube shape (0f = square, 1f = cube)
+
+   
+
+external fun setVacuumTube(
+    self: JamesDspHandle,
+    enable: Boolean,
+    level: Double
+): Boolean
+
 external fun setVacuumTubeShape(
     self: JamesDspHandle,
     mix: Double
 ): Boolean
 
-fun setTubeShape(self: JamesDspHandle, mix: Float): Boolean {
-    val clamped = mix.coerceIn(0f, 1f)
-    return setVacuumTubeShape(self, clamped.toDouble())
+external fun setVacuumTubeHarmonics(
+    self: JamesDspHandle,
+    even: Double,
+    odd: Double
+): Boolean
+
+// Optional extra native hooks – only keep if you added C-side API:
+//   void VacuumTubeSetHarmScale(JamesDSPLib *jdsp, double scale);
+//   void VacuumTubeSetTriodeParams(JamesDSPLib *jdsp, double drive, double bias, double scale);
+external fun setVacuumTubeHarmScale(
+    self: JamesDspHandle,
+    scale: Double
+): Boolean
+
+external fun setVacuumTubeTriodeParams(
+    self: JamesDspHandle,
+    drive: Double,
+    bias: Double,
+    scale: Double
+): Boolean
+
+// ------------------------------------------------------------------
+// Kotlin-side “nice” wrappers (optional, but keeps LocalEngine tidy)
+// ------------------------------------------------------------------
+
+fun setTubeShape(self: JamesDspHandle, mix: Double): Boolean {
+    val clamped = mix.coerceIn(0.0, 1.0)
+    return setVacuumTubeShape(self, clamped)
+}
+
+fun setTubeHarmonics(self: JamesDspHandle, even: Double, odd: Double): Boolean {
+    val e = even.coerceAtLeast(0.0)
+    val o = odd.coerceAtLeast(0.0)
+    return setVacuumTubeHarmonics(self, e, o)
+}
+
+fun setTubeHarmScale(self: JamesDspHandle, scale: Double): Boolean {
+    // 0 = no extra harmonic boost, 1 = “max” (you can tune)
+    val s = scale.coerceIn(0.0, 1.0)
+    return setVacuumTubeHarmScale(self, s)
+}
+
+fun setTubeTriodeParams(
+    self: JamesDspHandle,
+    drive: Double,
+    bias: Double,
+    scale: Double
+): Boolean {
+    // Reasonable starter ranges – you can adjust later:
+    val d = drive.coerceIn(0.5, 4.0)   // how hard to hit tanh
+    val b = bias.coerceIn(-0.5, 0.5)   // small DC shift
+    val s = scale.coerceIn(0.1, 1.5)   // output trim
+
+    return setVacuumTubeTriodeParams(self, d, b, s)
 }
 
     external fun setLiveprog(self: JamesDspHandle, enable: Boolean, id: String, liveprogContent: String): Boolean
