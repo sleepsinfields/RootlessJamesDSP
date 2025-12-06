@@ -42,6 +42,8 @@ void VTInit(VacuumTube *tb, double fs)
     tb->triodeDrive  = 2.50f;
     tb->triodeBias   = 0.00f;
     tb->triodeScale  = 0.50f;
+    
+    tb->coreTriodeEnabled = 1;
 
     // Oversampling setup (your existing logic)
     if (fs >= 65000.0)
