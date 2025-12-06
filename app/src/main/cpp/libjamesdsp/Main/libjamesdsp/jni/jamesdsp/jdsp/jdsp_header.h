@@ -143,11 +143,17 @@ typedef struct
     int needOversample;
     samplerateTool smp[2];
     SixBandsCrossover subband[2];
+
     float pregain, postgain;
-    float shapeMix;    // 0 = old allpass core, 1 = triode core
-    // New: harmonic balance controls (even vs odd)
-    float evenGain;    // scales 2nd+4th
-    float oddGain;     // scales 3rd+5th
+
+    // Tube “core” and harmonic controls
+    float shapeMix;      // 0 = original, 1 = triode
+    float evenGain;      // scales 2nd + 4th
+    float oddGain;       // scales 3rd + 5th
+    float triodeDrive;   // drive for vt_triodeshape
+    float triodeBias;    // bias for vt_triodeshape
+    float triodeScale;   // output scale for vt_triodeshape
+    float harmScale;     // global harmonic mix (both branches)
 } VacuumTube;
 
 typedef struct
