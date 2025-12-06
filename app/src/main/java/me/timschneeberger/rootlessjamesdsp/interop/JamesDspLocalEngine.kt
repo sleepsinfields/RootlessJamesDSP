@@ -190,6 +190,12 @@ fun setVacuumTubeTriodeParams(
     return JamesDspWrapper.setTubeTriodeParams(handle, d, b, s)
 }
 
+fun setVacuumTubeCoreTriode(enabled: Boolean): Boolean {
+    Log.e("TubeDebug", "LocalEngine.setVacuumTubeCoreTriode enabled=$enabled")
+    return JamesDspWrapper.setVacuumTubeCoreTriode(handle, enabled)
+}
+
+
     override fun setMultiEqualizerInternal(
         enable: Boolean,
         filterType: Int,
