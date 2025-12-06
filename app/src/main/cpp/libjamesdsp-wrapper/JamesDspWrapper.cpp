@@ -735,83 +735,69 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     return JNI_TRUE;
 }
 //
-extern "C"
-JNIEXPORT jboolean JNICALL
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeShape(
-        JNIEnv* /*env*/,
-        jclass /*clazz*/,
+        JNIEnv *env,
+        jclass,
         jlong self,
         jdouble mix
+) {
+    auto *jdsp = reinterpret_cast<JamesDSPLib *>(self);
+    if (!jdsp) return JNI_FALSE;
+
+    VacuumTubeSetShape(jdsp, (double)mix);
+    return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeTriodeParams(
+    JNIEnv* env, jclass,
+    jlong self,
+    jdouble drive,
+    jdouble bias,
+    jdouble scale
 ) {
     auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
     if (!jdsp) return JNI_FALSE;
 
-    VacuumTubeSetShape(jdsp, static_cast<double>(mix));
+    VacuumTubeSetTriodeParams(jdsp, (double)drive, (double)bias, (double)scale);
     return JNI_TRUE;
 }
 
-extern "C"
-JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeTriodeParams(
-        JNIEnv* /*env*/, jclass /*clazz*/,
-        jlong handle,
-        jdouble drive,
-        jdouble bias,
-        jdouble scale
-) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
-    if (!jdsp) return JNI_FALSE;
-
-    VacuumTubeSetTriodeParams(
-        jdsp,
-        static_cast<double>(drive),
-        static_cast<double>(bias),
-        static_cast<double>(scale)
-    );
-    return JNI_TRUE;
-}
-
-extern "C"
-JNIEXPORT jboolean JNICALL
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmScale(
-        JNIEnv* /*env*/, jclass /*clazz*/,
-        jlong handle,
-        jdouble harmScale
+    JNIEnv* env, jclass,
+    jlong self,
+    jdouble harmScale
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
     if (!jdsp) return JNI_FALSE;
 
-    VacuumTubeSetHarmScale(jdsp, static_cast<double>(harmScale));
+    VacuumTubeSetHarmScale(jdsp, (double)harmScale);
     return JNI_TRUE;
 }
 
-extern "C"
-JNIEXPORT jboolean JNICALL
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmonics(
-        JNIEnv* /*env*/, jclass /*clazz*/,
-        jlong handle,
-        jdouble even,
-        jdouble odd
+    JNIEnv* env, jclass,
+    jlong self,
+    jdouble even,
+    jdouble odd
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
     if (!jdsp) return JNI_FALSE;
 
-    VacuumTubeSetHarmonics(
-        jdsp,
-        static_cast<double>(even),
-        static_cast<double>(odd)
-    );
+    VacuumTubeSetHarmonics(jdsp, (double)even, (double)odd);
     return JNI_TRUE;
 }
 
-extern "C"
-JNIEXPORT jboolean JNICALL
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeCoreTriode(
-        JNIEnv* /*env*/, jclass /*clazz*/,
-        jlong handle,
-        jboolean enabled
+    JNIEnv* env, jclass,
+    jlong self,
+    jboolean enabled
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
     if (!jdsp) return JNI_FALSE;
 
     VacuumTubeSetCoreTriode(jdsp, enabled ? 1 : 0);
