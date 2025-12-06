@@ -702,74 +702,105 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
     return true;
 }
 
-extern "C" JNIEXPORT jboolean JNICALL
+extern "C"
+JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
-    JNIEnv *env, jobject obj, jlong self,
-    jboolean enable, jdouble level)   // ⬅ jfloat → jdouble
-{
-    DECLARE_DSP_B
-    if (enable)
-    {
-        // level is now a double, keep the same scaling
-        VacuumTubeSetGain(dsp, level / 100.0);   // ⬅ drop the 'f' so this is double math
-        VacuumTubeEnable(dsp);
+    JNIEnv* /*env*/,
+    jclass  /*clazz*/,          // use jclass if this is a static/companion external
+    jlong   self,
+    jboolean enable,
+    jdouble level               // Kotlin Double
+) {
+    // This is what DECLARE_DSP_B *should* expand to; keep it if it’s already correct:
+    // DECLARE_DSP_B
+    auto* dsp = reinterpret_cast<JamesDSPLib*>(self);
+    if (!dsp) {
+        return JNI_FALSE;
     }
-    else
-    {
-        VacuumTubeDisable(dsp);  // if you already had this, keep it; if not, optional
+
+    if (enable) {
+        // IMPORTANT: decide what `level` actually is.
+
+        // 1) If `level` is already in dB (your new precise slider logic):
+        VacuumTubeSetGain(dsp, static_cast<double>(level));
+
+        // 2) If `level` is still a 0..100 UI percent, use the old scaling instead:
+        // VacuumTubeSetGain(dsp, static_cast<double>(level) / 100.0);
+
+        VacuumTubeEnable(dsp);
+    } else {
+        VacuumTubeDisable(dsp);
     }
 
     return JNI_TRUE;
 }
-
 //
-extern "C" JNIEXPORT jboolean JNICALL
+extern "C"
+JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeShape(
-        JNIEnv *env,
-        jclass,
+        JNIEnv* /*env*/,
+        jclass /*clazz*/,
         jlong self,
         jdouble mix
 ) {
-    auto *dsp = reinterpret_cast<JamesDSPLib *>(self);
-    if (!dsp) return JNI_FALSE;
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
+    if (!jdsp) return JNI_FALSE;
 
-    VacuumTubeSetShape(dsp, (double)mix);
+    VacuumTubeSetShape(jdsp, static_cast<double>(mix));
     return JNI_TRUE;
 }
 
-extern "C" JNIEXPORT jboolean JNICALL
+extern "C"
+JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeTriodeParams(
-    JNIEnv* env, jclass,
-    jlong handle,
-    jdouble drive,
-    jdouble bias,
-    jdouble scale
+        JNIEnv* /*env*/, jclass /*clazz*/,
+        jlong handle,
+        jdouble drive,
+        jdouble bias,
+        jdouble scale
 ) {
     auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
-    VacuumTubeSetTriodeParams(jdsp, (double)drive, (double)bias, (double)scale);
+    if (!jdsp) return JNI_FALSE;
+
+    VacuumTubeSetTriodeParams(
+        jdsp,
+        static_cast<double>(drive),
+        static_cast<double>(bias),
+        static_cast<double>(scale)
+    );
     return JNI_TRUE;
 }
 
-extern "C" JNIEXPORT jboolean JNICALL
+extern "C"
+JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmScale(
-    JNIEnv* env, jclass,
-    jlong handle,
-    jdouble harmScale
+        JNIEnv* /*env*/, jclass /*clazz*/,
+        jlong handle,
+        jdouble harmScale
 ) {
     auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
-    VacuumTubeSetHarmScale(jdsp, (double)harmScale);
+    if (!jdsp) return JNI_FALSE;
+
+    VacuumTubeSetHarmScale(jdsp, static_cast<double>(harmScale));
     return JNI_TRUE;
 }
 
-extern "C" JNIEXPORT jboolean JNICALL
+extern "C"
+JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmonics(
-    JNIEnv* env, jclass,
-    jlong handle,
-    jdouble even,
-    jdouble odd
+        JNIEnv* /*env*/, jclass /*clazz*/,
+        jlong handle,
+        jdouble even,
+        jdouble odd
 ) {
     auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
-    VacuumTubeSetHarmonics(jdsp, (double)even, (double)odd);
+    if (!jdsp) return JNI_FALSE;
+
+    VacuumTubeSetHarmonics(
+        jdsp,
+        static_cast<double>(even),
+        static_cast<double>(odd)
+    );
     return JNI_TRUE;
 }
 //
