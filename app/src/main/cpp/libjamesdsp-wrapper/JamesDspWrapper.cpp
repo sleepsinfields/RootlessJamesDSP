@@ -705,12 +705,12 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     JNIEnv* /*env*/,
-    jclass  /*clazz*/,   // because it's @JvmStatic
-    jlong handle,
+    jobject /*thiz*/,   // instance method on the Kotlin object
+    jlong self,
     jboolean enable,
     jdouble level
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
     if (!jdsp) {
         __android_log_print(ANDROID_LOG_ERROR,
                             "TubeDebug",
@@ -718,7 +718,6 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
         return JNI_FALSE;
     }
 
-    // Clamp to your VacuumTubeSetGain range
     if (level > 12.0) level = 12.0;
     if (level < -3.0) level = -3.0;
 
@@ -734,8 +733,23 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeShape(
+    JNIEnv* /*env*/,
+    jobject /*thiz*/,
+    jlong self,
+    jdouble mix
+) {
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
+    if (!jdsp) return JNI_FALSE;
+
+    VacuumTubeSetShape(jdsp, (double)mix);
+    return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeTriodeParams(
-    JNIEnv* env, jclass,
+    JNIEnv* /*env*/,
+    jobject /*thiz*/,
     jlong self,
     jdouble drive,
     jdouble bias,
@@ -750,7 +764,8 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeTr
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmScale(
-    JNIEnv* env, jclass,
+    JNIEnv* /*env*/,
+    jobject /*thiz*/,
     jlong self,
     jdouble harmScale
 ) {
@@ -763,7 +778,8 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHa
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmonics(
-    JNIEnv* env, jclass,
+    JNIEnv* /*env*/,
+    jobject /*thiz*/,
     jlong self,
     jdouble even,
     jdouble odd
@@ -777,14 +793,16 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHa
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeCoreTriode(
-    JNIEnv* env, jclass,
+    JNIEnv* /*env*/,
+    jobject /*thiz*/,
     jlong self,
     jboolean enabled
 ) {
     auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
     if (!jdsp) return JNI_FALSE;
 
-    VacuumTubeSetCoreTriode(jdsp, enabled ? 1 : 0);
+    // you’ll need a field in jdsp->tube, e.g. coreTriodesOn
+    jdsp->tube.coreTriodesOn = (enabled == JNI_TRUE) ? 1 : 0;
     return JNI_TRUE;
 }
 //
