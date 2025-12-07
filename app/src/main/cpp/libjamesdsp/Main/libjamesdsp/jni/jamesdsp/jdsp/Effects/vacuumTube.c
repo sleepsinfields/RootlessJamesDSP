@@ -44,7 +44,6 @@ void VTInit(VacuumTube *tb, double fs)
     tb->triodeScale  = 0.50f;
     
     tb->coreTriodesOn = 1;
-    tb->shapeLevelComp = 1.0f;  // no compensation at startup
 
     // Oversampling setup (your existing logic)
     if (fs >= 65000.0)
@@ -192,12 +191,8 @@ if (tb->coreTriodesOn && tb->shapeMix > 0.0f)
 double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
 double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
 
-// apply shape-level compensation so triodeMix≈constant loudness
-wetCh1 *= tb->shapeLevelComp;
-wetCh2 *= tb->shapeLevelComp;
-
-upsample[0][j] = (float)wetCh1;
-upsample[1][j] = (float)wetCh2;
+    upsample[0][j] = (float)wetCh1;
+    upsample[1][j] = (float)wetCh2;
             }
 
             out1[i] = oversample_stepdownSmpFloat(&tb->smp[0], upsample[0]) * tb->postgain;
@@ -297,13 +292,8 @@ if (tb->coreTriodesOn && tb->shapeMix > 0.0f)
 double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
 double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
 
-// apply shape-level compensation
-wetCh1 *= tb->shapeLevelComp;
-wetCh2 *= tb->shapeLevelComp;
-
-// final wet sample
-out1[i] = (float)(wetCh1 * tb->postgain);
-out2[i] = (float)(wetCh2 * tb->postgain);
+out1[j] = (float)wetCh1 * tb->postgain;
+out2[j] = (float)wetCh2 * tb->postgain;
         }
     }
 }
@@ -339,22 +329,11 @@ void VacuumTubeProcess(JamesDSPLib *jdsp, size_t n)
               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
 }
-
 void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
 {
     if (mix < 0.0) mix = 0.0;
     if (mix > 1.0) mix = 1.0;
-
     jdsp->tube.shapeMix = (float)mix;
-
-    // --- simple loudness compensation vs shapeMix ---
-    // At mix=0.0 → comp=1.0 (no change)
-    // At mix=1.0 → comp≈0.56 (about -5 dB), tweak 0.8 as needed
-    double loudnessBoost = 1.0 + 0.8 * mix;
-    if (loudnessBoost < 0.001)
-        loudnessBoost = 0.001;
-
-    jdsp->tube.shapeLevelComp = (float)(1.0 / loudnessBoost);
 }
 
 void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
