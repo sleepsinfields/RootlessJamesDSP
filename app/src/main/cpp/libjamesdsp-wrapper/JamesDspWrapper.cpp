@@ -730,98 +730,82 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     return JNI_TRUE;
 }
 
+// --- Advanced Vacuum Tube controls ----------------------------------
+// NOTE: keep the simple setVacuumTube() above exactly as-is.
+
+// Shape mix: 0.0 – 1.0
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeShape(
-    JNIEnv* /*env*/,
-    jobject /*thiz*/,
+    JNIEnv *env,
+    jobject obj,
     jlong self,
     jdouble mix
 ) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "TubeDebug",
-        "JNI STUB setVacuumTubeShape: self=%p mix=%f",
-        reinterpret_cast<void*>(self),
-        reinterpret_cast<void*>(self),
-        (double)mix
-    );
+    DECLARE_DSP_B
+    VacuumTubeSetShape(dsp, (double)mix);
     return JNI_TRUE;
 }
 
+// Triode parameters: drive / bias / scale
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeTriodeParams(
-    JNIEnv* /*env*/,
-    jobject /*thiz*/,
+    JNIEnv *env,
+    jobject obj,
     jlong self,
     jdouble drive,
     jdouble bias,
     jdouble scale
 ) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "TubeDebug",
-        "JNI STUB setVacuumTubeTriodeParams: self=%p drive=%f bias=%f scale=%f",
-        reinterpret_cast<void*>(self),
-        (double)drive,
-        (double)bias,
-        (double)scale
-    );
+    DECLARE_DSP_B
+    VacuumTubeSetTriodeParams(dsp,
+                              (double)drive,
+                              (double)bias,
+                              (double)scale);
     return JNI_TRUE;
 }
 
+// Global harmonic scale
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmScale(
-    JNIEnv* /*env*/,
-    jobject /*thiz*/,
+    JNIEnv *env,
+    jobject obj,
     jlong self,
     jdouble harmScale
 ) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "TubeDebug",
-        "JNI STUB setVacuumTubeHarmScale: self=%p harmScale=%f",
-        reinterpret_cast<void*>(self),
-        (double)harmScale
-    );
+    DECLARE_DSP_B
+    VacuumTubeSetHarmScale(dsp, (double)harmScale);
     return JNI_TRUE;
 }
 
+// Even / odd harmonic gains
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHarmonics(
-    JNIEnv* /*env*/,
-    jobject /*thiz*/,
+    JNIEnv *env,
+    jobject obj,
     jlong self,
     jdouble even,
     jdouble odd
 ) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "TubeDebug",
-        "JNI STUB setVacuumTubeHarmonics: self=%p even=%f odd=%f",
-        reinterpret_cast<void*>(self),
-        (double)even,
-        (double)odd
-    );
+    DECLARE_DSP_B
+    VacuumTubeSetHarmonics(dsp,
+                           (double)even,
+                           (double)odd);
     return JNI_TRUE;
 }
 
+// Core triode on the mid allpass band
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeCoreTriode(
-    JNIEnv* /*env*/,
-    jobject /*thiz*/,
+    JNIEnv *env,
+    jobject obj,
     jlong self,
     jboolean enabled
 ) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "TubeDebug",
-        "JNI STUB setVacuumTubeCoreTriode: self=%p enabled=%d",
-        reinterpret_cast<void*>(self),
-        (int)enabled
-    );
+    DECLARE_DSP_B
+    VacuumTubeSetCoreTriode(dsp,
+                            (enabled == JNI_TRUE) ? 1 : 0);
     return JNI_TRUE;
 }
-
 //
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setLiveprog(JNIEnv *env, jobject obj, jlong self,
