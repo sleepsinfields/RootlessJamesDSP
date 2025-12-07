@@ -58,22 +58,17 @@ private const val TUBE_EPS = 1e-18  // or even 1e-7 if you want it stricter
     }
 // 
 
-private var lastTubeEnabled: Boolean? = null
-private var lastTubeDrive: Double? = null
-
-
+private var lastTubeEnabled: Boolean = false
+private var lastTubeDrive: Double = Double.NaN
 
 private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
-    val unchanged =
-        lastTubeEnabled == enabled &&
-        lastTubeDrive != null &&
-        kotlin.math.abs(lastTubeDrive!! - drive) < TUBE_EPS
+    val eps = 1e-6
 
-    if (unchanged) {
+    if (enabled == lastTubeEnabled && kotlin.math.abs(drive - lastTubeDrive) < eps) {
         Log.e(
             "TubeDebug",
             "applyTubeIfChanged: skipping DSP call (same as last within eps) " +
-            "enabled=$enabled drive=$drive last=$lastTubeDrive"
+                    "enabled=$enabled drive=$drive last=$lastTubeDrive"
         )
         return
     }
@@ -81,11 +76,15 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
     lastTubeEnabled = enabled
     lastTubeDrive = drive
 
+    // **TEMP**: DO NOT CALL NATIVE HERE
     Log.e(
         "TubeDebug",
-        "applyTubeIfChanged: calling setVacuumTube enabled=$enabled drive=$drive"
+        "applyTubeIfChanged: (TEMP) NOT calling native setVacuumTube; " +
+                "enabled=$enabled drive=$drive"
     )
-    setVacuumTube(enabled, drive)
+
+    // When we’re ready later, we’ll restore something like:
+    // (this as? JamesDspLocalEngine)?.setVacuumTube(enabled, drive)
 }
 
     
