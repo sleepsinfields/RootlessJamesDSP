@@ -195,10 +195,6 @@ if (tb->coreTriodesOn && tb->shapeMix > 0.0f)
 double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
 double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
 
-// apply shape-level compensation so triodeMix≈constant loudness
-wetCh1 *= tb->shapeLevelComp;
-wetCh2 *= tb->shapeLevelComp;
-
 upsample[0][j] = (float)wetCh1;
 upsample[1][j] = (float)wetCh2;
             }
@@ -300,10 +296,6 @@ if (tb->shapeMix > 0.0f)
             // final wet sample
             double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
             double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
-
-            // apply shape-level compensation
-            wetCh1 *= tb->shapeLevelComp;
-            wetCh2 *= tb->shapeLevelComp;
 
             out1[i] = (float)(wetCh1 * tb->postgain);
             out2[i] = (float)(wetCh2 * tb->postgain);
