@@ -140,7 +140,7 @@ typedef struct str_dynfreqdomain
 
 typedef struct
 {
-    int needOversampling;
+    int needOversample;
     samplerateTool smp[2];
     SixBandsCrossover subband[2];
     float pregain, postgain;
