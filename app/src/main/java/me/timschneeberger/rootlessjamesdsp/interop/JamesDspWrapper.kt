@@ -120,20 +120,17 @@ external fun setCrossfeed(
 //
 // --- Vacuum tube JNI -------------------------------------------------------
 
-    @JvmStatic
     external fun setVacuumTube(
         handle: Long,
         enable: Boolean,
         level: Double
     ): Boolean
 
-    @JvmStatic
     external fun setVacuumTubeShape(
         handle: Long,
         mix: Double
     ): Boolean
 
-    @JvmStatic
     external fun setVacuumTubeTriodeParams(
         handle: Long,
         drive: Double,
@@ -141,20 +138,17 @@ external fun setCrossfeed(
         scale: Double
     ): Boolean
 
-    @JvmStatic
     external fun setVacuumTubeHarmScale(
         handle: Long,
         harmScale: Double
     ): Boolean
 
-    @JvmStatic
     external fun setVacuumTubeHarmonics(
         handle: Long,
         even: Double,
         odd: Double
     ): Boolean
 
-    @JvmStatic
     external fun setVacuumTubeCoreTriode(
         handle: Long,
         enabled: Boolean
