@@ -76,17 +76,14 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
     lastTubeEnabled = enabled
     lastTubeDrive = drive
 
-    // **TEMP**: DO NOT CALL NATIVE HERE
     Log.e(
         "TubeDebug",
-        "applyTubeIfChanged: (TEMP) NOT calling native setVacuumTube; " +
-                "enabled=$enabled drive=$drive"
+        "applyTubeIfChanged: calling setVacuumTube enabled=$enabled drive=$drive"
     )
 
-    // When we’re ready later, we’ll restore something like:
-    // (this as? JamesDspLocalEngine)?.setVacuumTube(enabled, drive)
+    // Call into LocalEngine → JNI
+    setVacuumTube(enabled, drive)
 }
-
     
     // ---- Lifecycle ----
 
