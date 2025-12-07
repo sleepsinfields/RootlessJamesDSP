@@ -114,87 +114,85 @@ class JamesDspLocalEngine(
 // Core vacuum tube enable / drive (already mostly present, but unified)
 // --------------------------------------------------------------------
 override fun setVacuumTube(enable: Boolean, level: Double): Boolean {
-    // 'level' is in dB (same as VacuumTubeSetGain)
-    android.util.Log.e(
+    Log.e(
         "TubeDebug",
-        "LocalEngine.setVacuumTube enable=$enable level(dB)=$level"
+        "LocalEngine.setVacuumTube enable=$enable level(dB)=$level handle=$handle"
     )
+
+    if (!JamesDspWrapper.isHandleValid(handle)) {
+        Log.e("TubeDebug", "setVacuumTube: invalid handle=$handle, skipping native call")
+        return false
+    }
+
     return JamesDspWrapper.setVacuumTube(handle, enable, level)
 }
-
 // --------------------------------------------------------------------
 // Shape mix: 0 = original allpass core, 1 = full triode curve
 // --------------------------------------------------------------------
+
 fun setVacuumTubeShape(mix: Double): Boolean {
     val clamped = mix.coerceIn(0.0, 1.0)
 
-    android.util.Log.e(
-        "TubeDebug",
-        "LocalEngine.setVacuumTubeShape mix=$clamped"
-    )
+    if (!JamesDspWrapper.isHandleValid(handle)) {
+        Log.e("TubeDebug", "setVacuumTubeShape: invalid handle=$handle, skipping")
+        return false
+    }
 
+    Log.e("TubeDebug", "LocalEngine.setVacuumTubeShape mix=$clamped handle=$handle")
     return JamesDspWrapper.setTubeShape(handle, clamped)
 }
 
-// --------------------------------------------------------------------
-// Even / odd harmonic balance controls
-// evenGain scales (2nd + 4th), oddGain scales (3rd + 5th)
-// --------------------------------------------------------------------
-fun setVacuumTubeHarmonics(
-    evenGain: Double,
-    oddGain: Double
-): Boolean {
+fun setVacuumTubeHarmonics(evenGain: Double, oddGain: Double): Boolean {
     val e = evenGain.coerceAtLeast(0.0)
     val o = oddGain.coerceAtLeast(0.0)
 
-    android.util.Log.e(
-        "TubeDebug",
-        "LocalEngine.setVacuumTubeHarmonics even=$e odd=$o"
-    )
+    if (!JamesDspWrapper.isHandleValid(handle)) {
+        Log.e("TubeDebug", "setVacuumTubeHarmonics: invalid handle=$handle, skipping")
+        return false
+    }
 
+    Log.e("TubeDebug", "LocalEngine.setVacuumTubeHarmonics even=$e odd=$o handle=$handle")
     return JamesDspWrapper.setTubeHarmonics(handle, e, o)
 }
 
-// --------------------------------------------------------------------
-// Global harmonic intensity scale (ties both branches together)
-// This should feed the 'harmScale' you use in C for harmCh1/harmCh2
-// --------------------------------------------------------------------
 fun setVacuumTubeHarmScale(scale: Double): Boolean {
     val s = scale.coerceIn(0.0, 1.0)
 
-    android.util.Log.e(
-        "TubeDebug",
-        "LocalEngine.setVacuumTubeHarmScale scale=$s"
-    )
+    if (!JamesDspWrapper.isHandleValid(handle)) {
+        Log.e("TubeDebug", "setVacuumTubeHarmScale: invalid handle=$handle, skipping")
+        return false
+    }
 
+    Log.e("TubeDebug", "LocalEngine.setVacuumTubeHarmScale scale=$s handle=$handle")
     return JamesDspWrapper.setTubeHarmScale(handle, s)
 }
 
-// --------------------------------------------------------------------
-// Triode core “knobs” – direct control of drive/bias/scale in vt_triodeshape
-// --------------------------------------------------------------------
-fun setVacuumTubeTriodeParams(
-    drive: Double,
-    bias: Double,
-    scale: Double
-): Boolean {
+fun setVacuumTubeTriodeParams(drive: Double, bias: Double, scale: Double): Boolean {
     val d = drive.coerceIn(0.5, 4.0)
     val b = bias.coerceIn(-0.5, 0.5)
     val s = scale.coerceIn(0.1, 1.5)
 
-    android.util.Log.e(
-        "TubeDebug",
-        "LocalEngine.setVacuumTubeTriodeParams drive=$d bias=$b scale=$s"
-    )
+    if (!JamesDspWrapper.isHandleValid(handle)) {
+        Log.e("TubeDebug", "setVacuumTubeTriodeParams: invalid handle=$handle, skipping")
+        return false
+    }
 
+    Log.e(
+        "TubeDebug",
+        "LocalEngine.setVacuumTubeTriodeParams drive=$d bias=$b scale=$s handle=$handle"
+    )
     return JamesDspWrapper.setTubeTriodeParams(handle, d, b, s)
 }
 
 fun setVacuumTubeCoreTriode(enabled: Boolean): Boolean {
-    Log.e("TubeDebug", "LocalEngine.setVacuumTubeCoreTriode enabled=$enabled")
+    if (!JamesDspWrapper.isHandleValid(handle)) {
+        Log.e("TubeDebug", "setVacuumTubeCoreTriode: invalid handle=$handle, skipping")
+        return false
+    }
+
+    Log.e("TubeDebug", "LocalEngine.setVacuumTubeCoreTriode enabled=$enabled handle=$handle")
     return JamesDspWrapper.setVacuumTubeCoreTriode(handle, enabled)
 }
-
 
     override fun setMultiEqualizerInternal(
         enable: Boolean,
