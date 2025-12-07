@@ -704,21 +704,29 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
-    JNIEnv* /*env*/,
-    jobject /*thiz*/,
+    JNIEnv* env,
+    jobject obj,
     jlong self,
     jboolean enable,
-    jdouble level
+    jdouble level   // dB from Kotlin
 ) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "TubeDebug",
-        "JNI STUB setVacuumTube: self=%p enable=%d level=%f",
-        reinterpret_cast<void*>(self),
-        (int)enable,
-        (double)level
-    );
-    // NO native tube calls for now
+    // Use the same macro as before – this is important
+    // because it safely resolves `self` → JamesDSPLib* dsp
+    DECLARE_DSP_B   // gives you `dsp` (JamesDSPLib*) or early-return
+
+    // Clamp to your UI/desired range (matches slider: -3 to 12 dB)
+    if (level > 12.0) level = 12.0;
+    if (level < -3.0) level = -3.0;
+
+    // Pass dB directly to your DSP (VacuumTubeSetGain converts dB → linear internally)
+    VacuumTubeSetGain(dsp, level);
+
+    if (enable) {
+        VacuumTubeEnable(dsp);
+    } else {
+        VacuumTubeDisable(dsp);
+    }
+
     return JNI_TRUE;
 }
 
