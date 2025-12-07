@@ -704,30 +704,13 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
-    JNIEnv* env,
-    jobject /* this */,
-    jlong self,
-    jboolean enable,
-    jdouble level
+    JNIEnv* /*env*/,
+    jobject /*thiz*/,
+    jlong /*self*/,
+    jboolean /*enable*/,
+    jdouble /*level*/
 ) {
-    // Same as DECLARE_DSP_B, but spelled out to be clear here
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!jdsp) {
-        return JNI_FALSE;
-    }
-
-    if (enable) {
-        // Keep your existing gain mapping: level is dB * 100 on the Kotlin side
-        VacuumTubeSetGain(jdsp, level / 100.0);
-        VacuumTubeEnable(jdsp);
-    } else {
-        // Just mark it disabled; don't call VacuumTubeDisable at all.
-        jdsp->tubeEnabled = 0;
-        // If you ever want, you could also optionally reset gains here:
-        // jdsp->tube.pregain  = 1.0f;
-        // jdsp->tube.postgain = 1.0f;
-    }
-
+    // TEMP: do nothing – just report success.
     return JNI_TRUE;
 }
 //
