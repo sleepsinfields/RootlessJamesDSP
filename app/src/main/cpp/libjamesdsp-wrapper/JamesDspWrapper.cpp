@@ -705,26 +705,33 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     JNIEnv* /*env*/,
-    jobject /*thiz*/,
-    jlong /*self*/,
-    jboolean /*enable*/,
-    jdouble /*level*/
+    jclass  /*clazz*/,
+    jlong handle,
+    jboolean enable,
+    jdouble level
 ) {
-    // TEMP: do nothing – just report success.
-    return JNI_TRUE;
-}
-//
-extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeShape(
-        JNIEnv *env,
-        jclass,
-        jlong self,
-        jdouble mix
-) {
-    auto *jdsp = reinterpret_cast<JamesDSPLib *>(self);
-    if (!jdsp) return JNI_FALSE;
+    // Convert the handle back to a JamesDSPLib pointer
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
+    if (!jdsp) {
+        // Defensive: invalid handle, don’t crash
+        return JNI_FALSE;
+    }
 
-    VacuumTubeSetShape(jdsp, (double)mix);
+    // TEMP: make this as simple and safe as possible first.
+    // You can uncomment the real logic once we confirm stability.
+
+    // Clamp level to tube’s allowed range
+    if (level > 12.0) level = 12.0;
+    if (level < -3.0) level = -3.0;
+
+    VacuumTubeSetGain(jdsp, level);
+
+    if (enable) {
+        VacuumTubeEnable(jdsp);
+    } else {
+        VacuumTubeDisable(jdsp);
+    }
+
     return JNI_TRUE;
 }
 
