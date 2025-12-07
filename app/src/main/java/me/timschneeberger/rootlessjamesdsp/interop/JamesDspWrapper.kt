@@ -120,39 +120,45 @@ external fun setCrossfeed(
 //
 // --- Vacuum tube JNI -------------------------------------------------------
 
-external fun setVacuumTube(
-    self: JamesDspHandle,
-    enable: Boolean,
-    level: Double
-): Boolean
+    @JvmStatic
+    external fun setVacuumTube(
+        handle: Long,
+        enable: Boolean,
+        level: Double
+    ): Boolean
 
-external fun setVacuumTubeShape(
-    self: JamesDspHandle,
-    mix: Double
-): Boolean
+    @JvmStatic
+    external fun setVacuumTubeShape(
+        handle: Long,
+        mix: Double
+    ): Boolean
 
-external fun setVacuumTubeHarmonics(
-    self: JamesDspHandle,
-    even: Double,
-    odd: Double
-): Boolean
+    @JvmStatic
+    external fun setVacuumTubeTriodeParams(
+        handle: Long,
+        drive: Double,
+        bias: Double,
+        scale: Double
+    ): Boolean
 
-external fun setVacuumTubeHarmScale(
-    self: JamesDspHandle,
-    scale: Double
-): Boolean
+    @JvmStatic
+    external fun setVacuumTubeHarmScale(
+        handle: Long,
+        harmScale: Double
+    ): Boolean
 
-external fun setVacuumTubeTriodeParams(
-    self: JamesDspHandle,
-    drive: Double,
-    bias: Double,
-    scale: Double
-): Boolean
+    @JvmStatic
+    external fun setVacuumTubeHarmonics(
+        handle: Long,
+        even: Double,
+        odd: Double
+    ): Boolean
 
-external fun setVacuumTubeCoreTriode(
-    self: JamesDspHandle,
-    enabled: Boolean
-): Boolean
+    @JvmStatic
+    external fun setVacuumTubeCoreTriode(
+        handle: Long,
+        enabled: Boolean
+    ): Boolean
 
 fun setTubeCoreTriode(self: JamesDspHandle, enabled: Boolean): Boolean {
     return setVacuumTubeCoreTriode(self, enabled)
