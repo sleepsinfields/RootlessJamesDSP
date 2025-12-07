@@ -705,22 +705,20 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     JNIEnv* /*env*/,
-    jclass  /*clazz*/,
+    jclass  /*clazz*/,   // because it's @JvmStatic
     jlong handle,
     jboolean enable,
     jdouble level
 ) {
-    // Convert the handle back to a JamesDSPLib pointer
     auto* jdsp = reinterpret_cast<JamesDSPLib*>(handle);
     if (!jdsp) {
-        // Defensive: invalid handle, don’t crash
+        __android_log_print(ANDROID_LOG_ERROR,
+                            "TubeDebug",
+                            "setVacuumTube: null jdsp handle");
         return JNI_FALSE;
     }
 
-    // TEMP: make this as simple and safe as possible first.
-    // You can uncomment the real logic once we confirm stability.
-
-    // Clamp level to tube’s allowed range
+    // Clamp to your VacuumTubeSetGain range
     if (level > 12.0) level = 12.0;
     if (level < -3.0) level = -3.0;
 
