@@ -705,7 +705,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     JNIEnv* /*env*/,
-    jobject /*thiz*/,   // instance method on the Kotlin object
+    jobject /*thiz*/,
     jlong self,
     jboolean enable,
     jdouble level
@@ -713,13 +713,12 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     __android_log_print(
         ANDROID_LOG_ERROR,
         "TubeDebug",
-        "JNI setVacuumTube STUB: self=%p enable=%d level=%f",
+        "JNI STUB setVacuumTube: self=%p enable=%d level=%f",
         reinterpret_cast<void*>(self),
         (int)enable,
         (double)level
     );
-
-    // DO *NOT* touch jdsp here at all for this test
+    // NO native tube calls for now
     return JNI_TRUE;
 }
 
@@ -730,10 +729,14 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeSh
     jlong self,
     jdouble mix
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!jdsp) return JNI_FALSE;
-
-    VacuumTubeSetShape(jdsp, (double)mix);
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "TubeDebug",
+        "JNI STUB setVacuumTubeShape: self=%p mix=%f",
+        reinterpret_cast<void*>(self),
+        reinterpret_cast<void*>(self),
+        (double)mix
+    );
     return JNI_TRUE;
 }
 
@@ -746,10 +749,15 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeTr
     jdouble bias,
     jdouble scale
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!jdsp) return JNI_FALSE;
-
-    VacuumTubeSetTriodeParams(jdsp, (double)drive, (double)bias, (double)scale);
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "TubeDebug",
+        "JNI STUB setVacuumTubeTriodeParams: self=%p drive=%f bias=%f scale=%f",
+        reinterpret_cast<void*>(self),
+        (double)drive,
+        (double)bias,
+        (double)scale
+    );
     return JNI_TRUE;
 }
 
@@ -760,10 +768,13 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHa
     jlong self,
     jdouble harmScale
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!jdsp) return JNI_FALSE;
-
-    VacuumTubeSetHarmScale(jdsp, (double)harmScale);
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "TubeDebug",
+        "JNI STUB setVacuumTubeHarmScale: self=%p harmScale=%f",
+        reinterpret_cast<void*>(self),
+        (double)harmScale
+    );
     return JNI_TRUE;
 }
 
@@ -775,10 +786,14 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeHa
     jdouble even,
     jdouble odd
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!jdsp) return JNI_FALSE;
-
-    VacuumTubeSetHarmonics(jdsp, (double)even, (double)odd);
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "TubeDebug",
+        "JNI STUB setVacuumTubeHarmonics: self=%p even=%f odd=%f",
+        reinterpret_cast<void*>(self),
+        (double)even,
+        (double)odd
+    );
     return JNI_TRUE;
 }
 
@@ -789,13 +804,16 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTubeCo
     jlong self,
     jboolean enabled
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!jdsp) return JNI_FALSE;
-
-    // you’ll need a field in jdsp->tube, e.g. coreTriodesOn
-    jdsp->tube.coreTriodesOn = (enabled == JNI_TRUE) ? 1 : 0;
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "TubeDebug",
+        "JNI STUB setVacuumTubeCoreTriode: self=%p enabled=%d",
+        reinterpret_cast<void*>(self),
+        (int)enabled
+    );
     return JNI_TRUE;
 }
+
 //
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setLiveprog(JNIEnv *env, jobject obj, jlong self,
