@@ -702,34 +702,30 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhanc
     return true;
 }
 
-extern "C"
-JNIEXPORT jboolean JNICALL
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
-    JNIEnv* /*env*/,
-    jclass  /*clazz*/,          // use jclass if this is a static/companion external
-    jlong   self,
+    JNIEnv* env,
+    jobject /* this */,
+    jlong self,
     jboolean enable,
-    jdouble level               // Kotlin Double
+    jdouble level
 ) {
-    // This is what DECLARE_DSP_B *should* expand to; keep it if it’s already correct:
-    // DECLARE_DSP_B
-    auto* dsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!dsp) {
+    // Same as DECLARE_DSP_B, but spelled out to be clear here
+    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
+    if (!jdsp) {
         return JNI_FALSE;
     }
 
     if (enable) {
-        // IMPORTANT: decide what `level` actually is.
-
-        // 1) If `level` is already in dB (your new precise slider logic):
-        VacuumTubeSetGain(dsp, static_cast<double>(level));
-
-        // 2) If `level` is still a 0..100 UI percent, use the old scaling instead:
-        // VacuumTubeSetGain(dsp, static_cast<double>(level) / 100.0);
-
-        VacuumTubeEnable(dsp);
+        // Keep your existing gain mapping: level is dB * 100 on the Kotlin side
+        VacuumTubeSetGain(jdsp, level / 100.0);
+        VacuumTubeEnable(jdsp);
     } else {
-        VacuumTubeDisable(dsp);
+        // Just mark it disabled; don't call VacuumTubeDisable at all.
+        jdsp->tubeEnabled = 0;
+        // If you ever want, you could also optionally reset gains here:
+        // jdsp->tube.pregain  = 1.0f;
+        // jdsp->tube.postgain = 1.0f;
     }
 
     return JNI_TRUE;
