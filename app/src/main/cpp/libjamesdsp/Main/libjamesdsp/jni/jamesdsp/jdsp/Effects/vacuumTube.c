@@ -344,14 +344,12 @@ void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
 
     jdsp->tube.shapeMix = (float)mix;
 
-    // --- simple loudness compensation vs shapeMix ---
-    // At mix=0.0 → comp=1.0 (no change)
-    // At mix=1.0 → comp≈0.56 (about -5 dB), tweak 0.8 as needed
-    double loudnessBoost = 1.0 + 0.8 * mix;
-    if (loudnessBoost < 0.001)
-        loudnessBoost = 0.001;
+    // --- Loudness compensation for triode mix ---
+    // Simple empirical curve: more triode → a bit less gain
+    // You can tweak 0.6 to taste (0.4 = less comp, 0.8 = more comp)
+    double comp = 1.0 / (1.0 + 0.6 * mix);
 
-    jdsp->tube.shapeLevelComp = (float)(1.0 / loudnessBoost);
+    jdsp->tube.shapeLevelComp = (float)comp;
 }
 
 void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
