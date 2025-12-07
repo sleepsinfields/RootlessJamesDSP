@@ -207,17 +207,17 @@ upsample[1][j] = (float)wetCh2;
     else
     {
         // -------- Non-oversampled branch (single rate) --------
-        for (size_t j = 0; j < n; j++)
+        for (size_t i = 0; i < n; i++)
         {
             process6BandsCrossover(
                 &tb->subband[0],
-                x1[j] * tb->pregain,
+                x1[i] * tb->pregain,
                 &bandCh1[0], &bandCh1[1], &bandCh1[2],
                 &bandCh1[3], &bandCh1[4], &bandCh1[5]
             );
             process6BandsCrossover(
                 &tb->subband[1],
-                x2[j] * tb->pregain,
+                x2[i] * tb->pregain,
                 &bandCh2[0], &bandCh2[1], &bandCh2[2],
                 &bandCh2[3], &bandCh2[4], &bandCh2[5]
             );
@@ -228,82 +228,79 @@ upsample[1][j] = (float)wetCh2;
             bandCh2[1] = -bandCh2[1];
             bandCh2[3] = -bandCh2[3];
             bandCh2[5] = -bandCh2[5];
-// Per-band tube shaping on ALL bands using shapeMix
-if (tb->shapeMix > 0.0f)
-{
-    double mix = 1 * (double)tb->shapeMix;
-    for (int b = 0; b < 6; ++b)
-    {
-        double dry1 = bandCh1[b];
-        double dry2 = bandCh2[b];
 
-        double tri1 = vt_triodeshape(dry1, tb);
-        double tri2 = vt_triodeshape(dry2, tb);
+            // Per-band tube shaping on ALL bands using shapeMix
+            if (tb->shapeMix > 0.0f)
+            {
+                double mix = (double)tb->shapeMix;
+                for (int b = 0; b < 6; ++b)
+                {
+                    double dry1 = bandCh1[b];
+                    double dry2 = bandCh2[b];
 
-        bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
-        bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
-    }
-}
-//
+                    double tri1 = vt_triodeshape(dry1, tb);
+                    double tri2 = vt_triodeshape(dry2, tb);
+
+                    bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
+                    bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
+                }
+            }
+
             double allpassCh1 = bandCh1[1] + bandCh1[2] + bandCh1[3] + bandCh1[4];
             double allpassCh2 = bandCh2[1] + bandCh2[2] + bandCh2[3] + bandCh2[4];
 
             // --- harmonic energy per band ---
-double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
-double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
-double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
-double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
+            double harmonic2Ch1 = bandCh1[1] * bandCh1[1];
+            double harmonic3Ch1 = bandCh1[2] * bandCh1[2];
+            double harmonic4Ch1 = bandCh1[3] * bandCh1[3];
+            double harmonic5Ch1 = bandCh1[4] * bandCh1[4];
 
-double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
-double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
-double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
-double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
+            double harmonic2Ch2 = bandCh2[1] * bandCh2[1];
+            double harmonic3Ch2 = bandCh2[2] * bandCh2[2];
+            double harmonic4Ch2 = bandCh2[3] * bandCh2[3];
+            double harmonic5Ch2 = bandCh2[4] * bandCh2[4];
 
-// --- EVEN / ODD SPLIT ---
-// even: 2nd + 4th, odd: 3rd + 5th
-double harmEvenCh1 = (harmonic2Ch1 + harmonic4Ch1) * tb->evenGain;
-double harmOddCh1  = (harmonic3Ch1 + harmonic5Ch1) * tb->oddGain;
+            // --- EVEN / ODD SPLIT ---
+            double harmEvenCh1 = (harmonic2Ch1 + harmonic4Ch1) * tb->evenGain;
+            double harmOddCh1  = (harmonic3Ch1 + harmonic5Ch1) * tb->oddGain;
 
-double harmEvenCh2 = (harmonic2Ch2 + harmonic4Ch2) * tb->evenGain;
-double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
+            double harmEvenCh2 = (harmonic2Ch2 + harmonic4Ch2) * tb->evenGain;
+            double harmOddCh2  = (harmonic3Ch2 + harmonic5Ch2) * tb->oddGain;
 
-// base scaling for harmonic contribution
+            double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
+            double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
 
-double harmCh1 = (harmEvenCh1 + harmOddCh1) * (double)tb->harmScale;
-double harmCh2 = (harmEvenCh2 + harmOddCh2) * (double)tb->harmScale;
+            // --- triode core on allpass (second core, toggleable) ---
+            double coreInCh1 = allpassCh1;
+            double coreInCh2 = allpassCh2;
 
-// --- triode core on allpass (second core, toggleable) ---
-double coreInCh1 = allpassCh1;
-double coreInCh2 = allpassCh2;
+            double coreOutCh1 = coreInCh1;
+            double coreOutCh2 = coreInCh2;
 
-double coreOutCh1 = coreInCh1;
-double coreOutCh2 = coreInCh2;
+            if (tb->coreTriodesOn && tb->shapeMix > 0.0f)
+            {
+                double triodeCh1 = vt_triodeshape(coreInCh1, tb);
+                double triodeCh2 = vt_triodeshape(coreInCh2, tb);
 
-if (tb->coreTriodesOn && tb->shapeMix > 0.0f)
-{
-    double triodeCh1 = vt_triodeshape(coreInCh1, tb);
-    double triodeCh2 = vt_triodeshape(coreInCh2, tb);
+                coreOutCh1 =
+                    (1.0 - tb->shapeMix) * coreInCh1 +
+                    tb->shapeMix * triodeCh1;
 
-    coreOutCh1 =
-        (1.0 - tb->shapeMix) * coreInCh1 +
-        tb->shapeMix * triodeCh1;
+                coreOutCh2 =
+                    (1.0 - tb->shapeMix) * coreInCh2 +
+                    tb->shapeMix * triodeCh2;
+            }
 
-    coreOutCh2 =
-        (1.0 - tb->shapeMix) * coreInCh2 +
-        tb->shapeMix * triodeCh2;
-}
+            // final wet sample
+            double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
+            double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
 
-// final wet sample
-double wetCh1 = bandCh1[0] + coreOutCh1 + bandCh1[5] + harmCh1;
-double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
+            // apply shape-level compensation
+            wetCh1 *= tb->shapeLevelComp;
+            wetCh2 *= tb->shapeLevelComp;
 
-// apply shape-level compensation
-wetCh1 *= tb->shapeLevelComp;
-wetCh2 *= tb->shapeLevelComp;
-
-// final wet sample
-out1[i] = (float)(wetCh1 * tb->postgain);
-out2[i] = (float)(wetCh2 * tb->postgain);
+            out1[i] = (float)(wetCh1 * tb->postgain);
+            out2[i] = (float)(wetCh2 * tb->postgain);
         }
     }
 }
