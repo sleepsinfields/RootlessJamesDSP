@@ -710,25 +710,16 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setVacuumTube(
     jboolean enable,
     jdouble level
 ) {
-    auto* jdsp = reinterpret_cast<JamesDSPLib*>(self);
-    if (!jdsp) {
-        __android_log_print(ANDROID_LOG_ERROR,
-                            "TubeDebug",
-                            "setVacuumTube: null jdsp handle");
-        return JNI_FALSE;
-    }
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "TubeDebug",
+        "JNI setVacuumTube STUB: self=%p enable=%d level=%f",
+        reinterpret_cast<void*>(self),
+        (int)enable,
+        (double)level
+    );
 
-    if (level > 12.0) level = 12.0;
-    if (level < -3.0) level = -3.0;
-
-    VacuumTubeSetGain(jdsp, level);
-
-    if (enable) {
-        VacuumTubeEnable(jdsp);
-    } else {
-        VacuumTubeDisable(jdsp);
-    }
-
+    // DO *NOT* touch jdsp here at all for this test
     return JNI_TRUE;
 }
 
