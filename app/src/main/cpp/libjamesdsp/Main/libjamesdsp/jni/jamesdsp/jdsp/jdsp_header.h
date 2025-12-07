@@ -140,18 +140,18 @@ typedef struct str_dynfreqdomain
 
 typedef struct
 {
-    int needOversample;
     samplerateTool smp[2];
     SixBandsCrossover subband[2];
     float pregain, postgain;
-    float shapeMix;      // 0–1
-    float evenGain;      // 2nd+4th
-    float oddGain;       // 3rd+5th
-    float harmScale;     // global harmonic level
-    float triodeDrive;   // vt_triodeshape params
+    float shapeMix;        // 0–1
+    float evenGain;        // 2nd+4th
+    float oddGain;         // 3rd+5th
+    float harmScale;       // global harmonic level
+    float triodeDrive;     // vt_triodeshape params
     float triodeBias;
     float triodeScale;
-    int   coreTriodesOn; // <--- NEW: 0/1: triode core on allpass or not
+    int   coreTriodesOn;   // 0/1: triode core on allpass or not
+    float shapeLevelComp;  // gain trim vs shapeMix
 } VacuumTube;
 
 typedef struct
