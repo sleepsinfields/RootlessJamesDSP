@@ -124,10 +124,25 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
                 bandCh2[3] = -bandCh2[3];
                 bandCh2[5] = -bandCh2[5];
 
-// Per-band tube shaping on ALL bands using shapeMix
+// Per-band tube shaping on ALL bands using shapeMix, with level compensation
 if (tb->shapeMix > 0.0f)
 {
-    double mix = 1 * (double)tb->shapeMix;
+    double mix   = (double)tb->shapeMix;
+
+    double drive = (double)tb->triodeDrive;
+    double bias  = (double)tb->triodeBias;
+    double scale = (double)tb->triodeScale;
+
+    // Small-signal triode gain at x ≈ 0:
+    // gain_tri = drive * sech^2(bias * drive) * scale
+    double v0    = bias * drive;
+    double sech0 = 1.0 / cosh(v0);
+    double gain_tri = drive * sech0 * sech0 * scale;
+
+    // Effective linear gain of the dry/triode mix
+    double G_eff = (1.0 - mix) + mix * gain_tri;
+    double norm  = (G_eff != 0.0) ? (1.0 / G_eff) : 1.0;
+
     for (int b = 0; b < 6; ++b)
     {
         double dry1 = bandCh1[b];
@@ -136,8 +151,11 @@ if (tb->shapeMix > 0.0f)
         double tri1 = vt_triodeshape(dry1, tb);
         double tri2 = vt_triodeshape(dry2, tb);
 
-        bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
-        bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
+        double mixed1 = (1.0 - mix) * dry1 + mix * tri1;
+        double mixed2 = (1.0 - mix) * dry2 + mix * tri2;
+
+        bandCh1[b] = mixed1 * norm;
+        bandCh2[b] = mixed2 * norm;
     }
 }
 //
@@ -223,10 +241,26 @@ double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
             bandCh2[1] = -bandCh2[1];
             bandCh2[3] = -bandCh2[3];
             bandCh2[5] = -bandCh2[5];
-// Per-band tube shaping on ALL bands using shapeMix
+
+// Per-band tube shaping on ALL bands using shapeMix, with level compensation
 if (tb->shapeMix > 0.0f)
 {
-    double mix = 1 * (double)tb->shapeMix;
+    double mix   = (double)tb->shapeMix;
+
+    double drive = (double)tb->triodeDrive;
+    double bias  = (double)tb->triodeBias;
+    double scale = (double)tb->triodeScale;
+
+    // Small-signal triode gain at x ≈ 0:
+    // gain_tri = drive * sech^2(bias * drive) * scale
+    double v0    = bias * drive;
+    double sech0 = 1.0 / cosh(v0);
+    double gain_tri = drive * sech0 * sech0 * scale;
+
+    // Effective linear gain of the dry/triode mix
+    double G_eff = (1.0 - mix) + mix * gain_tri;
+    double norm  = (G_eff != 0.0) ? (1.0 / G_eff) : 1.0;
+
     for (int b = 0; b < 6; ++b)
     {
         double dry1 = bandCh1[b];
@@ -235,8 +269,11 @@ if (tb->shapeMix > 0.0f)
         double tri1 = vt_triodeshape(dry1, tb);
         double tri2 = vt_triodeshape(dry2, tb);
 
-        bandCh1[b] = (1.0 - mix) * dry1 + mix * tri1;
-        bandCh2[b] = (1.0 - mix) * dry2 + mix * tri2;
+        double mixed1 = (1.0 - mix) * dry1 + mix * tri1;
+        double mixed2 = (1.0 - mix) * dry2 + mix * tri2;
+
+        bandCh1[b] = mixed1 * norm;
+        bandCh2[b] = mixed2 * norm;
     }
 }
 //
