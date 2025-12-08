@@ -15,6 +15,8 @@ import me.timschneeberger.rootlessjamesdsp.R
 import me.timschneeberger.rootlessjamesdsp.databinding.PreferenceCompanderBinding
 import me.timschneeberger.rootlessjamesdsp.view.CompanderSurface
 import java.util.Locale
+import android.text.Editable
+import android.text.TextWatcher
 
 class CompanderPreference : DialogPreference {
 
