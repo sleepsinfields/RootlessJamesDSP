@@ -37,7 +37,7 @@ class CompanderPreference : DialogPreference {
     constructor(
         context: Context, attrs: AttributeSet?, defStyleAttr: Int,
         defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes) {
+    ) : super(context, attrs, defStyleRes, defStyleRes) {
         layoutResource = R.layout.preference_compander
         dialogLayoutResource = R.layout.preference_compander_dialog
 
@@ -64,7 +64,7 @@ class CompanderPreference : DialogPreference {
         // draw current gains into the small row graph
         setEqualizerViewValues(initialValue)
 
-        // wire the precision edit button in the row
+        // precision edit button in the row
         binding.btnEditCompanderValues.setOnClickListener {
             showPrecisionEditorDialog()
         }
@@ -85,7 +85,7 @@ class CompanderPreference : DialogPreference {
     // --- parsing/building the stored string ---
 
     private val bandCount: Int
-        get() = me.timschneeberger.rootlessjamesdsp.view.CompanderSurface.SCALE.size
+        get() = CompanderSurface.SCALE.size
 
     /**
      * Stored format (from your default):
@@ -99,16 +99,14 @@ class CompanderPreference : DialogPreference {
 
         val n = bandCount
         val freqs = DoubleArray(n) { i ->
-            // default to CompanderSurface.SCALE if not present
-            me.timschneeberger.rootlessjamesdsp.view.CompanderSurface.SCALE[i]
+            CompanderSurface.SCALE[i]
         }
         val gains = DoubleArray(n) { 0.0 }
 
         if (tokens.size >= 2 * n) {
             // first n = freqs, last n = gains
             for (i in 0 until n) {
-                freqs[i] = tokens[i].toDoubleOrNull()
-                    ?: me.timschneeberger.rootlessjamesdsp.view.CompanderSurface.SCALE[i]
+                freqs[i] = tokens[i].toDoubleOrNull() ?: CompanderSurface.SCALE[i]
             }
             for (i in 0 until n) {
                 gains[i] = tokens[n + i].toDoubleOrNull() ?: 0.0
@@ -198,7 +196,7 @@ class CompanderPreference : DialogPreference {
                 if (callChangeListener(newValue)) {
                     persistString(newValue)
                     initialValue = newValue
-                    updateFromPreferences() // refresh the little row graph
+                    updateFromPreferences() // refresh the row graph
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
