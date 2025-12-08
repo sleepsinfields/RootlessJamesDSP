@@ -371,15 +371,19 @@ void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
     if (mix < 0.0) mix = 0.0;
     if (mix > 1.0) mix = 1.0;
 
-    // Snap near-zero to 0, and near-one to 1
+    // Snap near-zero or near-one to exact constants
+    double orig = mix;
     if (fabs(mix) < 1e-4)
         mix = 0.0;
     else if (fabs(mix - 1.0) < 1e-4)
         mix = 1.0;
 
     jdsp->tube.shapeMix = (float)mix;
-}
 
+    // Log what the DSP actually receives
+    VT_LOGI("VacuumTubeSetShape: raw=%.9f snapped=%.9f stored=%.9f",
+            orig, mix, jdsp->tube.shapeMix);
+}
 void VacuumTubeSetHarmonics(JamesDSPLib *jdsp, double even, double odd)
 {
     if (even < 0.0) even = 0.0;
