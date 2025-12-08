@@ -145,61 +145,97 @@ class CompanderPreference : DialogPreference {
     // --- precision editor: dialog with one field per band ---
 
     private fun showPrecisionEditorDialog() {
-        val ctx = context
+    val ctx = context
 
-        val scroll = ScrollView(ctx)
-        val layout = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 32, 48, 32)
-        }
-        scroll.addView(
-            layout,
-            ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        )
+    // Remember original stored value so Cancel can revert everything
+    val originalValue = getPersistedString(initialValue)
+    val (freqs, originalGains) = parseFreqsAndGains(originalValue)
 
-        val (freqs, gains) = parseFreqsAndGains(getPersistedString(initialValue))
-        val inputs = ArrayList<EditText>(bandCount)
-
-        for (i in 0 until bandCount) {
-            val label = TextView(ctx).apply {
-                text = String.format(Locale.US, "%.0f Hz gain:", freqs[i])
-            }
-
-            val input = EditText(ctx).apply {
-                inputType =
-                    android.text.InputType.TYPE_CLASS_NUMBER or
-                    android.text.InputType.TYPE_NUMBER_FLAG_SIGNED or
-                    android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-
-                setText(String.format(Locale.US, "%.9f", gains[i]))
-            }
-
-            layout.addView(label)
-            layout.addView(input)
-            inputs.add(input)
-        }
-
-        AlertDialog.Builder(ctx)
-            .setTitle(R.string.compander_enable) // or custom title
-            .setMessage("Enter precise gains for each band (linear, not dB).")
-            .setView(scroll)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val newGains = DoubleArray(bandCount) { idx ->
-                    inputs[idx].text.toString().toDoubleOrNull() ?: gains[idx]
-                }
-
-                val newValue = buildValueFromFreqsAndGains(freqs, newGains)
-
-                if (callChangeListener(newValue)) {
-                    persistString(newValue)
-                    initialValue = newValue
-                    updateFromPreferences() // refresh the row graph
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+    val scroll = ScrollView(ctx)
+    val layout = LinearLayout(ctx).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(48, 32, 48, 32)
     }
+    scroll.addView(
+        layout,
+        ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    )
+
+    // Build inputs prefilled with current gains
+    val inputs = ArrayList<EditText>(bandCount)
+
+    for (i in 0 until bandCount) {
+        val label = TextView(ctx).apply {
+            text = String.format(Locale.US, "%.0f Hz gain:", freqs[i])
+        }
+
+        val input = EditText(ctx).apply {
+            inputType =
+                android.text.InputType.TYPE_CLASS_NUMBER or
+                android.text.InputType.TYPE_NUMBER_FLAG_SIGNED or
+                android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+
+            setText(String.format(Locale.US, "%.9f", originalGains[i]))
+        }
+
+        layout.addView(label)
+        layout.addView(input)
+        inputs.add(input)
+    }
+
+    // Live preview: update graph/DSP but DON'T persist
+    fun applyPreviewFromInputs() {
+        val previewGains = DoubleArray(bandCount) { idx ->
+            inputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
+        }
+        val previewValue = buildValueFromFreqsAndGains(freqs, previewGains)
+
+        // Update only the visual/EQ state (and DSP via setBand), not prefs
+        setEqualizerViewValues(previewValue)
+    }
+
+    // Attach TextWatcher for live preview
+    for (i in 0 until bandCount) {
+        inputs[i].addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                applyPreviewFromInputs()
+            }
+            override fun beforeTextChanged(
+                s: CharSequence?, start: Int, count: Int, after: Int
+            ) { }
+            override fun onTextChanged(
+                s: CharSequence?, start: Int, before: Int, count: Int
+            ) { }
+        })
+    }
+
+    AlertDialog.Builder(ctx)
+        .setTitle(R.string.compander_enable) // or custom title
+        .setMessage("Enter precise gains for each band (linear, not dB).")
+        .setView(scroll)
+        .setPositiveButton(android.R.string.ok) { _, _ ->
+            // Final commit: read all fields, persist, refresh row
+            val finalGains = DoubleArray(bandCount) { idx ->
+                inputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
+            }
+            val newValue = buildValueFromFreqsAndGains(freqs, finalGains)
+
+            if (callChangeListener(newValue)) {
+                persistString(newValue)
+                initialValue = newValue
+                updateFromPreferences()
+            } else {
+                // If listener vetoes, also revert to original visually
+                setEqualizerViewValues(originalValue)
+            }
+        }
+        .setNegativeButton(android.R.string.cancel) { _, _ ->
+            // Revert everything visually & DSP-wise
+            setEqualizerViewValues(originalValue)
+        }
+        .show()
+}
 }
