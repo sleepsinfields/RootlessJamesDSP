@@ -14,10 +14,4 @@
         android:layout_weight="1"
         android:layout_marginBottom="16dp" />
 
-    <!-- New precision editor button -->
-    <Button
-        android:id="@+id/btn_edit_compander_values"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Edit Values…" />
 </LinearLayout>
