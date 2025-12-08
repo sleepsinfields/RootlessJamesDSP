@@ -3,9 +3,11 @@ package me.timschneeberger.rootlessjamesdsp.preference
 import android.content.Context
 import android.content.res.TypedArray
 import android.util.AttributeSet
-import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.preference.DialogPreference
 import androidx.preference.PreferenceViewHolder
@@ -56,8 +58,16 @@ class CompanderPreference : DialogPreference {
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
 
-        companderView = PreferenceCompanderBinding.bind(holder.itemView).layoutEqualizer
+        val binding = PreferenceCompanderBinding.bind(holder.itemView)
+        companderView = binding.layoutEqualizer
+
+        // draw current gains into the small row graph
         setEqualizerViewValues(initialValue)
+
+        // wire the precision edit button in the row
+        binding.btnEditCompanderValues.setOnClickListener {
+            showPrecisionEditorDialog()
+        }
     }
 
     fun updateFromPreferences() {
@@ -66,61 +76,67 @@ class CompanderPreference : DialogPreference {
     }
 
     private fun setEqualizerViewValues(value: String) {
-        val gains = parseGains(value)
+        val (_, gains) = parseFreqsAndGains(value)
         gains.forEachIndexed { index, g ->
             companderView?.setBand(index, g)
         }
     }
 
-    // --- helper: how many bands and how to parse/build value string ---
+    // --- parsing/building the stored string ---
 
     private val bandCount: Int
-        get() = CompanderSurface.SCALE.size
+        get() = me.timschneeberger.rootlessjamesdsp.view.CompanderSurface.SCALE.size
 
     /**
      * Stored format (from your default):
      *   freq1;freq2;...;freq7;gain1;gain2;...;gain7
      */
-    private fun parseGains(value: String): DoubleArray {
+    private fun parseFreqsAndGains(value: String): Pair<DoubleArray, DoubleArray> {
         val tokens = value
             .split(";")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
 
         val n = bandCount
+        val freqs = DoubleArray(n) { i ->
+            // default to CompanderSurface.SCALE if not present
+            me.timschneeberger.rootlessjamesdsp.view.CompanderSurface.SCALE[i]
+        }
         val gains = DoubleArray(n) { 0.0 }
 
-        // If we have at least 7 freqs + 7 gains, take the last 7 as gains
         if (tokens.size >= 2 * n) {
-            val gainTokens = tokens.takeLast(n)
+            // first n = freqs, last n = gains
             for (i in 0 until n) {
-                gains[i] = gainTokens[i].toDoubleOrNull() ?: 0.0
+                freqs[i] = tokens[i].toDoubleOrNull()
+                    ?: me.timschneeberger.rootlessjamesdsp.view.CompanderSurface.SCALE[i]
             }
-            return gains
+            for (i in 0 until n) {
+                gains[i] = tokens[n + i].toDoubleOrNull() ?: 0.0
+            }
+            return freqs to gains
         }
 
-        // Fallback: if exactly n tokens, assume they are gains
+        // fallback: if exactly n tokens, treat them as gains only
         if (tokens.size == n) {
             for (i in 0 until n) {
                 gains[i] = tokens[i].toDoubleOrNull() ?: 0.0
             }
         }
 
-        return gains
+        return freqs to gains
     }
 
-    private fun buildValueFromGains(gains: DoubleArray): String {
-        val freqs = CompanderSurface.SCALE
+    private fun buildValueFromFreqsAndGains(freqs: DoubleArray, gains: DoubleArray): String {
+        val n = bandCount
         val sb = StringBuilder()
 
-        // Frequencies first
-        for (i in freqs.indices) {
+        // frequencies first
+        for (i in 0 until n) {
             if (i > 0) sb.append(';')
             sb.append(String.format(Locale.US, "%.9f", freqs[i]))
         }
-
-        // Then gains
-        for (i in gains.indices) {
+        // then gains
+        for (i in 0 until n) {
             sb.append(';')
             sb.append(String.format(Locale.US, "%.9f", gains[i]))
         }
@@ -128,29 +144,7 @@ class CompanderPreference : DialogPreference {
         return sb.toString()
     }
 
-    // --- dialog binding: hook up the graph + precision edit button ---
-
-    override fun onBindDialogView(view: View) {
-        super.onBindDialogView(view)
-
-        // Sync dialog graph with current gains
-        val dialogSurface = view.findViewById<CompanderSurface>(R.id.compander_surface)
-        val currentValue = getPersistedString(initialValue)
-        val gains = parseGains(currentValue)
-        dialogSurface?.let { surf ->
-            for (i in gains.indices) {
-                surf.setBand(i, gains[i])
-            }
-        }
-
-        // Hook precision editor button
-        val editButton = view.findViewById<Button>(R.id.btn_edit_compander_values)
-        editButton?.setOnClickListener {
-            showPrecisionEditorDialog()
-        }
-    }
-
-    // --- precision editor: one numeric field per band ---
+    // --- precision editor: dialog with one field per band ---
 
     private fun showPrecisionEditorDialog() {
         val ctx = context
@@ -168,9 +162,7 @@ class CompanderPreference : DialogPreference {
             )
         )
 
-        val freqs = CompanderSurface.SCALE
-        val currentValue = getPersistedString(initialValue)
-        val currentGains = parseGains(currentValue)
+        val (freqs, gains) = parseFreqsAndGains(getPersistedString(initialValue))
         val inputs = ArrayList<EditText>(bandCount)
 
         for (i in 0 until bandCount) {
@@ -184,7 +176,7 @@ class CompanderPreference : DialogPreference {
                     android.text.InputType.TYPE_NUMBER_FLAG_SIGNED or
                     android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
 
-                setText(String.format(Locale.US, "%.9f", currentGains[i]))
+                setText(String.format(Locale.US, "%.9f", gains[i]))
             }
 
             layout.addView(label)
@@ -193,21 +185,20 @@ class CompanderPreference : DialogPreference {
         }
 
         AlertDialog.Builder(ctx)
-            .setTitle(R.string.compander_enable) // or custom title if you like
-            .setMessage("Enter precise gains for each band (linear gain).")
+            .setTitle(R.string.compander_enable) // or custom title
+            .setMessage("Enter precise gains for each band (linear, not dB).")
             .setView(scroll)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val newGains = DoubleArray(bandCount) { idx ->
-                    inputs[idx].text.toString().toDoubleOrNull() ?: currentGains[idx]
+                    inputs[idx].text.toString().toDoubleOrNull() ?: gains[idx]
                 }
 
-                val newValue = buildValueFromGains(newGains)
+                val newValue = buildValueFromFreqsAndGains(freqs, newGains)
 
-                // Let listeners veto if needed
                 if (callChangeListener(newValue)) {
                     persistString(newValue)
                     initialValue = newValue
-                    updateFromPreferences() // refresh the row graph as well
+                    updateFromPreferences() // refresh the little row graph
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
