@@ -87,6 +87,9 @@ void VTInit(VacuumTube *tb, double fs)
 // ------------------------------------------------------------
 void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, size_t n)
 {
+VT_LOGI("VTProcess: shapeMix=%.9f coreTriodes=%d",
+        tb->shapeMix, tb->coreTriodesOn);
+
     float  upsample[2][5];  // up to 5x oversample
     double bandCh1[6], bandCh2[6];
 
