@@ -188,15 +188,21 @@ class CompanderPreference : DialogPreference {
         inputs.add(input)
     }
 
-    // Live preview: update graph/DSP but DON'T persist
+    // LIVE PREVIEW:
+    //  - update prefs -> whatever is listening (DSP) will react
+    //  - update row graph
     fun applyPreviewFromInputs() {
         val previewGains = DoubleArray(bandCount) { idx ->
             inputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
         }
         val previewValue = buildValueFromFreqsAndGains(freqs, previewGains)
 
-        // Update only the visual/EQ state (and DSP via setBand), not prefs
-        setEqualizerViewValues(previewValue)
+        // Let any listener veto; if it says "ok", treat it as current preview
+        if (callChangeListener(previewValue)) {
+            initialValue = previewValue
+            persistString(previewValue)
+            updateFromPreferences()  // redraw mini graph + push into companderView.setBand()
+        }
     }
 
     // Attach TextWatcher for live preview
@@ -219,24 +225,16 @@ class CompanderPreference : DialogPreference {
         .setMessage("Enter precise gains for each band (linear, not dB).")
         .setView(scroll)
         .setPositiveButton(android.R.string.ok) { _, _ ->
-            // Final commit: read all fields, persist, refresh row
-            val finalGains = DoubleArray(bandCount) { idx ->
-                inputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
-            }
-            val newValue = buildValueFromFreqsAndGains(freqs, finalGains)
-
-            if (callChangeListener(newValue)) {
-                persistString(newValue)
-                initialValue = newValue
-                updateFromPreferences()
-            } else {
-                // If listener vetoes, also revert to original visually
-                setEqualizerViewValues(originalValue)
-            }
+            // Final value is already persisted by applyPreviewFromInputs(),
+            // so we just leave things as-is.
         }
         .setNegativeButton(android.R.string.cancel) { _, _ ->
-            // Revert everything visually & DSP-wise
-            setEqualizerViewValues(originalValue)
+            // Revert prefs + graph + DSP back to original
+            if (callChangeListener(originalValue)) {
+                initialValue = originalValue
+                persistString(originalValue)
+                updateFromPreferences()
+            }
         }
         .show()
 }
