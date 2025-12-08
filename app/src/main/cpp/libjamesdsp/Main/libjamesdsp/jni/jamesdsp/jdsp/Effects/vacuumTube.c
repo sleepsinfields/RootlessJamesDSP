@@ -125,7 +125,7 @@ void VTProcess(VacuumTube *tb, float *x1, float *x2, float *out1, float *out2, s
                 bandCh2[5] = -bandCh2[5];
 
 // Per-band tube shaping on ALL bands using shapeMix, with level compensation
-if (tb->shapeMix > 0.0f)
+if (tb->shapeMix > 1e-4f)
 {
     double mix   = (double)tb->shapeMix;
 
@@ -243,7 +243,7 @@ double wetCh2 = bandCh2[0] + coreOutCh2 + bandCh2[5] + harmCh2;
             bandCh2[5] = -bandCh2[5];
 
 // Per-band tube shaping on ALL bands using shapeMix, with level compensation
-if (tb->shapeMix > 0.0f)
+if (tb->shapeMix > 1e-4f)
 {
     double mix   = (double)tb->shapeMix;
 
@@ -370,6 +370,13 @@ void VacuumTubeSetShape(JamesDSPLib *jdsp, double mix)
 {
     if (mix < 0.0) mix = 0.0;
     if (mix > 1.0) mix = 1.0;
+
+    // Snap near-zero to 0, and near-one to 1
+    if (fabs(mix) < 1e-4)
+        mix = 0.0;
+    else if (fabs(mix - 1.0) < 1e-4)
+        mix = 1.0;
+
     jdsp->tube.shapeMix = (float)mix;
 }
 
