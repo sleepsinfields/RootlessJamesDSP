@@ -1,17 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/compander_dialog_root"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="16dp"
-    android:orientation="vertical">
+    android:layout_height="wrap_content">
 
-    <!-- Existing graph -->
-    <me.timschneeberger.rootlessjamesdsp.view.CompanderSurface
-        android:id="@+id/compander_surface"
+    <LinearLayout
+        android:id="@+id/compander_dialog_root"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginBottom="16dp" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</LinearLayout>
+        <!-- Title inside dialog body (dialog already has a title bar, but this
+             keeps things readable even if theme hides it) -->
+        <TextView
+            android:id="@+id/compander_dialog_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/compander_enable"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="4dp" />
+
+        <!-- Short description -->
+        <TextView
+            android:id="@+id/compander_dialog_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Adjust the compander curve visually. For precise numeric control, use the Edit values… button in the main settings."
+            android:textSize="13sp"
+            android:paddingBottom="12dp" />
+
+        <!-- Graph container (gives a bit of card-like separation) -->
+        <FrameLayout
+            android:id="@+id/compander_graph_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp">
+
+            <me.timschneeberger.rootlessjamesdsp.view.CompanderSurface
+                android:id="@+id/compander_surface"
+                android:layout_width="match_parent"
+                android:layout_height="220dp" />
+        </FrameLayout>
+
+        <!-- Small hint text at bottom -->
+        <TextView
+            android:id="@+id/compander_dialog_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tip: drag points to shape the curve. Changes are applied when you press OK."
+            android:textSize="12sp"
+            android:paddingTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>
