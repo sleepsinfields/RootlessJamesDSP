@@ -157,7 +157,7 @@ class CompanderPreference : DialogPreference {
     private fun showPrecisionEditorDialog() {
     val ctx = context
 
-    // Remember original stored value so Cancel can revert everything
+    // Remember original stored value so Cancel can revert EVERYTHING (sound + graph)
     val originalValue = getPersistedString(initialValue)
     val (originalFreqs, originalGains) = parseFreqsAndGains(originalValue)
 
@@ -181,10 +181,12 @@ class CompanderPreference : DialogPreference {
     for (i in 0 until bandCount) {
         val bandLabel = TextView(ctx).apply {
             text = String.format(Locale.US, "Band %d", i + 1)
+            textSize = 14f
         }
 
         val freqLabel = TextView(ctx).apply {
             text = "Frequency (Hz):"
+            textSize = 12f
         }
         val freqInput = EditText(ctx).apply {
             inputType =
@@ -195,6 +197,7 @@ class CompanderPreference : DialogPreference {
 
         val gainLabel = TextView(ctx).apply {
             text = "Gain (linear):"
+            textSize = 12f
         }
         val gainInput = EditText(ctx).apply {
             inputType =
@@ -215,11 +218,10 @@ class CompanderPreference : DialogPreference {
     }
 
     // LIVE PREVIEW:
-    //  - update prefs → DSP reacts
+    //  - update prefs → DSP reacts (same path as graph)
     //  - update row graph via updateFromPreferences()
     fun applyPreviewFromInputs() {
         val previewFreqs = DoubleArray(bandCount) { idx ->
-            // fallback to original freq if empty/bad
             freqInputs[idx].text.toString().toDoubleOrNull() ?: originalFreqs[idx]
         }
 
@@ -227,7 +229,7 @@ class CompanderPreference : DialogPreference {
             gainInputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
         }
 
-        // Optional: simple clamp of frequencies to sane range
+        // Clamp freqs to something sane, optional
         for (i in 0 until bandCount) {
             if (previewFreqs[i] < 40.0) previewFreqs[i] = 40.0
             if (previewFreqs[i] > 20000.0) previewFreqs[i] = 20000.0
@@ -264,12 +266,12 @@ class CompanderPreference : DialogPreference {
     }
 
     AlertDialog.Builder(ctx)
-        .setTitle(R.string.compander_enable) // or custom title
-        .setMessage("Edit band frequencies and gains.\nLive preview; Cancel reverts.")
+        .setTitle("Edit compander bands")
+        .setMessage("Live preview while you type. OK = keep, Cancel = revert.")
         .setView(scroll)
         .setPositiveButton(android.R.string.ok) { _, _ ->
-            // Final value is already persisted by live preview;
-            // nothing extra to do, just close.
+            // Nothing special to do here – latest preview is already persisted.
+            // We just close the dialog.
         }
         .setNegativeButton(android.R.string.cancel) { _, _ ->
             // Revert prefs + graph + DSP back to original
