@@ -77,12 +77,20 @@ class CompanderPreference : DialogPreference {
         setEqualizerViewValues(initialValue)
     }
 
-    private fun setEqualizerViewValues(value: String) {
-        val (_, gains) = parseFreqsAndGains(value)
-        gains.forEachIndexed { index, g ->
-            companderView?.setBand(index, g)
-        }
+ private fun setEqualizerViewValues(value: String) {
+    val (freqs, gains) = parseFreqsAndGains(value)
+
+    // Update band frequencies globally for CompanderSurface
+    for (i in freqs.indices) {
+        // mutate the SCALE array so the graph + DSP use your custom freqs
+        me.timschneeberger.rootlessjamesdsp.view.CompanderSurface.SCALE[i] = freqs[i]
     }
+
+    // Update gains on the surface
+    gains.forEachIndexed { index, g ->
+        companderView?.setBand(index, g)
+    }
+}
 
     // --- parsing/building the stored string ---
 
@@ -151,7 +159,7 @@ class CompanderPreference : DialogPreference {
 
     // Remember original stored value so Cancel can revert everything
     val originalValue = getPersistedString(initialValue)
-    val (freqs, originalGains) = parseFreqsAndGains(originalValue)
+    val (originalFreqs, originalGains) = parseFreqsAndGains(originalValue)
 
     val scroll = ScrollView(ctx)
     val layout = LinearLayout(ctx).apply {
@@ -166,67 +174,102 @@ class CompanderPreference : DialogPreference {
         )
     )
 
-    // Build inputs prefilled with current gains
-    val inputs = ArrayList<EditText>(bandCount)
+    val freqInputs = ArrayList<EditText>(bandCount)
+    val gainInputs = ArrayList<EditText>(bandCount)
 
+    // Build UI: for each band, editable freq + gain
     for (i in 0 until bandCount) {
-        val label = TextView(ctx).apply {
-            text = String.format(Locale.US, "%.0f Hz gain:", freqs[i])
+        val bandLabel = TextView(ctx).apply {
+            text = String.format(Locale.US, "Band %d", i + 1)
         }
 
-        val input = EditText(ctx).apply {
+        val freqLabel = TextView(ctx).apply {
+            text = "Frequency (Hz):"
+        }
+        val freqInput = EditText(ctx).apply {
+            inputType =
+                android.text.InputType.TYPE_CLASS_NUMBER or
+                android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            setText(String.format(Locale.US, "%.9f", originalFreqs[i]))
+        }
+
+        val gainLabel = TextView(ctx).apply {
+            text = "Gain (linear):"
+        }
+        val gainInput = EditText(ctx).apply {
             inputType =
                 android.text.InputType.TYPE_CLASS_NUMBER or
                 android.text.InputType.TYPE_NUMBER_FLAG_SIGNED or
                 android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-
             setText(String.format(Locale.US, "%.9f", originalGains[i]))
         }
 
-        layout.addView(label)
-        layout.addView(input)
-        inputs.add(input)
+        layout.addView(bandLabel)
+        layout.addView(freqLabel)
+        layout.addView(freqInput)
+        layout.addView(gainLabel)
+        layout.addView(gainInput)
+
+        freqInputs.add(freqInput)
+        gainInputs.add(gainInput)
     }
 
     // LIVE PREVIEW:
-    //  - update prefs -> whatever is listening (DSP) will react
-    //  - update row graph
+    //  - update prefs → DSP reacts
+    //  - update row graph via updateFromPreferences()
     fun applyPreviewFromInputs() {
-        val previewGains = DoubleArray(bandCount) { idx ->
-            inputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
+        val previewFreqs = DoubleArray(bandCount) { idx ->
+            // fallback to original freq if empty/bad
+            freqInputs[idx].text.toString().toDoubleOrNull() ?: originalFreqs[idx]
         }
-        val previewValue = buildValueFromFreqsAndGains(freqs, previewGains)
 
-        // Let any listener veto; if it says "ok", treat it as current preview
+        val previewGains = DoubleArray(bandCount) { idx ->
+            gainInputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
+        }
+
+        // Optional: simple clamp of frequencies to sane range
+        for (i in 0 until bandCount) {
+            if (previewFreqs[i] < 40.0) previewFreqs[i] = 40.0
+            if (previewFreqs[i] > 20000.0) previewFreqs[i] = 20000.0
+        }
+
+        val previewValue = buildValueFromFreqsAndGains(previewFreqs, previewGains)
+
+        // Let listeners veto; if OK, treat as current preview
         if (callChangeListener(previewValue)) {
             initialValue = previewValue
             persistString(previewValue)
-            updateFromPreferences()  // redraw mini graph + push into companderView.setBand()
+            updateFromPreferences()  // → updates SCALE + setBand() → graph + DSP
         }
     }
 
-    // Attach TextWatcher for live preview
+    // Attach TextWatcher for live preview on both freq and gain fields
+    val watcher = object : android.text.TextWatcher {
+        override fun afterTextChanged(s: android.text.Editable?) {
+            applyPreviewFromInputs()
+        }
+
+        override fun beforeTextChanged(
+            s: CharSequence?, start: Int, count: Int, after: Int
+        ) { }
+
+        override fun onTextChanged(
+            s: CharSequence?, start: Int, before: Int, count: Int
+        ) { }
+    }
+
     for (i in 0 until bandCount) {
-        inputs[i].addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                applyPreviewFromInputs()
-            }
-            override fun beforeTextChanged(
-                s: CharSequence?, start: Int, count: Int, after: Int
-            ) { }
-            override fun onTextChanged(
-                s: CharSequence?, start: Int, before: Int, count: Int
-            ) { }
-        })
+        freqInputs[i].addTextChangedListener(watcher)
+        gainInputs[i].addTextChangedListener(watcher)
     }
 
     AlertDialog.Builder(ctx)
         .setTitle(R.string.compander_enable) // or custom title
-        .setMessage("Enter precise gains for each band (linear, not dB).")
+        .setMessage("Edit band frequencies and gains.\nLive preview; Cancel reverts.")
         .setView(scroll)
         .setPositiveButton(android.R.string.ok) { _, _ ->
-            // Final value is already persisted by applyPreviewFromInputs(),
-            // so we just leave things as-is.
+            // Final value is already persisted by live preview;
+            // nothing extra to do, just close.
         }
         .setNegativeButton(android.R.string.cancel) { _, _ ->
             // Revert prefs + graph + DSP back to original
