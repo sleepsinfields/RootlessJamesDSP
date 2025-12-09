@@ -295,28 +295,84 @@ static inline void ProcessStateVariable2ndOrderStereo(StateVariable2ndOrder *svf
 		break;
 	}
 }
+
 static void DBBParam(DBB *dbb, double fs, float maxG)
 {
-	double maxDetectionSmoothing = 0.5; // 0.5 ms
-	double gainSmoothing = 2.0; // 2.0 ms
-	if (maxG < 0.0f)
-		maxG = 0.0f;
-	double targetFS = 500.0;
-	dbb->maxGain = maxG;
-	int factor = (int)round(fs / targetFS);
-	oversample_makeSmp(&dbb->downsampler, factor);
-	double trueTargetFs = fs / factor;
-	dbb->fs = fs;
-	for (int i = 0; i < 9; i++)
-		dbb->freq[i] = (float)((((double)i * (trueTargetFs / (double)16)) + (i * (trueTargetFs / (double)16))) * 0.5f);
-	dbb->maxSmoothingFactor = (float)(1.0 - exp(-1.0 / (maxDetectionSmoothing / 1000.0 * dbb->fs)));
-	dbb->minusmaxSmoothingFactor = 1.0f - dbb->maxSmoothingFactor;
-	dbb->gainSmoothingFactor = (float)(1.0 - exp(-1.0 / (gainSmoothing / 1000.0 * dbb->fs)));
-	dbb->minusgainSmoothingFactor = 1.0f - dbb->gainSmoothingFactor;
-	integerDelayLineInit(&dbb->dL[0], 1024);
-	integerDelayLineInit(&dbb->dL[1], 1024);
-	integerDelayLine_setDelay(&dbb->dL[0], dbb->downsampler.factor + gainSmoothing * (dbb->fs / 1000.0));
-	integerDelayLine_setDelay(&dbb->dL[1], dbb->downsampler.factor + gainSmoothing * (dbb->fs / 1000.0));
+    if (maxG < 0.0f)
+        maxG = 0.0f;
+
+    dbb->fs      = fs;
+    dbb->maxGain = maxG;
+
+    // --- validate / clamp user parameters ---
+    double targetFS = dbb->targetFs;
+    if (targetFS < 100.0)  targetFS = 100.0;
+    if (targetFS > 2000.0) targetFS = 2000.0;
+
+    double maxDetectionSmoothing = dbb->detectSmoothMs;
+    if (maxDetectionSmoothing < 0.05) maxDetectionSmoothing = 0.05;
+    if (maxDetectionSmoothing > 200.0) maxDetectionSmoothing = 200.0;
+
+    double gainSmoothing = dbb->gainSmoothMs;
+    if (gainSmoothing < 0.1) gainSmoothing = 0.1;
+    if (gainSmoothing > 500.0) gainSmoothing = 500.0;
+
+    // 1) analysis downsample factor
+    int factor = (int)round(fs / targetFS);
+    if (factor < 1) factor = 1;
+    oversample_makeSmp(&dbb->downsampler, factor);
+    double trueTargetFs = fs / factor;
+
+    // 2) analysis bin centers
+    switch (dbb->freqMode)
+    {
+    default:
+    case 0: // legacy-ish
+        for (int i = 0; i < 9; i++)
+            dbb->freq[i] = (float)(i * (trueTargetFs / 16.0));
+        break;
+
+    case 1: // log spaced
+    {
+        double fMin = 20.0;
+        double fMax = trueTargetFs * 0.5;
+        if (fMax < fMin) fMax = fMin * 2.0;
+        double ratio = pow(fMax / fMin, 1.0 / 8.0);
+        double f = fMin;
+        for (int i = 0; i < 9; i++) {
+            dbb->freq[i] = (float)f;
+            f *= ratio;
+        }
+        break;
+    }
+
+    case 2: // explicit custom
+        for (int i = 0; i < 9; i++) {
+            float f = dbb->freqCustom[i];
+            if (f <= 0.0f)
+                f = (float)(i * (trueTargetFs / 16.0)); // fallback
+            dbb->freq[i] = f;
+        }
+        break;
+    }
+
+    // 3) smoothing coefficients
+    dbb->maxSmoothingFactor =
+        (float)(1.0 - exp(-1.0 / (maxDetectionSmoothing / 1000.0 * dbb->fs)));
+    dbb->minusmaxSmoothingFactor = 1.0f - dbb->maxSmoothingFactor;
+
+    dbb->gainSmoothingFactor =
+        (float)(1.0 - exp(-1.0 / (gainSmoothing / 1000.0 * dbb->fs)));
+    dbb->minusgainSmoothingFactor = 1.0f - dbb->gainSmoothingFactor;
+
+    // 4) delay lines, look-ahead tied to gain smoothing
+    integerDelayLineInit(&dbb->dL[0], 1024);
+    integerDelayLineInit(&dbb->dL[1], 1024);
+
+    int lagSamples = dbb->downsampler.factor +
+                     (int)(gainSmoothing * (dbb->fs / 1000.0));
+    integerDelayLine_setDelay(&dbb->dL[0], lagSamples);
+    integerDelayLine_setDelay(&dbb->dL[1], lagSamples);
 }
 static void DBBProcess(DBB *dbb, float *x1, float *x2, float *y1, float *y2, size_t n)
 {
@@ -410,7 +466,19 @@ static void DBBProcess(DBB *dbb, float *x1, float *x2, float *y1, float *y2, siz
 				gainClamp = dbb->maxGain;
 			dbb->boostdB = gainClamp * dbb->gainSmoothingFactor + dbb->boostdB * dbb->minusgainSmoothingFactor;
 			dbb->smoothMaxFreq = currentMaxFreq * dbb->maxSmoothingFactor + dbb->smoothMaxFreq * dbb->minusmaxSmoothingFactor;
-			refreshStateVariable2ndOrder(&dbb->svf[0], dbb->fs, dbb->smoothMaxFreq, resonanceToQ(0.75), db2mag(dbb->boostdB));
+
+			double res = dbb->resonance;
+if (res < 0.0)  res = 0.0;
+if (res > 0.99) res = 0.99;
+
+refreshStateVariable2ndOrder(
+    &dbb->svf[0],
+    dbb->fs,
+    dbb->smoothMaxFreq,
+    resonanceToQ(res),
+    db2mag(dbb->boostdB)
+);
+
 #ifdef DEBUG_DBB
 			fprintf(tele, "gain: %1.7f fc: %1.7f binNum: %d\n", dbb->boostdB, dbb->smoothMaxFreq, binNum + 1);
 #endif
@@ -432,8 +500,18 @@ void BassBoostDisable(JamesDSPLib *jdsp)
 }
 void BassBoostConstructor(JamesDSPLib *jdsp)
 {
-	InitStateVariable2ndOrder(&jdsp->dbb.svf[0]);
-	InitStateVariable2ndOrder(&jdsp->dbb.svf[1]);
+    InitStateVariable2ndOrder(&jdsp->dbb.svf[0]);
+    InitStateVariable2ndOrder(&jdsp->dbb.svf[1]);
+
+    // Defaults that match current behavior
+    jdsp->dbb.targetFs       = 500.0;  // was hard-coded targetFS
+    jdsp->dbb.detectSmoothMs = 0.5;    // was maxDetectionSmoothing = 0.5 ms
+    jdsp->dbb.gainSmoothMs   = 2.0;    // was gainSmoothing = 2.0 ms
+    jdsp->dbb.resonance      = 0.75f;  // was resonanceToQ(0.75)
+    jdsp->dbb.freqMode       = 0;      // 0 = legacy freq[i] behaviour
+
+    for (int i = 0; i < 9; ++i)
+        jdsp->dbb.freqCustom[i] = 0.0f;
 }
 // BassBoostSetParam(context, dB [0 - 15])
 void BassBoostSetParam(JamesDSPLib *jdsp, float maxG)
