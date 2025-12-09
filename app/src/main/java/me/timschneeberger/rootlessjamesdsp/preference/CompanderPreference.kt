@@ -17,6 +17,7 @@ import me.timschneeberger.rootlessjamesdsp.view.CompanderSurface
 import java.util.Locale
 import android.text.Editable
 import android.text.TextWatcher
+import android.widget.Button
 
 class CompanderPreference : DialogPreference {
 
@@ -161,13 +162,19 @@ class CompanderPreference : DialogPreference {
     val originalValue = getPersistedString(initialValue)
     val (originalFreqs, originalGains) = parseFreqsAndGains(originalValue)
 
-    val scroll = ScrollView(ctx)
-    val layout = LinearLayout(ctx).apply {
+    // Root layout for the whole dialog content
+    val root = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(48, 32, 48, 32)
     }
+
+    // Scrollable area for band fields
+    val scroll = ScrollView(ctx)
+    val fieldsContainer = LinearLayout(ctx).apply {
+        orientation = LinearLayout.VERTICAL
+    }
     scroll.addView(
-        layout,
+        fieldsContainer,
         ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -207,18 +214,68 @@ class CompanderPreference : DialogPreference {
             setText(String.format(Locale.US, "%.9f", originalGains[i]))
         }
 
-        layout.addView(bandLabel)
-        layout.addView(freqLabel)
-        layout.addView(freqInput)
-        layout.addView(gainLabel)
-        layout.addView(gainInput)
+        fieldsContainer.addView(bandLabel)
+        fieldsContainer.addView(freqLabel)
+        fieldsContainer.addView(freqInput)
+        fieldsContainer.addView(gainLabel)
+        fieldsContainer.addView(gainInput)
 
         freqInputs.add(freqInput)
         gainInputs.add(gainInput)
     }
 
+    // Add the scroll area to root
+    root.addView(
+        scroll,
+        LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            0,
+            1f // weight so fields take most of the height
+        )
+    )
+
+    // Button row – our own Cancel / Save buttons
+    val buttonRow = LinearLayout(ctx).apply {
+        orientation = LinearLayout.HORIZONTAL
+        val topPadding = 24
+        setPadding(0, topPadding, 0, 0)
+    }
+
+    val cancelButton = Button(ctx).apply {
+        text = ctx.getString(android.R.string.cancel)
+    }
+    val okButton = Button(ctx).apply {
+        text = ctx.getString(android.R.string.ok)
+    }
+
+    // Give the buttons equal width
+    buttonRow.addView(
+        cancelButton,
+        LinearLayout.LayoutParams(
+            0,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            1f
+        )
+    )
+    buttonRow.addView(
+        okButton,
+        LinearLayout.LayoutParams(
+            0,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            1f
+        )
+    )
+
+    root.addView(
+        buttonRow,
+        LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    )
+
     // LIVE PREVIEW:
-    //  - update prefs → DSP reacts (same path as graph)
+    //  - update prefs → DSP reacts
     //  - update row graph via updateFromPreferences()
     fun applyPreviewFromInputs() {
         val previewFreqs = DoubleArray(bandCount) { idx ->
@@ -229,7 +286,7 @@ class CompanderPreference : DialogPreference {
             gainInputs[idx].text.toString().toDoubleOrNull() ?: originalGains[idx]
         }
 
-        // Clamp freqs to something sane, optional
+        // Clamp freqs to something sane (optional)
         for (i in 0 until bandCount) {
             if (previewFreqs[i] < 40.0) previewFreqs[i] = 40.0
             if (previewFreqs[i] > 20000.0) previewFreqs[i] = 20000.0
@@ -265,22 +322,29 @@ class CompanderPreference : DialogPreference {
         gainInputs[i].addTextChangedListener(watcher)
     }
 
-    AlertDialog.Builder(ctx)
+    // Build the dialog with our custom root view (no system buttons)
+    val dialog = androidx.appcompat.app.AlertDialog.Builder(ctx)
         .setTitle("Edit compander bands")
-        .setMessage("Live preview while you type. OK = keep, Cancel = revert.")
-        .setView(scroll)
-        .setPositiveButton(android.R.string.ok) { _, _ ->
-            // Nothing special to do here – latest preview is already persisted.
-            // We just close the dialog.
+        .setMessage("Live preview while you type. Save = keep, Cancel = revert.")
+        .setView(root)
+        .create()
+
+    // Cancel button: revert prefs + graph + DSP back to original
+    cancelButton.setOnClickListener {
+        if (callChangeListener(originalValue)) {
+            initialValue = originalValue
+            persistString(originalValue)
+            updateFromPreferences()
         }
-        .setNegativeButton(android.R.string.cancel) { _, _ ->
-            // Revert prefs + graph + DSP back to original
-            if (callChangeListener(originalValue)) {
-                initialValue = originalValue
-                persistString(originalValue)
-                updateFromPreferences()
-            }
-        }
-        .show()
+        dialog.dismiss()
+    }
+
+    // OK/Save button: keep latest preview (already persisted)
+    okButton.setOnClickListener {
+        // Nothing extra: live preview already stored latest values
+        dialog.dismiss()
+    }
+
+    dialog.show()
 }
 }
