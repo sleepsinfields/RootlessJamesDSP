@@ -519,7 +519,7 @@ void BassBoostSetParam(JamesDSPLib *jdsp, float maxG)
 	DBBParam(&jdsp->dbb, jdsp->fs, maxG);
 }
 
-// Advanced DBB control
+/* // Advanced DBB control
 void BassBoostSetAdvanced(
     JamesDSPLib *jdsp,
     float  maxG,
@@ -546,6 +546,7 @@ void BassBoostSetAdvanced(
 
     DBBParam(dbb, jdsp->fs, maxG);
 }
+*/
 
 void BassBoostProcess(JamesDSPLib *jdsp, size_t n)
 {
