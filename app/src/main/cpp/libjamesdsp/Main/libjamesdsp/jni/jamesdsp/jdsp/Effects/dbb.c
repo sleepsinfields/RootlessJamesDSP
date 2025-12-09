@@ -518,6 +518,35 @@ void BassBoostSetParam(JamesDSPLib *jdsp, float maxG)
 {
 	DBBParam(&jdsp->dbb, jdsp->fs, maxG);
 }
+
+// Advanced DBB control
+void BassBoostSetAdvanced(
+    JamesDSPLib *jdsp,
+    float  maxG,
+    double targetFs,
+    double detectSmoothMs,
+    double gainSmoothMs,
+    float  resonance,
+    int    freqMode,
+    const float *freqCustom // optional, used if freqMode == 2
+)
+{
+    DBB *dbb = &jdsp->dbb;
+
+    dbb->targetFs       = targetFs;
+    dbb->detectSmoothMs = detectSmoothMs;
+    dbb->gainSmoothMs   = gainSmoothMs;
+    dbb->resonance      = resonance;
+    dbb->freqMode       = freqMode;
+
+    if (freqMode == 2 && freqCustom != NULL) {
+        for (int i = 0; i < 9; ++i)
+            dbb->freqCustom[i] = freqCustom[i];
+    }
+
+    DBBParam(dbb, jdsp->fs, maxG);
+}
+
 void BassBoostProcess(JamesDSPLib *jdsp, size_t n)
 {
 	DBBProcess(&jdsp->dbb, jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
