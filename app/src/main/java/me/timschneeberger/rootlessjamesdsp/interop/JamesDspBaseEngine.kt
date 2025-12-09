@@ -219,7 +219,32 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                         compResponse
                     )
 
-                    Constants.PREF_BASS -> setBassBoost(bassEnabled, bassMaxGain)
+                    Constants.PREF_BASS -> {
+    val prefs = preferences  // whatever SharedPreferences / wrapper this class uses
+
+    val enable   = bassEnabled            // this is already computed in BaseEngine
+    val boostDb  = bassMaxGain            // this is already computed too
+
+    val widthPct = prefs.getInt("pref_dbb_width", 50)
+    val speedPct = prefs.getInt("pref_dbb_speed", 50)
+    val stabPct  = prefs.getInt("pref_dbb_stability", 50)
+    val typeStr  = prefs.getString("pref_dbb_type", "1") ?: "1"
+    val typeInt  = typeStr.toIntOrNull() ?: 1
+
+    val widthNorm = (widthPct / 100f).coerceIn(0f, 1f)
+    val speedNorm = (speedPct / 100f).coerceIn(0f, 1f)
+    val stabNorm  = (stabPct / 100f).coerceIn(0f, 1f)
+
+    setBassBoostAdvanced(
+        enable,
+        boostDb,
+        widthNorm,
+        typeInt,
+        speedNorm,
+        stabNorm
+    )
+}
+
                     Constants.PREF_EQ -> setMultiEqualizer(
                         eqEnabled,
                         eqFilterType,
