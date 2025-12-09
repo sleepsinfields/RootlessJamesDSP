@@ -417,4 +417,17 @@
         <item>spl0</item>
         <item>spl1</item>
     </string-array>
+
+<string-array name="dbb_type_entries">
+    <item>Sub-bass focus</item>
+    <item>Balanced</item>
+    <item>Punchy</item>
+</string-array>
+
+<string-array name="dbb_type_values">
+    <item>0</item>
+    <item>1</item>
+    <item>2</item>
+</string-array>
+
 </resources>
