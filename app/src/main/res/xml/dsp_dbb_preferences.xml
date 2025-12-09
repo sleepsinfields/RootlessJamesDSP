@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup
+        android:key="@string/key_dbb_enable"
+        android:title="@string/dbb_enable"
+        android:icon="@drawable/ic_baseline_baseline_boost_24dp"
+        app:iconSpaceReserved="false">
+
+        <!-- 1. Bass boost level (dB) -->
+        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+            android:key="@string/key_dbb_boost_db"
+            android:title="@string/dbb_boost_db"
+            android:defaultValue="6"
+            app:minValue="0"
+            app:maxValue="15"
+            app:precision="0"
+            app:unit=" dB"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="true"
+            app:iconSpaceReserved="false" />
+
+        <!-- 2. Bass width (focus) -->
+        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+            android:key="@string/key_dbb_width"
+            android:title="@string/dbb_width"
+            android:defaultValue="50"
+            app:minValue="0"
+            app:maxValue="100"
+            app:precision="0"
+            app:showSeekBarValue="false"
+            app:updatesContinuously="true"
+            app:iconSpaceReserved="false" />
+
+        <!-- 3. Dynamics speed -->
+        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+            android:key="@string/key_dbb_speed"
+            android:title="@string/dbb_speed"
+            android:defaultValue="50"
+            app:minValue="0"
+            app:maxValue="100"
+            app:precision="0"
+            app:showSeekBarValue="false"
+            app:updatesContinuously="true"
+            app:iconSpaceReserved="false" />
+
+        <!-- 4. Tracking stability -->
+        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+            android:key="@string/key_dbb_stability"
+            android:title="@string/dbb_stability"
+            android:defaultValue="50"
+            app:minValue="0"
+            app:maxValue="100"
+            app:precision="0"
+            app:showSeekBarValue="false"
+            app:updatesContinuously="true"
+            app:iconSpaceReserved="false" />
+
+        <!-- 5. Bass type -->
+        <ListPreference
+            android:key="@string/key_dbb_type"
+            android:title="@string/dbb_type"
+            android:defaultValue="1"
+            android:entries="@array/dbb_type_entries"
+            android:entryValues="@array/dbb_type_values"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
+        <!-- 6. Advanced dialog entry -->
+        <Preference
+            android:key="@string/key_dbb_advanced"
+            android:title="@string/dbb_advanced_title"
+            android:summary="@string/dbb_advanced_summary"
+            app:iconSpaceReserved="false" />
+    </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
+</PreferenceScreen>
