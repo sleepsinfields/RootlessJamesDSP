@@ -170,24 +170,35 @@ typedef struct
 	float precomputeCoeff1, precomputeCoeff2, precomputeCoeff3, precomputeCoeff4;
 	float z1_A, z2_A; // state variables (z^-1)
 } StateVariable2ndOrder;
+
+// dynamic bass boost
 typedef struct
 {
-	float maxGain;
-	float originalBuf[960];
-	int downsamplerPos;
-	samplerateTool downsampler;
-	float delayLine[16];
-	float fftBuf[16];
-	float smoothFFTBuffer[9];
-	float freq[9];
-	float maxSmoothingFactor, minusmaxSmoothingFactor;
-	float smoothMaxFreq;
-	float boostdB;
-	double fs;
-	float gainSmoothingFactor, minusgainSmoothingFactor;
-	StateVariable2ndOrder svf[2];
-	integerDelayLine dL[2];
+    float maxGain;
+    float originalBuf[960];
+    int downsamplerPos;
+    samplerateTool downsampler;
+    float delayLine[16];
+    float fftBuf[16];
+    float smoothFFTBuffer[9];
+    float freq[9];
+    float maxSmoothingFactor, minusmaxSmoothingFactor;
+    float smoothMaxFreq;
+    float boostdB;
+    double fs;
+    float gainSmoothingFactor, minusgainSmoothingFactor;
+    StateVariable2ndOrder svf[2];
+    integerDelayLine dL[2];
+
+    // 🔧 user-tunable parameters (new)
+    double targetFs;        // analysis fs (Hz), was fixed ~500
+    double detectSmoothMs;  // maxDetectionSmoothing (ms)
+    double gainSmoothMs;    // gainSmoothing (ms)
+    float  resonance;       // mapped to Q via resonanceToQ()
+    int    freqMode;        // 0 = old formula, 1 = log, 2 = custom
+    float  freqCustom[9];   // only used if freqMode == 2
 } DBB;
+
 //   sf_reverb_state_st rv;
 //   sf_presetreverb(&rv, 44100, SF_REVERB_PRESET_DEFAULT);
 //
