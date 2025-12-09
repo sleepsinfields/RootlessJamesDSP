@@ -133,6 +133,23 @@
     <string name="bass_enable">Dynamic bass boost</string>
     <string name="bass_max_gain">Maximum gain</string>
 
+<string name="key_dbb_enable">pref_dbb_enable</string>
+<string name="key_dbb_boost_db">pref_dbb_boost_db</string>
+<string name="key_dbb_width">pref_dbb_width</string>
+<string name="key_dbb_speed">pref_dbb_speed</string>
+<string name="key_dbb_stability">pref_dbb_stability</string>
+<string name="key_dbb_type">pref_dbb_type</string>
+<string name="key_dbb_advanced">pref_dbb_advanced</string>
+
+<string name="dbb_enable">Dynamic Bass Boost</string>
+<string name="dbb_boost_db">Bass boost (dB)</string>
+<string name="dbb_width">Bass width (focus)</string>
+<string name="dbb_speed">Dynamics speed</string>
+<string name="dbb_stability">Tracking stability</string>
+<string name="dbb_type">Bass type</string>
+<string name="dbb_advanced_title">Advanced bass limits</string>
+<string name="dbb_advanced_summary">Min/Max frequency range and tracking mode</string>
+
     <string name="reverb_enable">Virtual room effect</string>
     <string name="reverb_room_type">Room type</string>
     <string name="reverb_preset_default">Default</string>
