@@ -131,13 +131,30 @@ class DspFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListen
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        when(key) {
-            getString(R.string.key_device_profiles_enable) -> {
-                (binding.cardDeviceProfiles.parent as ViewGroup).isVisible =
-                    prefsApp.get<Boolean>(R.string.key_device_profiles_enable)
-            }
+    when(key) {
+
+        // Existing handler
+        getString(R.string.key_device_profiles_enable) -> {
+            (binding.cardDeviceProfiles.parent as ViewGroup).isVisible =
+                prefsApp.get<Boolean>(R.string.key_device_profiles_enable)
+        }
+
+        // 🔥 NEW — DBB UI-driven tuning
+        getString(R.string.key_dbb_enable),
+        getString(R.string.key_dbb_boost_db),
+        getString(R.string.key_dbb_width),
+        getString(R.string.key_dbb_speed),
+        getString(R.string.key_dbb_stability),
+        getString(R.string.key_dbb_type) -> {
+
+            // Apply DBB parameters to the DSP engine
+            DBBPreferenceHelper.applyFromPreferences(
+                prefsApp.sharedPrefs,
+                jamesDspWrapper     // whatever your DSP wrapper instance is called here
+            )
         }
     }
+}
 
     private fun hideTranslationNotice() {
         binding.translationNotice.isVisible = false
