@@ -522,3 +522,28 @@ void BassBoostProcess(JamesDSPLib *jdsp, size_t n)
 {
 	DBBProcess(&jdsp->dbb, jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
 }
+
+void BassBoostSetTargetFs(JamesDSPLib *jdsp, double targetFs)
+{
+    jdsp->dbb.targetFs = targetFs;
+}
+
+void BassBoostSetSmoothing(JamesDSPLib *jdsp, double detectMs, double gainMs)
+{
+    jdsp->dbb.detectSmoothMs = detectMs;
+    jdsp->dbb.gainSmoothMs   = gainMs;
+}
+
+void BassBoostSetResonance(JamesDSPLib *jdsp, float resonance)
+{
+    jdsp->dbb.resonance = resonance;
+}
+
+void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCustom)
+{
+    jdsp->dbb.freqMode = freqMode;
+    if (freqMode == 2 && freqCustom != NULL) {
+        for (int i = 0; i < 9; ++i)
+            jdsp->dbb.freqCustom[i] = freqCustom[i];
+    }
+}
