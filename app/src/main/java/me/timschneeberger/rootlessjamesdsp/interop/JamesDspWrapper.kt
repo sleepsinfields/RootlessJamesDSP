@@ -112,6 +112,17 @@ external fun setCrossfeed(
 ): Boolean
 
     external fun setBassBoost(self: JamesDspHandle, enable: Boolean, maxGain: Float): Boolean
+
+external fun setBassBoostAdvanced(
+    handle: JamesDspHandle,
+    enable: Boolean,
+    maxGain: Float,
+    widthNorm: Float,
+    typeInt: Int,
+    speedNorm: Float,
+    stabilityNorm: Float
+): Boolean
+
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
 
 
