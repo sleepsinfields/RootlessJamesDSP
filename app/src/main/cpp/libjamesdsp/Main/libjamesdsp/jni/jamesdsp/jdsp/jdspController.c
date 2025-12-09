@@ -1204,30 +1204,25 @@ void JamesDSPSetSampleRate(JamesDSPLib *jdsp, float new_sample_rate, int forceRe
 	}
 
 	JamesDSPRefreshBlob(jdsp, jdsp->fs);
-	if (forceRefresh)
-	{
-// Example tuning
-BassBoostSetTargetFs(jdsp, 432.0);             // analysis fs
-BassBoostSetSmoothing(jdsp, 0.618, 12.5663706143591729538);         // detect ms, gain ms
-BassBoostSetResonance(jdsp, 0.618f);            // tighter Q than 0.75
-BassBoostSetFreqMode(jdsp, 0, NULL);           // 0 = legacy freq[i]
+if (forceRefresh)
+{
+    // Optional: just recompute DBB with whatever the UI last set
+    BassBoostSetParam(jdsp, jdsp->dbb.maxGain);
 
-// Now apply with current maxGain (whatever UI set)
-BassBoostSetParam(jdsp, jdsp->dbb.maxGain);
-		jdsp->ddcForceRefresh = 1;
-		DDCEnable(jdsp, jdsp->ddcEnabled);
-		jdsp->crossfeedForceRefresh = 1;
-		CrossfeedEnable(jdsp, jdsp->crossfeedEnabled);
-		jdsp->arbMagForceRefresh = 1;
-		ArbitraryResponseEqualizerEnable(jdsp, jdsp->arbitraryMagEnabled);
-		jdsp->equalizerForceRefresh = 1;
-		MultimodalEqualizerEnable(jdsp, jdsp->equalizerEnabled);
-		jdsp->compForceRefresh = 1;
-		CompressorEnable(jdsp, jdsp->compEnabled);
-		StereoEnhancementRefresh(jdsp);
-	}
-	jdsp_unlock(jdsp);
+    jdsp->ddcForceRefresh = 1;
+    DDCEnable(jdsp, jdsp->ddcEnabled);
+    jdsp->crossfeedForceRefresh = 1;
+    CrossfeedEnable(jdsp, jdsp->crossfeedEnabled);
+    jdsp->arbMagForceRefresh = 1;
+    ArbitraryResponseEqualizerEnable(jdsp, jdsp->arbitraryMagEnabled);
+    jdsp->equalizerForceRefresh = 1;
+    MultimodalEqualizerEnable(jdsp, jdsp->equalizerEnabled);
+    jdsp->compForceRefresh = 1;
+    CompressorEnable(jdsp, jdsp->compEnabled);
+    StereoEnhancementRefresh(jdsp);
 }
+jdsp_unlock(jdsp);
+
 void JamesDSPFree(JamesDSPLib *jdsp)
 {
 	jdsp_lock(jdsp);
