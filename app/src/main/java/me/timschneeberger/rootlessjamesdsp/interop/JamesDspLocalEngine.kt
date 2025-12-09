@@ -103,7 +103,24 @@ class JamesDspLocalEngine(
     override fun setBassBoost(enable: Boolean, maxGain: Float): Boolean {
         return JamesDspWrapper.setBassBoost(handle, enable, maxGain)
     }
-
+fun setBassBoostAdvanced(
+    enable: Boolean,
+    maxGain: Float,
+    widthNorm: Float,
+    typeInt: Int,
+    speedNorm: Float,
+    stabilityNorm: Float
+): Boolean {
+    return JamesDspWrapper.setBassBoostAdvanced(
+        handle,
+        enable,
+        maxGain,
+        widthNorm,
+        typeInt,
+        speedNorm,
+        stabilityNorm
+    )
+}
     override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
         return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
     }
