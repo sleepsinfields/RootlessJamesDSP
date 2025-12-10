@@ -30,7 +30,7 @@ import me.timschneeberger.rootlessjamesdsp.interop.JamesDspLocalEngine
 abstract class JamesDspBaseEngine(
     val context: Context,
     val callbacks: JamesDspWrapper.JamesDspCallbacks? = null
-) : AutoCloseable, {
+) : AutoCloseable {
 
     abstract var enabled: Boolean
     
