@@ -7,8 +7,6 @@
     android:title="@string/dbb_enable"
     android:icon="@drawable/ic_twotone_speaker_24dp""
     app:iconSpaceReserved="false">
-        android:icon="@drawable/ic_baseline_baseline_boost_24dp"
-        app:iconSpaceReserved="false">
 
         <!-- 1. Bass boost level (dB) -->
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
