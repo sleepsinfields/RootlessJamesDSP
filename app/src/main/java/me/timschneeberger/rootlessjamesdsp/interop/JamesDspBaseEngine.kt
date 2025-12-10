@@ -22,6 +22,9 @@ import android.util.Log
 import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
 import me.timschneeberger.rootlessjamesdsp.interop.JamesDspLocalEngine
 
+import me.timschneeberger.rootlessjamesdsp.utils.Preferences
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 //
 
 
@@ -29,7 +32,7 @@ import me.timschneeberger.rootlessjamesdsp.interop.JamesDspLocalEngine
 abstract class JamesDspBaseEngine(
     val context: Context,
     val callbacks: JamesDspWrapper.JamesDspCallbacks? = null
-) : AutoCloseable {
+) : AutoCloseable, KoinComponent {
 
     abstract var enabled: Boolean
     
@@ -45,6 +48,8 @@ abstract class JamesDspBaseEngine(
             field = value
             reportSampleRate(value)
         }
+
+protected val preferences: Preferences.App by inject()
 
     private val syncScope = CoroutineScope(Dispatchers.IO)
     private val syncMutex = Mutex()
@@ -220,25 +225,21 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                     )
 
                     Constants.PREF_BASS -> {
-        // Existing core values
         val enable  = bassEnabled
         val boostDb = bassMaxGain
 
-        // Read DBB UI prefs (using the same Preferences.App ‘preferences’ that EQ/compander use)
+        // DBB UI controls
         val widthPct = preferences.get<Int>(R.string.key_dbb_width)
         val speedPct = preferences.get<Int>(R.string.key_dbb_speed)
         val stabPct  = preferences.get<Int>(R.string.key_dbb_stability)
-
-        // key_dbb_type is a ListPreference → stored as String
         val typeStr  = preferences.get<String>(R.string.key_dbb_type)
-        val typeInt  = typeStr.toIntOrNull() ?: 1  // default = “Balanced”
 
-        // Normalize 0–100 → 0.0–1.0
-        val widthNorm = (widthPct / 100f).coerceIn(0f, 1f)
-        val speedNorm = (speedPct / 100f).coerceIn(0f, 1f)
-        val stabNorm  = (stabPct / 100f).coerceIn(0f, 1f)
+        val typeInt = typeStr.toIntOrNull() ?: 1  // default “Balanced”
 
-        // Call your advanced DBB entry point
+        val widthNorm = (widthPct.toFloat() / 100f).coerceIn(0f, 1f)
+        val speedNorm = (speedPct.toFloat() / 100f).coerceIn(0f, 1f)
+        val stabNorm  = (stabPct.toFloat() / 100f).coerceIn(0f, 1f)
+
         setBassBoostAdvanced(
             enable,
             boostDb,
