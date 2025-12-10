@@ -219,7 +219,56 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                         compResponse
                     )
 
-                    Constants.PREF_BASS -> setBassBoost(bassEnabled, bassMaxGain)
+                    Constants.PREF_BASS -> {
+
+    val prefs = preferences.sharedPrefs  // same style used elsewhere in BaseEngine
+
+    val enable = prefs.getBoolean(
+        context.getString(R.string.key_dbb_enable),
+        bassEnabled   // fallback to old value
+    )
+
+    val boostDb = prefs.getInt(
+        context.getString(R.string.key_dbb_boost_db),
+        bassMaxGain.toInt()
+    ).toFloat()
+
+    val widthPct = prefs.getInt(
+        context.getString(R.string.key_dbb_width),
+        50
+    )
+
+    val speedPct = prefs.getInt(
+        context.getString(R.string.key_dbb_speed),
+        50
+    )
+
+    val stabPct = prefs.getInt(
+        context.getString(R.string.key_dbb_stability),
+        50
+    )
+
+    val typeStr = prefs.getString(
+        context.getString(R.string.key_dbb_type),
+        "1"
+    ) ?: "1"
+
+    val typeInt = typeStr.toIntOrNull() ?: 1
+
+    // Normalize 0–100 → 0.0–1.0
+    val widthNorm = (widthPct / 100f).coerceIn(0f, 1f)
+    val speedNorm = (speedPct / 100f).coerceIn(0f, 1f)
+    val stabNorm  = (stabPct / 100f).coerceIn(0f, 1f)
+
+    setBassBoostAdvanced(
+        enable,
+        boostDb,
+        widthNorm,
+        typeInt,
+        speedNorm,
+        stabNorm
+    )
+}
 
                     Constants.PREF_EQ -> setMultiEqualizer(
                         eqEnabled,
@@ -543,6 +592,19 @@ fun setStereoArbEqFlags(
     abstract fun setCrossfeed(enable: Boolean, mode: Int): Boolean
     abstract fun setCrossfeedCustom(enable: Boolean, fcut: Int, feed: Int): Boolean
     abstract fun setBassBoost(enable: Boolean, maxGain: Float): Boolean
+
+open fun setBassBoostAdvanced(
+    enable: Boolean,
+    maxGain: Float,
+    widthNorm: Float,
+    typeInt: Int,
+    speedNorm: Float,
+    stabilityNorm: Float
+): Boolean {
+    // Fallback: ignore the extra parameters and just do basic bass boost
+    return setBassBoost(enable, maxGain)
+}
+
     abstract fun setStereoEnhancement(enable: Boolean, level: Float): Boolean
     abstract fun setVacuumTube(enable: Boolean, level: Double): Boolean
 
