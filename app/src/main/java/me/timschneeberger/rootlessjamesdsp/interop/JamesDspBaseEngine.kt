@@ -21,7 +21,6 @@ import java.io.FileReader
 import android.util.Log 
 import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
 import me.timschneeberger.rootlessjamesdsp.interop.JamesDspLocalEngine
-
 import me.timschneeberger.rootlessjamesdsp.utils.Preferences
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -40,6 +39,8 @@ abstract class JamesDspBaseEngine(
     var isAdvancedShiftEnabled: Boolean = false
         private set
 
+        protected val preferences: Preferences.App by inject()
+
     fun setAdvancedShiftEnabled(enabled: Boolean) {
         isAdvancedShiftEnabled = enabled
     }
@@ -49,7 +50,6 @@ abstract class JamesDspBaseEngine(
             reportSampleRate(value)
         }
 
-protected val preferences: Preferences.App by inject()
 
     private val syncScope = CoroutineScope(Dispatchers.IO)
     private val syncMutex = Mutex()
