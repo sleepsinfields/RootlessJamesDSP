@@ -3,10 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup
-    android:key="@string/key_dbb_enable"
-    android:title="@string/dbb_enable"
-    android:icon="@drawable/ic_twotone_speaker_24dp""
-    app:iconSpaceReserved="false">
+        android:key="@string/key_dbb_enable"
+        android:title="@string/dbb_enable"
+        android:icon="@drawable/ic_twotone_speaker_24dp"
+        app:iconSpaceReserved="false">
 
         <!-- 1. Bass boost level (dB) -->
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
@@ -69,9 +69,4 @@
 
         <!-- 6. Advanced dialog entry -->
         <Preference
-            android:key="@string/key_dbb_advanced"
-            android:title="@string/dbb_advanced_title"
-            android:summary="@string/dbb_advanced_summary"
-            app:iconSpaceReserved="false" />
-    </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
-</PreferenceScreen>
+            android:key="@string/key_dbb_advanced
