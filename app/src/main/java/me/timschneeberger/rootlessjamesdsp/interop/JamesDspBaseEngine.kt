@@ -222,33 +222,35 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                     )
 
                     Constants.PREF_BASS -> {
-    // Read DBB UI prefs through the existing cache
-    // (mirror how other prefs are read in this function)
-    val widthPct = cache.getInt(R.string.key_dbb_width, 50)
-    val speedPct = cache.getInt(R.string.key_dbb_speed, 50)
-    val stabPct  = cache.getInt(R.string.key_dbb_stability, 50)
+    // Read bass / DBB prefs from the same cache used for other sections
+    cache.select(Constants.PREF_BASS)
 
-    // dbb_type is a ListPreference, usually stored as a String ("0","1","2").
-    // PreferenceCache normally has a getString() helper; mirror how other
-    // list prefs are handled in this same file.
-    val typeStr = cache.getString(R.string.key_dbb_type, "1") ?: "1"
+    // These two already existed in your original logic
+    val bassEnabled = cache.get(R.string.key_bass_enable, false)
+    val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6).toFloat()
+
+    // NEW: DBB UI params
+    val widthPct = cache.get(R.string.key_dbb_width, 50)
+    val speedPct = cache.get(R.string.key_dbb_speed, 50)
+    val stabPct  = cache.get(R.string.key_dbb_stability, 50)
+
+    val typeStr: String = cache.get(R.string.key_dbb_type, "1")
     val typeInt = typeStr.toIntOrNull() ?: 1   // 0=sub, 1=balanced, 2=punchy
 
-    // Normalize sliders 0–100 → 0.0–1.0
+    // Normalize sliders [0–100] → [0.0–1.0]
     val widthNorm = (widthPct.coerceIn(0, 100) / 100f)
     val speedNorm = (speedPct.coerceIn(0, 100) / 100f)
     val stabNorm  = (stabPct.coerceIn(0, 100) / 100f)
 
     setBassBoostAdvanced(
-        bassEnabled,   // same flag as before
-        bassMaxGain,   // same dB as before
-        widthNorm,
-        typeInt,
-        speedNorm,
-        stabNorm
+        enable        = bassEnabled,
+        maxGain       = bassMaxGain,
+        widthNorm     = widthNorm,
+        typeInt       = typeInt,
+        speedNorm     = speedNorm,
+        stabilityNorm = stabNorm
     )
 }
-
                     
 Constants.PREF_GEQ -> {
     val ok = if (this is JamesDspLocalEngine) {
