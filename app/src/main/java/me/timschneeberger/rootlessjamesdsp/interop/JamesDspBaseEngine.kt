@@ -24,7 +24,6 @@ import me.timschneeberger.rootlessjamesdsp.interop.JamesDspLocalEngine
 import me.timschneeberger.rootlessjamesdsp.utils.Preferences
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-//
 
 
 
@@ -50,7 +49,7 @@ protected val preferences: Preferences.App by inject()
             reportSampleRate(value)
         }
 
-
+protected val preferences: Preferences.App by inject()
     private val syncScope = CoroutineScope(Dispatchers.IO)
     private val syncMutex = Mutex()
     protected val cache = PreferenceCache(context)
