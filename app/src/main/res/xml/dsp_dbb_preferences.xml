@@ -5,7 +5,6 @@
     <me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup
         android:key="@string/key_dbb_enable"
         android:title="@string/dbb_enable"
-        android:icon="@drawable/ic_twotone_speaker_24dp"
         app:iconSpaceReserved="false">
 
         <!-- 1. Bass boost level (dB) -->
@@ -69,4 +68,10 @@
 
         <!-- 6. Advanced dialog entry -->
         <Preference
-            android:key="@string/key_dbb_advanced
+            android:key="@string/key_dbb_advanced"
+            android:title="@string/dbb_advanced_title"
+            android:summary="@string/dbb_advanced_summary"
+            app:iconSpaceReserved="false" />
+
+    </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
+</PreferenceScreen>
