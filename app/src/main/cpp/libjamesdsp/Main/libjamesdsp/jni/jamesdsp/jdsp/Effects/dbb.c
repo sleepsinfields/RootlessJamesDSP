@@ -577,3 +577,82 @@ void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCust
             jdsp->dbb.freqCustom[i] = freqCustom[i];
     }
 }
+void BassBoostSetAdvanced(
+    JamesDSPLib *jdsp,
+    float maxG,
+    float widthNorm,
+    int typeInt,
+    float speedNorm,
+    float stabilityNorm
+)
+{
+    DBB *dbb = &jdsp->dbb;
+
+    // Clamp inputs to [0, 1]
+    if (widthNorm < 0.0f)      widthNorm = 0.0f;
+    else if (widthNorm > 1.0f) widthNorm = 1.0f;
+
+    if (speedNorm < 0.0f)      speedNorm = 0.0f;
+    else if (speedNorm > 1.0f) speedNorm = 1.0f;
+
+    if (stabilityNorm < 0.0f)      stabilityNorm = 0.0f;
+    else if (stabilityNorm > 1.0f) stabilityNorm = 1.0f;
+
+    // --- Base template per "type" (sub-bass / balanced / punchy) ---
+    double baseTargetFs;
+    double baseDetectMs;
+    double baseGainMs;
+    float  baseRes;
+
+    switch (typeInt) {
+    case 0: // Sub-bass focus
+        baseTargetFs = 350.0;
+        baseDetectMs = 25.0;
+        baseGainMs   = 80.0;
+        baseRes      = 0.85f;
+        dbb->freqMode = 1; // log-ish
+        break;
+
+    case 2: // Punchy
+        baseTargetFs = 900.0;
+        baseDetectMs = 6.0;
+        baseGainMs   = 20.0;
+        baseRes      = 0.50f;
+        dbb->freqMode = 0;
+        break;
+
+    default: // Balanced
+        baseTargetFs = 500.0;
+        baseDetectMs = 12.0;
+        baseGainMs   = 40.0;
+        baseRes      = 0.70f;
+        dbb->freqMode = 0;
+        break;
+    }
+
+    // --- Speed & stability → smoothing times ---
+    // speedNorm: 0 = slow, 1 = very fast
+    double speedScale = 0.3 + (1.0 - (double)speedNorm) * 1.7; // 1 → 0.3x, 0 → 2.0x
+    // stabilityNorm: 0 = more "nervous", 1 = very stable (more smoothing)
+    double stabScale  = 0.5 + (double)stabilityNorm * 1.5;     // 0 → 0.5x, 1 → 2.0x
+
+    double detectMs = baseDetectMs * speedScale * stabScale;
+    double gainMs   = baseGainMs   * speedScale * stabScale;
+
+    // --- Width → resonance / Q ---
+    // widthNorm: 0 = very broad, 1 = very narrow/excited
+    double widthOffset = ((double)widthNorm - 0.5) * 0.4; // ±0.2
+    float res = baseRes + (float)widthOffset;
+
+    if (res < 0.20f) res = 0.20f;
+    if (res > 0.95f) res = 0.95f;
+
+    // --- Commit into DBB struct ---
+    dbb->targetFs       = baseTargetFs;
+    dbb->detectSmoothMs = detectMs;
+    dbb->gainSmoothMs   = gainMs;
+    dbb->resonance      = res;
+
+    // Finally re-run param computation with incoming maxG
+    DBBParam(dbb, jdsp->fs, maxG);
+}
