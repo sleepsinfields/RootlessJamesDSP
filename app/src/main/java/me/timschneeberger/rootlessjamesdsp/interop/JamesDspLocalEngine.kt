@@ -11,13 +11,19 @@ import java.util.Timer
 import kotlin.concurrent.schedule
 import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
 import android.util.Log
+import me.timschneeberger.rootlessjamesdsp.prefs.Preferences
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
 
 class JamesDspLocalEngine(
     context: Context,
     callbacks: JamesDspWrapper.JamesDspCallbacks? = null
-) : JamesDspBaseEngine(context, callbacks) {
+) : JamesDspBaseEngine(context, callbacks), KoinComponent {
 
     var handle: JamesDspHandle = JamesDspWrapper.alloc(callbacks ?: DummyCallbacks())
+
+private val prefsApp: Preferences.App by inject()
 
     override var sampleRate: Float
         set(value) {
@@ -101,7 +107,47 @@ class JamesDspLocalEngine(
     }
 
     override fun setBassBoost(enable: Boolean, maxGain: Float): Boolean {
-    return JamesDspWrapper.setBassBoost(handle, enable, maxGain)
+    // If bass is off, just pass through to the simple JNI
+    if (!enable) {
+        return JamesDspWrapper.setBassBoost(handle, false, maxGain)
+    }
+
+    val sp = prefsApp.sharedPrefs
+
+    // Read UI prefs (keys from strings.xml)
+    val widthPct = sp.getInt(
+        context.getString(R.string.key_dbb_width),
+        50
+    )
+    val speedPct = sp.getInt(
+        context.getString(R.string.key_dbb_speed),
+        50
+    )
+    val stabPct = sp.getInt(
+        context.getString(R.string.key_dbb_stability),
+        50
+    )
+    val typeStr = sp.getString(
+        context.getString(R.string.key_dbb_type),
+        "1"
+    ) ?: "1"
+    val typeInt = typeStr.toIntOrNull() ?: 1
+
+    // Normalize 0–100 → 0.0–1.0
+    val widthNorm = (widthPct.coerceIn(0, 100)) / 100f
+    val speedNorm = (speedPct.coerceIn(0, 100)) / 100f
+    val stabNorm  = (stabPct.coerceIn(0, 100)) / 100f
+
+    // Call the advanced JNI so C side can map everything:
+    return JamesDspWrapper.setBassBoostAdvanced(
+        handle,
+        enable,
+        maxGain,
+        widthNorm,
+        typeInt,
+        speedNorm,
+        stabNorm
+    )
 }
 
 override fun setBassBoostAdvanced(
