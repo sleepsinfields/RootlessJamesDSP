@@ -689,6 +689,67 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoost(JN
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoostAdvanced(
+    JNIEnv *env,
+    jobject obj,
+    jlong self,
+    jboolean enable,
+    jfloat maxGain,
+    jfloat widthNorm,
+    jint   typeInt,
+    jfloat speedNorm,
+    jfloat stabilityNorm
+)
+{
+    DECLARE_DSP_B
+
+    // If disabled, just turn DBB off and return
+    if (!enable)
+    {
+        BassBoostDisable(dsp);
+        return true;
+    }
+
+    // --- Clamp normalized controls 0..1 ---
+    double w   = (double)widthNorm;
+    double spd = (double)speedNorm;
+    double stab = (double)stabilityNorm;
+
+    if (w   < 0.0) w   = 0.0; if (w   > 1.0) w   = 1.0;
+    if (spd < 0.0) spd = 0.0; if (spd > 1.0) spd = 1.0;
+    if (stab < 0.0) stab = 0.0; if (stab > 1.0) stab = 1.0;
+
+    // --- Map UI → DSP parameters ---
+
+    // Stability → analysis fs (targetFs): 400..1000 Hz
+    double targetFs = 400.0 + stab * 600.0;
+
+    // Speed → detection / gain smoothing:
+    //  spd = 0 → slower, smoother
+    //  spd = 1 → faster, more responsive
+    double detectMs = 0.5 + (1.0 - spd) * 15.0;   // 0.5..15.5 ms
+    double gainMs   = 5.0  + (1.0 - spd) * 60.0;  // 5..65 ms
+
+    // Width → resonance: 0.3..0.9
+    float resonance = (float)(0.3 + w * 0.6);
+
+    // Type → freqMode (0 = legacy, 1 = log, 2 = custom)
+    int mode = (int)typeInt;
+    if (mode < 0) mode = 0;
+    if (mode > 2) mode = 2;
+
+    // --- Apply to the DBB core ---
+    BassBoostEnable(dsp);
+    BassBoostSetTargetFs(dsp, targetFs);
+    BassBoostSetSmoothing(dsp, detectMs, gainMs);
+    BassBoostSetResonance(dsp, resonance);
+    BassBoostSetFreqMode(dsp, mode, NULL);
+    BassBoostSetParam(dsp, maxGain);
+
+    return true;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhancement(JNIEnv *env, jobject obj, jlong self,
                                                                                      jboolean enable, jfloat level)
 {
