@@ -700,68 +700,91 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoostAdv
 {
     DECLARE_DSP_B
 
-    // Clamp normalized controls 0..1, type 0..2
-    float w   = fmaxf(0.0f, fminf(1.0f, widthNorm));
-    float sp  = fmaxf(0.0f, fminf(1.0f, speedNorm));
-    float stab = fmaxf(0.0f, fminf(1.0f, stabilityNorm));
+    if (!enable)
+    {
+        BassBoostDisable(dsp);
+        return JNI_TRUE;
+    }
 
-    int t = typeInt;
+    // --- clamp UI inputs ---
+    float w   = fminf(fmaxf(widthNorm,   0.0f), 1.0f);
+    float sp  = fminf(fmaxf(speedNorm,   0.0f), 1.0f);
+    float stab= fminf(fmaxf(stabilityNorm, 0.0f), 1.0f);
+    int   t   = typeInt;
     if (t < 0) t = 0;
     if (t > 2) t = 2;
 
-    // --- Map normalized controls → DBB parameters ---
+    // --- start from your original defaults ---
+    double targetFs = 500.0;   // analysis fs (Hz)
+    double detectMs = 0.5;     // “attack” / detection smoothing
+    double gainMs   = 2.0;     // “release” / gain smoothing
+    float  resonance= 0.75f;   // mapped via resonanceToQ()
+    int    freqMode = 0;       // we’ll keep legacy bins for now
 
-    // Width: 0 → “deep & tight”, 1 → “wider / more musical”
-    // Target analysis Fs: higher Fs = more resolution / tighter tracking
-    double targetFs = 300.0 + (1200.0 * (1.0 - (double)w));  // 300–1500 Hz
-
-    // Speed: 0 → very slow, 1 → very fast
-    // Make speedNorm = 1 very quick, and 0 quite lazy
-    double gainMs   = 1.0  + 49.0 * (1.0 - (double)sp);      // 1–50 ms
-    // Stability: 0 → jittery tracking, 1 → very stable / smoothed
-    double detectMs = 0.2  + 9.8  * (1.0 - (double)stab);    // 0.2–10 ms
-
-    // Bass “type” preset shaping
-    float resonance;
-    int   freqMode;
-
+    // --- Bass type “macro” shaping ---
     switch (t)
     {
-        case 0: // Sub-bass focus
-            resonance = 0.96f;   // very tight
-            freqMode  = 1;       // log bins
-            break;
+    case 0: // Sub-bass focus
+        targetFs = 350.0;      // coarser, more low-focused bins
+        resonance = 0.80f;
+        break;
 
-        case 2: // Punchy
-            resonance = 0.90f;   // a bit wider
-            freqMode  = 0;       // legacy-ish (more mid-bass)
-            break;
+    case 1: // Balanced
+        targetFs = 500.0;
+        resonance = 0.75f;
+        break;
 
-        default: // 1 = Balanced
-            resonance = 0.93f;
-            freqMode  = 1;
-            break;
+    case 2: // Punchy
+    default:
+        targetFs = 750.0;      // finer / higher detail
+        resonance = 0.70f;
+        break;
     }
 
-    // Push parameters down into your C core
+    // --- Width: adjust resonance (Q-ish) ---
+    // w = 0 → wider (less resonant), w = 1 → tighter
+    {
+        const float minRes = 0.55f;
+        const float maxRes = 0.95f;
+        float targetRes = minRes + w * (maxRes - minRes);
+        // blend with type base a bit so type still matters
+        resonance = 0.5f * resonance + 0.5f * targetRes;
+    }
+
+    // --- Speed + stability: detection + gain smoothing ---
+    // Speed: high = faster (shorter times)
+    // Stability: high = smoother, longer release
+    {
+        // detection: 0.2 ms … 5 ms
+        const double detMin = 0.2;
+        const double detMax = 5.0;
+        detectMs = detMax - sp * (detMax - detMin);
+
+        // gain (release): 4 ms … 120 ms
+        const double gainFast = 4.0;
+        const double gainSlow = 120.0;
+        double baseGainMs = gainSlow - sp * (gainSlow - gainFast);
+
+        // stability pushes it towards the slower side
+        double stabilityFactor = 0.7 + 0.6 * stab;  // ~0.7 … 1.3
+        gainMs = baseGainMs * stabilityFactor;
+    }
+
+    // --- push into your new DBB fields ---
     BassBoostSetTargetFs(dsp, targetFs);
     BassBoostSetSmoothing(dsp, detectMs, gainMs);
     BassBoostSetResonance(dsp, resonance);
-    BassBoostSetFreqMode(dsp, freqMode, NULL);
+    // keep legacy bin layout for now
+    BassBoostSetFreqMode(dsp, freqMode, nullptr);
 
-    // Then apply the usual on/off + maxGain logic
-    if (enable)
-    {
-        BassBoostSetParam(dsp, maxGain);
-        BassBoostEnable(dsp);
-    }
-    else
-    {
-        BassBoostDisable(dsp);
-    }
+    // final recompute + enable
+    BassBoostSetParam(dsp, maxGain);
+    BassBoostEnable(dsp);
 
     return JNI_TRUE;
 }
+
+    
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhancement(JNIEnv *env, jobject obj, jlong self,
