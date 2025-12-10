@@ -225,30 +225,30 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                     )
 
                     Constants.PREF_BASS -> {
-        val enable  = bassEnabled
-        val boostDb = bassMaxGain
+    val enable  = bassEnabled
+    val boostDb = bassMaxGain
 
-        // DBB UI controls
-        val widthPct = preferences.get<Int>(R.string.key_dbb_width)
-        val speedPct = preferences.get<Int>(R.string.key_dbb_speed)
-        val stabPct  = preferences.get<Int>(R.string.key_dbb_stability)
-        val typeStr  = preferences.get<String>(R.string.key_dbb_type)
+    // Read UI values from Preferences.App
+    val widthPct = preferences.get<Int>(R.string.key_dbb_width)
+    val speedPct = preferences.get<Int>(R.string.key_dbb_speed)
+    val stabPct  = preferences.get<Int>(R.string.key_dbb_stability)
+    val typeStr  = preferences.get<String>(R.string.key_dbb_type)
 
-        val typeInt = typeStr.toIntOrNull() ?: 1  // default “Balanced”
+    val typeInt = typeStr.toIntOrNull() ?: 1
 
-        val widthNorm = (widthPct.toFloat() / 100f).coerceIn(0f, 1f)
-        val speedNorm = (speedPct.toFloat() / 100f).coerceIn(0f, 1f)
-        val stabNorm  = (stabPct.toFloat() / 100f).coerceIn(0f, 1f)
+    val widthNorm = (widthPct.toFloat() / 100f).coerceIn(0f, 1f)
+    val speedNorm = (speedPct.toFloat() / 100f).coerceIn(0f, 1f)
+    val stabNorm  = (stabPct.toFloat() / 100f).coerceIn(0f, 1f)
 
-        setBassBoostAdvanced(
-            enable,
-            boostDb,
-            widthNorm,
-            typeInt,
-            speedNorm,
-            stabNorm
-        )
-    }
+    setBassBoostAdvanced(
+        enable,
+        boostDb,
+        widthNorm,
+        typeInt,
+        speedNorm,
+        stabNorm
+    )
+}
 
                     Constants.PREF_EQ -> setMultiEqualizer(
                         eqEnabled,
