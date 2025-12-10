@@ -228,7 +228,7 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
     val enable  = bassEnabled
     val boostDb = bassMaxGain
 
-    // Read UI values from Preferences.App
+    // Read UI values using Preferences.App helper
     val widthPct = preferences.get<Int>(R.string.key_dbb_width)
     val speedPct = preferences.get<Int>(R.string.key_dbb_speed)
     val stabPct  = preferences.get<Int>(R.string.key_dbb_stability)
