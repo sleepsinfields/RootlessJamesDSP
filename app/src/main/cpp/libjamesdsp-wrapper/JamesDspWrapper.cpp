@@ -690,100 +690,38 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoost(JN
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoostAdvanced(
-    JNIEnv *env, jobject obj, jlong self,
+    JNIEnv *env,
+    jobject obj,
+    jlong self,
     jboolean enable,
     jfloat maxGain,
     jfloat widthNorm,
     jint   typeInt,
     jfloat speedNorm,
-    jfloat stabilityNorm)
+    jfloat stabilityNorm
+)
 {
     DECLARE_DSP_B
 
-    if (!enable)
+    if (enable)
+    {
+        BassBoostSetAdvanced(
+            dsp,
+            maxGain,
+            widthNorm,
+            (int)typeInt,
+            speedNorm,
+            stabilityNorm
+        );
+        BassBoostEnable(dsp);
+    }
+    else
     {
         BassBoostDisable(dsp);
-        return JNI_TRUE;
     }
-
-    // --- clamp UI inputs ---
-    float w   = fminf(fmaxf(widthNorm,   0.0f), 1.0f);
-    float sp  = fminf(fmaxf(speedNorm,   0.0f), 1.0f);
-    float stab= fminf(fmaxf(stabilityNorm, 0.0f), 1.0f);
-    int   t   = typeInt;
-    if (t < 0) t = 0;
-    if (t > 2) t = 2;
-
-    // --- start from your original defaults ---
-    double targetFs = 500.0;   // analysis fs (Hz)
-    double detectMs = 0.5;     // “attack” / detection smoothing
-    double gainMs   = 2.0;     // “release” / gain smoothing
-    float  resonance= 0.75f;   // mapped via resonanceToQ()
-    int    freqMode = 0;       // we’ll keep legacy bins for now
-
-    // --- Bass type “macro” shaping ---
-    switch (t)
-    {
-    case 0: // Sub-bass focus
-        targetFs = 350.0;      // coarser, more low-focused bins
-        resonance = 0.80f;
-        break;
-
-    case 1: // Balanced
-        targetFs = 500.0;
-        resonance = 0.75f;
-        break;
-
-    case 2: // Punchy
-    default:
-        targetFs = 750.0;      // finer / higher detail
-        resonance = 0.70f;
-        break;
-    }
-
-    // --- Width: adjust resonance (Q-ish) ---
-    // w = 0 → wider (less resonant), w = 1 → tighter
-    {
-        const float minRes = 0.55f;
-        const float maxRes = 0.95f;
-        float targetRes = minRes + w * (maxRes - minRes);
-        // blend with type base a bit so type still matters
-        resonance = 0.5f * resonance + 0.5f * targetRes;
-    }
-
-    // --- Speed + stability: detection + gain smoothing ---
-    // Speed: high = faster (shorter times)
-    // Stability: high = smoother, longer release
-    {
-        // detection: 0.2 ms … 5 ms
-        const double detMin = 0.2;
-        const double detMax = 5.0;
-        detectMs = detMax - sp * (detMax - detMin);
-
-        // gain (release): 4 ms … 120 ms
-        const double gainFast = 4.0;
-        const double gainSlow = 120.0;
-        double baseGainMs = gainSlow - sp * (gainSlow - gainFast);
-
-        // stability pushes it towards the slower side
-        double stabilityFactor = 0.7 + 0.6 * stab;  // ~0.7 … 1.3
-        gainMs = baseGainMs * stabilityFactor;
-    }
-
-    // --- push into your new DBB fields ---
-    BassBoostSetTargetFs(dsp, targetFs);
-    BassBoostSetSmoothing(dsp, detectMs, gainMs);
-    BassBoostSetResonance(dsp, resonance);
-    // keep legacy bin layout for now
-    BassBoostSetFreqMode(dsp, freqMode, nullptr);
-
-    // final recompute + enable
-    BassBoostSetParam(dsp, maxGain);
-    BassBoostEnable(dsp);
 
     return JNI_TRUE;
 }
-
     
 
 extern "C" JNIEXPORT jboolean JNICALL
