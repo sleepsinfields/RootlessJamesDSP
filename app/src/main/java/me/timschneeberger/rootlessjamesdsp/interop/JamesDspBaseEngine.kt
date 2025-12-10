@@ -39,8 +39,6 @@ abstract class JamesDspBaseEngine(
     var isAdvancedShiftEnabled: Boolean = false
         private set
 
-        protected val preferences: Preferences.App by inject()
-
     fun setAdvancedShiftEnabled(enabled: Boolean) {
         isAdvancedShiftEnabled = enabled
     }
@@ -50,7 +48,7 @@ abstract class JamesDspBaseEngine(
             reportSampleRate(value)
         }
 
-
+protected val preferences: Preferences.App by inject()
     private val syncScope = CoroutineScope(Dispatchers.IO)
     private val syncMutex = Mutex()
     protected val cache = PreferenceCache(context)
