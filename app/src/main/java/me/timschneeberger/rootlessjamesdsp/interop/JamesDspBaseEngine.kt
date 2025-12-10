@@ -42,13 +42,15 @@ abstract class JamesDspBaseEngine(
     fun setAdvancedShiftEnabled(enabled: Boolean) {
         isAdvancedShiftEnabled = enabled
     }
+
+protected val preferences: Preferences.App by inject()
     open var sampleRate: Float = 0.0f
         set(value) {
             field = value
             reportSampleRate(value)
         }
 
-protected val preferences: Preferences.App by inject()
+
     private val syncScope = CoroutineScope(Dispatchers.IO)
     private val syncMutex = Mutex()
     protected val cache = PreferenceCache(context)
