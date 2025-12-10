@@ -104,7 +104,7 @@ class JamesDspLocalEngine(
     return JamesDspWrapper.setBassBoost(handle, enable, maxGain)
 }
 
-override fun setBassBoostAdvanced(
+fun setBassBoostAdvanced(
     enable: Boolean,
     maxGain: Float,
     widthNorm: Float,
