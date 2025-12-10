@@ -1202,27 +1202,24 @@ void JamesDSPSetSampleRate(JamesDSPLib *jdsp, float new_sample_rate, int forceRe
 		jdsp->enableASRC = 0;
 		jdsp->fs = jdsp->trueSampleRate;
 	}
-
 	JamesDSPRefreshBlob(jdsp, jdsp->fs);
-if (forceRefresh)
-{
-    // Optional: just recompute DBB with whatever the UI last set
-    BassBoostSetParam(jdsp, jdsp->dbb.maxGain);
-
-    jdsp->ddcForceRefresh = 1;
-    DDCEnable(jdsp, jdsp->ddcEnabled);
-    jdsp->crossfeedForceRefresh = 1;
-    CrossfeedEnable(jdsp, jdsp->crossfeedEnabled);
-    jdsp->arbMagForceRefresh = 1;
-    ArbitraryResponseEqualizerEnable(jdsp, jdsp->arbitraryMagEnabled);
-    jdsp->equalizerForceRefresh = 1;
-    MultimodalEqualizerEnable(jdsp, jdsp->equalizerEnabled);
-    jdsp->compForceRefresh = 1;
-    CompressorEnable(jdsp, jdsp->compEnabled);
-    StereoEnhancementRefresh(jdsp);
+	if (forceRefresh)
+	{
+		BassBoostSetParam(jdsp, jdsp->dbb.maxGain);
+		jdsp->ddcForceRefresh = 1;
+		DDCEnable(jdsp, jdsp->ddcEnabled);
+		jdsp->crossfeedForceRefresh = 1;
+		CrossfeedEnable(jdsp, jdsp->crossfeedEnabled);
+		jdsp->arbMagForceRefresh = 1;
+		ArbitraryResponseEqualizerEnable(jdsp, jdsp->arbitraryMagEnabled);
+		jdsp->equalizerForceRefresh = 1;
+		MultimodalEqualizerEnable(jdsp, jdsp->equalizerEnabled);
+		jdsp->compForceRefresh = 1;
+		CompressorEnable(jdsp, jdsp->compEnabled);
+		StereoEnhancementRefresh(jdsp);
+	}
+	jdsp_unlock(jdsp);
 }
-jdsp_unlock(jdsp);
-
 void JamesDSPFree(JamesDSPLib *jdsp)
 {
 	jdsp_lock(jdsp);
