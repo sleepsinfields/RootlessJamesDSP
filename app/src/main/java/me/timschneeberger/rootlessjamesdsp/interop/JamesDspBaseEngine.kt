@@ -219,14 +219,35 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                         compResponse
                     )
 
-                    Constants.PREF_BASS -> setBassBoostAdvanced(
-    bassEnabled,
-    bassMaxGain,
-    0.5f,  // width mid
-    1,     // type = “Balanced”
-    0.5f,  // speed mid
-    0.5f   // stability mid
-)
+                    Constants.PREF_BASS -> {
+        // Existing core values
+        val enable  = bassEnabled
+        val boostDb = bassMaxGain
+
+        // Read DBB UI prefs (using the same Preferences.App ‘preferences’ that EQ/compander use)
+        val widthPct = preferences.get<Int>(R.string.key_dbb_width)
+        val speedPct = preferences.get<Int>(R.string.key_dbb_speed)
+        val stabPct  = preferences.get<Int>(R.string.key_dbb_stability)
+
+        // key_dbb_type is a ListPreference → stored as String
+        val typeStr  = preferences.get<String>(R.string.key_dbb_type)
+        val typeInt  = typeStr.toIntOrNull() ?: 1  // default = “Balanced”
+
+        // Normalize 0–100 → 0.0–1.0
+        val widthNorm = (widthPct / 100f).coerceIn(0f, 1f)
+        val speedNorm = (speedPct / 100f).coerceIn(0f, 1f)
+        val stabNorm  = (stabPct / 100f).coerceIn(0f, 1f)
+
+        // Call your advanced DBB entry point
+        setBassBoostAdvanced(
+            enable,
+            boostDb,
+            widthNorm,
+            typeInt,
+            speedNorm,
+            stabNorm
+        )
+    }
 
                     Constants.PREF_EQ -> setMultiEqualizer(
                         eqEnabled,
