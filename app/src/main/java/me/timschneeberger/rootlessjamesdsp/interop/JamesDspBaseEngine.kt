@@ -221,38 +221,7 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                         compResponse
                     )
 
-                    Constants.PREF_BASS -> {
-    val enable  = bassEnabled
-    val boostDb = bassMaxGain
-
-    // Use default SharedPreferences for DBB UI
-    val prefs: SharedPreferences =
-        PreferenceManager.getDefaultSharedPreferences(context)
-
-    val widthKey = context.getString(R.string.key_dbb_width)
-    val speedKey = context.getString(R.string.key_dbb_speed)
-    val stabKey  = context.getString(R.string.key_dbb_stability)
-    val typeKey  = context.getString(R.string.key_dbb_type)
-
-    val widthPct = prefs.getInt(widthKey, 50)
-    val speedPct = prefs.getInt(speedKey, 50)
-    val stabPct  = prefs.getInt(stabKey, 50)
-    val typeStr  = prefs.getString(typeKey, "1") ?: "1"
-    val typeInt  = typeStr.toIntOrNull() ?: 1
-
-    val widthNorm = (widthPct.toFloat() / 100f).coerceIn(0f, 1f)
-    val speedNorm = (speedPct.toFloat() / 100f).coerceIn(0f, 1f)
-    val stabNorm  = (stabPct.toFloat() / 100f).coerceIn(0f, 1f)
-
-    setBassBoostAdvanced(
-        enable,
-        boostDb,
-        widthNorm,
-        typeInt,
-        speedNorm,
-        stabNorm
-    )
-}
+                    Constants.PREF_BASS -> setBassBoost(bassEnabled, bassMaxGain)
 
                     Constants.PREF_EQ -> setMultiEqualizer(
                         eqEnabled,
