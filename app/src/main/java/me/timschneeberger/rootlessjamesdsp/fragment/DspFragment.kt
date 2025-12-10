@@ -80,10 +80,14 @@ class DspFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListen
                 R.id.card_compressor, PreferenceGroupFragment.newInstance(Constants.PREF_COMPANDER,
                     R.xml.dsp_compander_preferences
                 ))
+
             .replace(
-                R.id.card_bass, PreferenceGroupFragment.newInstance(Constants.PREF_BASS,
-                    R.xml.dsp_bass_preferences
-                ))
+    R.id.card_bass, PreferenceGroupFragment.newInstance(
+        Constants.PREF_BASS,
+        R.xml.dsp_dbb_preferences
+    )
+)
+
             .replace(
                 R.id.card_eq, PreferenceGroupFragment.newInstance(Constants.PREF_EQ,
                     R.xml.dsp_equalizer_preferences
