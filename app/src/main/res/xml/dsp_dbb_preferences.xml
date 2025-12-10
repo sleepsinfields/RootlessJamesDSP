@@ -5,6 +5,7 @@
     <me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup
         android:key="@string/key_dbb_enable"
         android:title="@string/dbb_enable"
+        android:icon="@drawable/ic_twotone_speaker_24dp
         app:iconSpaceReserved="false">
 
         <!-- 1. Bass boost level (dB) -->
