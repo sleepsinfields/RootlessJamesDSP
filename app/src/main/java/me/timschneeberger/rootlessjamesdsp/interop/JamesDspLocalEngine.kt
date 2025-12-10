@@ -106,7 +106,7 @@ class JamesDspLocalEngine(
     return JamesDspWrapper.setBassBoost(handle, enable, maxGain)
 }
 
-// Advanced entry point — for now, just fall back to basic DBB
+// 
 override fun setBassBoostAdvanced(
     enable: Boolean,
     maxGain: Float,
@@ -115,9 +115,17 @@ override fun setBassBoostAdvanced(
     speedNorm: Float,
     stabilityNorm: Float
 ): Boolean {
-    // We’ll wire width/type/speed/stability later.
-    return setBassBoost(enable, maxGain)
+    return JamesDspWrapper.setBassBoostAdvanced(
+        handle,
+        enable,
+        maxGain,
+        widthNorm,
+        typeInt,
+        speedNorm,
+        stabilityNorm
+    )
 }
+//
     override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
         return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
     }
