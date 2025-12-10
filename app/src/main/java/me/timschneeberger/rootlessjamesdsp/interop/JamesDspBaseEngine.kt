@@ -9,6 +9,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import me.timschneeberger.rootlessjamesdsp.R
+//
+import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
+//
 import me.timschneeberger.rootlessjamesdsp.interop.structure.EelVmVariable
 import me.timschneeberger.rootlessjamesdsp.model.ProcessorMessage
 import me.timschneeberger.rootlessjamesdsp.preference.FileLibraryPreference
@@ -21,10 +25,6 @@ import java.io.FileReader
 import android.util.Log 
 import me.timschneeberger.rootlessjamesdsp.fragment.GraphicEqualizerFragment
 import me.timschneeberger.rootlessjamesdsp.interop.JamesDspLocalEngine
-import me.timschneeberger.rootlessjamesdsp.utils.Preferences
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-
 
 
 abstract class JamesDspBaseEngine(
@@ -42,14 +42,12 @@ abstract class JamesDspBaseEngine(
         isAdvancedShiftEnabled = enabled
     }
 
-protected val preferences: Preferences.App by inject()
     open var sampleRate: Float = 0.0f
         set(value) {
             field = value
             reportSampleRate(value)
         }
 
-protected val preferences: Preferences.App by inject()
     private val syncScope = CoroutineScope(Dispatchers.IO)
     private val syncMutex = Mutex()
     protected val cache = PreferenceCache(context)
@@ -227,13 +225,20 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
     val enable  = bassEnabled
     val boostDb = bassMaxGain
 
-    // Read UI values using Preferences.App helper
-    val widthPct = preferences.get<Int>(R.string.key_dbb_width)
-    val speedPct = preferences.get<Int>(R.string.key_dbb_speed)
-    val stabPct  = preferences.get<Int>(R.string.key_dbb_stability)
-    val typeStr  = preferences.get<String>(R.string.key_dbb_type)
+    // Use default SharedPreferences for DBB UI
+    val prefs: SharedPreferences =
+        PreferenceManager.getDefaultSharedPreferences(context)
 
-    val typeInt = typeStr.toIntOrNull() ?: 1
+    val widthKey = context.getString(R.string.key_dbb_width)
+    val speedKey = context.getString(R.string.key_dbb_speed)
+    val stabKey  = context.getString(R.string.key_dbb_stability)
+    val typeKey  = context.getString(R.string.key_dbb_type)
+
+    val widthPct = prefs.getInt(widthKey, 50)
+    val speedPct = prefs.getInt(speedKey, 50)
+    val stabPct  = prefs.getInt(stabKey, 50)
+    val typeStr  = prefs.getString(typeKey, "1") ?: "1"
+    val typeInt  = typeStr.toIntOrNull() ?: 1
 
     val widthNorm = (widthPct.toFloat() / 100f).coerceIn(0f, 1f)
     val speedNorm = (speedPct.toFloat() / 100f).coerceIn(0f, 1f)
