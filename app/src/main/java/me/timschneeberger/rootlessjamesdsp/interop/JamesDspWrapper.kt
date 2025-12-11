@@ -123,6 +123,27 @@ external fun setBassBoostAdvanced(
     stabilityNorm: Float
 ): Boolean
 
+external fun setDbbTargetFs(
+    self: JamesDspHandle,
+    targetFsHz: Float
+): Boolean
+
+external fun setDbbSmoothing(
+    self: JamesDspHandle,
+    detectMs: Float,
+    gainMs: Float
+): Boolean
+
+external fun setDbbResonance(
+    self: JamesDspHandle,
+    resonance: Float
+): Boolean
+
+external fun setDbbFreqMode(
+    self: JamesDspHandle,
+    mode: Int
+): Boolean
+
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
 
 
