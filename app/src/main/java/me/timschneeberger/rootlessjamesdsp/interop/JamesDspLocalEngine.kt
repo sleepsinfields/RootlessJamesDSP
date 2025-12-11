@@ -139,18 +139,21 @@ fun applyDbbTuning(
     resonance: Float,
     freqMode: Int
 ) {
-    if (!JamesDspWrapper.isHandleValid(handle)) {
+    val handle = this.handle
+    if (handle == 0L) {
         Log.e("DbbDebug", "applyDbbTuning: invalid handle=$handle, skipping")
         return
     }
 
+    // Clamp
     val tf = targetFs.coerceIn(100f, 2000f)
     val dm = detectMs.coerceIn(0.05f, 200f)
     val gm = gainMs.coerceIn(0.1f, 500f)
     val rs = resonance.coerceIn(0f, 0.99f)
     val fm = freqMode.coerceIn(0, 2)
 
-    Log.e("DbbDebug",
+    Log.e(
+        "DbbDebug",
         "applyDbbTuning: tf=$tf Hz dm=$dm ms gm=$gm ms res=$rs mode=$fm handle=$handle"
     )
 
@@ -160,7 +163,8 @@ fun applyDbbTuning(
         JamesDspWrapper.setDbbResonance(handle, rs)
         JamesDspWrapper.setDbbFreqMode(handle, fm)
     } catch (e: UnsatisfiedLinkError) {
-        Log.e("DbbDebug", "DBB JNI functions not linked correctly yet", e)
+        Log.e("DbbDebug", "DBB JNI functions not linked correctly yet; skipping native apply", e)
+        return
     }
 }
 //
