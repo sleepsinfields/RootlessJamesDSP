@@ -234,20 +234,34 @@ Log.e(
                     )
 
                     Constants.PREF_BASS -> {
-    // prefs were read earlier in the function:
-    // bassEnabled, bassMaxGain, targetFs, detectMs, gainMs, resonance, dbbFreqMode
+    val ok = when (this) {
+        is JamesDspLocalEngine -> {
+            // 1) Push raw DBB tuning into the DSP (no normalization)
+            this.applyDbbTuning(
+                targetFs  = dbbTargetFs,
+                detectMs  = dbbDetectMs,
+                gainMs    = dbbGainMs,
+                resonance = dbbResonance,
+                freqMode  = dbbFreqMode
+            )
 
-/*
-    setBassBoostAdvanced(
-        enable     = bassEnabled,
-        maxGain    = bassMaxGain,
-        targetFsHz = targetFs,
-        detectMs   = detectMs,
-        gainMs     = gainMs,
-        resonance  = resonance,
-        freqMode   = dbbFreqMode
-    )
-*/
+            // 2) Then apply enable + maxGain via classic BassBoost path
+            setBassBoost(
+                enable  = dbbEnabled,
+                maxGain = dbbMaxGain
+            )
+        }
+
+        else -> {
+            // Remote engine / other implementations: just use simple DBB
+            setBassBoost(
+                enable  = dbbEnabled,
+                maxGain = dbbMaxGain
+            )
+        }
+    }
+
+    ok
 }
 
 Constants.PREF_GEQ -> {
