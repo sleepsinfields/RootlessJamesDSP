@@ -8,7 +8,7 @@
         android:icon="@drawable/ic_twotone_speaker_24dp"
         app:iconSpaceReserved="false">
 
-        <!-- 1. Max gain (dB) – existing behavior -->
+        <!-- 1. Max gain (dB) – same concept as original -->
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
             android:key="@string/key_dbb_boost_db"
             android:title="@string/dbb_boost_db"
@@ -21,9 +21,9 @@
             app:updatesContinuously="true"
             app:iconSpaceReserved="false" />
 
-        <!-- 2. Analysis center frequency (Hz) -->
+        <!-- 2. Analysis center frequency (Hz) / target Fs -->
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-            android:key="@string/key_dbb_width"
+            android:key="@string/key_dbb_target_fs"
             android:title="@string/dbb_target_fs"
             android:defaultValue="432"
             app:minValue="100"
@@ -36,12 +36,12 @@
 
         <!-- 3. Detection smoothing (ms) -->
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-            android:key="@string/key_dbb_speed"
+            android:key="@string/key_dbb_detect_ms"
             android:title="@string/dbb_detect_ms"
-            android:defaultValue="1"
-            app:minValue="1"
+            android:defaultValue="0.618"
+            app:minValue="0.05"
             app:maxValue="200"
-            app:precision="1"
+            app:precision="3"
             app:unit=" ms"
             app:showSeekBarValue="true"
             app:updatesContinuously="true"
@@ -51,10 +51,10 @@
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
             android:key="@string/key_dbb_gain_ms"
             android:title="@string/dbb_gain_ms"
-            android:defaultValue="13"
-            app:minValue="1"
+            android:defaultValue="12.566"
+            app:minValue="0.1"
             app:maxValue="500"
-            app:precision="1"
+            app:precision="3"
             app:unit=" ms"
             app:showSeekBarValue="true"
             app:updatesContinuously="true"
@@ -64,18 +64,18 @@
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
             android:key="@string/key_dbb_resonance"
             android:title="@string/dbb_resonance"
-            android:defaultValue="62"
-            app:minValue="0"
-            app:maxValue="99"
+            android:defaultValue="0.618"
+            app:minValue="0.0"
+            app:maxValue="0.99"
             app:precision="3"
             app:unit=""
             app:showSeekBarValue="true"
             app:updatesContinuously="true"
             app:iconSpaceReserved="false" />
 
-        <!-- 6. Frequency mode (safe enum) -->
+        <!-- 6. Frequency mode -->
         <ListPreference
-            android:key="@string/key_dbb_type"
+            android:key="@string/key_dbb_freq_mode"
             android:title="@string/dbb_freq_mode"
             android:defaultValue="0"
             android:entries="@array/dbb_type_entries"
@@ -83,13 +83,12 @@
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
-        <!-- 7. Advanced entry for custom bands etc. -->
+        <!-- 7. Advanced entry (for future custom bands dialog, etc.) -->
         <Preference
             android:key="@string/key_dbb_advanced"
             android:title="@string/dbb_advanced_title"
             android:summary="@string/dbb_advanced_summary"
             app:iconSpaceReserved="false" />
-
     </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
 
 </PreferenceScreen>
