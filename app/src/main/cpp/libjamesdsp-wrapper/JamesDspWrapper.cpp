@@ -671,6 +671,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setCrossfeed(JN
     return true;
 }
 
+//
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoost(JNIEnv *env, jobject obj, jlong self,
                                                                              jboolean enable, jfloat maxGain)
@@ -687,43 +688,111 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoost(JN
     }
     return true;
 }
-
+//
+/* ???
 extern "C" JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_00024Companion_setBassBoostAdvanced(
+*/
+
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoostAdvanced(
-    JNIEnv *env,
-    jobject obj,
+    JNIEnv *env, jobject obj,
     jlong self,
     jboolean enable,
-    jfloat maxGain,
-    jfloat widthNorm,
-    jint   typeInt,
-    jfloat speedNorm,
-    jfloat stabilityNorm
+    jfloat  maxGain,
+    jfloat  widthNorm,
+    jint    typeInt,
+    jfloat  speedNorm,
+    jfloat  stabilityNorm
 )
 {
     DECLARE_DSP_B
 
-    if (enable)
-    {
-        BassBoostSetAdvanced(
-            dsp,
-            maxGain,
-            widthNorm,
-            (int)typeInt,
-            speedNorm,
-            stabilityNorm
-        );
-        BassBoostEnable(dsp);
-    }
-    else
-    {
+    // If disabled, keep it simple
+    if (!enable) {
         BassBoostDisable(dsp);
+        return JNI_TRUE;
     }
+
+    // --- clamp helpers ---
+    auto clamp01 = [](float v) -> float {
+        if (v < 0.0f) return 0.0f;
+        if (v > 1.0f) return 1.0f;
+        return v;
+    };
+
+    float w  = clamp01(widthNorm);
+    float sp = clamp01(speedNorm);
+    float st = clamp01(stabilityNorm);
+
+    int mode = typeInt;
+    if (mode < 0) mode = 0;
+    if (mode > 2) mode = 2;
+
+    // --- 1) base profile from Bass Type ---
+    double targetFs  = 500.0;
+    float  resonance = 0.75f;
+    int    freqMode  = 0;   // 0=legacy, 1=log
+
+    switch (mode) {
+        case 0: // Sub-bass focus
+            targetFs  = 300.0;
+            resonance = 0.85f;
+            freqMode  = 1;
+            break;
+
+        default:
+        case 1: // Balanced
+            targetFs  = 500.0;
+            resonance = 0.75f;
+            freqMode  = 0;
+            break;
+
+        case 2: // Punchy / mid-bass
+            targetFs  = 800.0;
+            resonance = 0.65f;
+            freqMode  = 1;
+            break;
+    }
+
+    // --- 2) Width slider: focus vs wide ---
+    //  w = 0 → tight, mid-focused
+    //  w = 1 → wide, more spread / sub emphasis
+    float resMin = 0.55f;
+    float resMax = 0.95f;
+    float resMapped = resMax - (resMax - resMin) * w;   // more width → lower Q
+
+    double tfMin = targetFs * 0.6;
+    double tfMax = targetFs * 1.4;
+    double tfMapped = tfMax - (tfMax - tfMin) * w;      // more width → slightly lower Fc
+
+    // --- 3) Speed slider: dynamics time constants ---
+    // sp = 0 → slow, sp = 1 → fast
+    double detectMsMin = 0.3;    // fast tracking
+    double detectMsMax = 20.0;   // slow tracking
+    double gainMsMin   = 2.0;    // fast gain
+    double gainMsMax   = 120.0;  // slow gain
+
+    double detectMs = detectMsMin + (detectMsMax - detectMsMin) * (1.0 - sp);
+    double gainMs   = gainMsMin   + (gainMsMax   - gainMsMin)   * (1.0 - sp);
+
+    // --- 4) Stability slider: extra smoothing on detection only ---
+    double stabFactor = 0.25 + 1.75 * st;   // 0 → 0.25x, 1 → 2.0x
+    detectMs *= stabFactor;
+
+    // --- 5) Push into DBB struct via our helpers ---
+    BassBoostSetTargetFs(dsp, tfMapped);
+    BassBoostSetSmoothing(dsp, detectMs, gainMs);
+    BassBoostSetResonance(dsp, resMapped);
+    BassBoostSetFreqMode(dsp, freqMode, nullptr);
+
+    // --- 6) final gain & enable ---
+    BassBoostSetParam(dsp, maxGain);
+    BassBoostEnable(dsp);
 
     return JNI_TRUE;
 }
-    
 
+//
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setStereoEnhancement(JNIEnv *env, jobject obj, jlong self,
                                                                                      jboolean enable, jfloat level)
