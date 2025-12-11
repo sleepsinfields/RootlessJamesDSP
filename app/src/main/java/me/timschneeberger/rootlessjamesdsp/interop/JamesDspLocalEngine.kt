@@ -150,8 +150,7 @@ fun applyDbbTuning(
     val rs = resonance.coerceIn(0f, 0.99f)
     val fm = freqMode.coerceIn(0, 2)
 
-    Log.e(
-        "DbbDebug",
+    Log.e("DbbDebug",
         "applyDbbTuning: tf=$tf Hz dm=$dm ms gm=$gm ms res=$rs mode=$fm handle=$handle"
     )
 
@@ -162,10 +161,13 @@ fun applyDbbTuning(
         JamesDspWrapper.setDbbFreqMode(handle, fm)
     } catch (e: UnsatisfiedLinkError) {
         Log.e("DbbDebug", "DBB JNI functions not linked correctly yet", e)
-        // Don’t rethrow; let the app keep running
     }
 }
-
+//
+override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
+        return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
+    }
+//
 // --------------------------------------------------------------------
 // Core vacuum tube enable / drive (already mostly present, but unified)
 // --------------------------------------------------------------------
