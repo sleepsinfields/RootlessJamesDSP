@@ -126,6 +126,26 @@ override fun setBassBoostAdvanced(
     )
 }
 //
+open fun applyDbbTuning(
+    targetFs: Float,
+    detectMs: Float,
+    gainMs: Float,
+    resonance: Float,
+    freqMode: Int
+) {
+    // Clamp lightly on the Kotlin side for safety
+    val tf = targetFs.coerceIn(100f, 2000f)
+    val dm = detectMs.coerceIn(0.05f, 200f)
+    val gm = gainMs.coerceIn(0.1f, 500f)
+    val rs = resonance.coerceIn(0f, 0.99f)
+    val fm = freqMode.coerceIn(0, 2)
+
+    JamesDspWrapper.setDbbTargetFs(handle, tf)
+    JamesDspWrapper.setDbbSmoothing(handle, dm, gm)
+    JamesDspWrapper.setDbbResonance(handle, rs)
+    JamesDspWrapper.setDbbFreqMode(handle, fm)
+}
+//
     override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
         return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
     }
