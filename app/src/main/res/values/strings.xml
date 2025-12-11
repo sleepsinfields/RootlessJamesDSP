@@ -161,6 +161,18 @@
     Target Fs, smoothing and detector layout
 </string>
 
+<string name="key_dbb_target_fs">pref_dbb_target_fs</string>
+<string name="key_dbb_detect_ms">pref_dbb_detect_ms</string>
+<string name="key_dbb_gain_ms">pref_dbb_gain_ms</string>
+<string name="key_dbb_resonance">pref_dbb_resonance</string>
+<string name="key_dbb_freq_mode">pref_dbb_freq_mode</string>
+
+<string name="dbb_target_fs">Analysis center frequency (Hz)</string>
+<string name="dbb_detect_ms">Detection smoothing (ms)</string>
+<string name="dbb_gain_ms">Gain smoothing (ms)</string>
+<string name="dbb_resonance">Resonance</string>
+<string name="dbb_freq_mode">Frequency mode</string>
+
     <string name="reverb_enable">Virtual room effect</string>
     <string name="reverb_room_type">Room type</string>
     <string name="reverb_preset_default">Default</string>
