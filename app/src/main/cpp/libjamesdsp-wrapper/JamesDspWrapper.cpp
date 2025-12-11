@@ -689,30 +689,50 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoost(JN
     return true;
 }
 //
+
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbTargetFs(
-        JNIEnv *env, jobject /*obj*/, jlong self, jfloat targetFsHz)
-{
-    auto *dsp = reinterpret_cast<JamesDSPLib *>(self);
-    if (dsp == nullptr) {
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbTargetFs(
+    JNIEnv *env,
+    jobject /*obj*/,
+    jlong self,
+    jfloat targetFsHz
+) {
+    if (self == 0) {
         return JNI_FALSE;
     }
 
-    BassBoostSetTargetFs(dsp, static_cast<double>(targetFsHz));
+    JamesDSPLib *jdsp = reinterpret_cast<JamesDSPLib *>(
+        static_cast<uintptr_t>(self)
+    );
+    if (jdsp == nullptr) {
+        return JNI_FALSE;
+    }
+
+    BassBoostSetTargetFs(jdsp, static_cast<double>(targetFsHz));
     return JNI_TRUE;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbSmoothing(
-        JNIEnv *env, jobject /*obj*/, jlong self, jfloat detectMs, jfloat gainMs)
-{
-    auto *dsp = reinterpret_cast<JamesDSPLib *>(self);
-    if (dsp == nullptr) {
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbSmoothing(
+    JNIEnv *env,
+    jobject /*obj*/,
+    jlong self,
+    jfloat detectMs,
+    jfloat gainMs
+) {
+    if (self == 0) {
+        return JNI_FALSE;
+    }
+
+    JamesDSPLib *jdsp = reinterpret_cast<JamesDSPLib *>(
+        static_cast<uintptr_t>(self)
+    );
+    if (jdsp == nullptr) {
         return JNI_FALSE;
     }
 
     BassBoostSetSmoothing(
-        dsp,
+        jdsp,
         static_cast<double>(detectMs),
         static_cast<double>(gainMs)
     );
@@ -720,32 +740,47 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbSmoothing
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbResonance(
-        JNIEnv *env, jobject /*obj*/, jlong self, jfloat resonance)
-{
-    auto *dsp = reinterpret_cast<JamesDSPLib *>(self);
-    if (dsp == nullptr) {
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbResonance(
+    JNIEnv *env,
+    jobject /*obj*/,
+    jlong self,
+    jfloat resonance
+) {
+    if (self == 0) {
         return JNI_FALSE;
     }
 
-    BassBoostSetResonance(dsp, resonance);
+    JamesDSPLib *jdsp = reinterpret_cast<JamesDSPLib *>(
+        static_cast<uintptr_t>(self)
+    );
+    if (jdsp == nullptr) {
+        return JNI_FALSE;
+    }
+
+    BassBoostSetResonance(jdsp, resonance);
     return JNI_TRUE;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbFreqMode(
-        JNIEnv *env, jobject /*obj*/, jlong self, jint mode)
-{
-    auto *dsp = reinterpret_cast<JamesDSPLib *>(self);
-    if (dsp == nullptr) {
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbFreqMode(
+    JNIEnv *env,
+    jobject /*obj*/,
+    jlong self,
+    jint mode
+) {
+    if (self == 0) {
         return JNI_FALSE;
     }
 
-    BassBoostSetFreqMode(
-        dsp,
-        static_cast<int>(mode),
-        /*freqCustom*/ nullptr
+    JamesDSPLib *jdsp = reinterpret_cast<JamesDSPLib *>(
+        static_cast<uintptr_t>(self)
     );
+    if (jdsp == nullptr) {
+        return JNI_FALSE;
+    }
+
+    // For now, no custom bands; pass NULL
+    BassBoostSetFreqMode(jdsp, static_cast<int>(mode), nullptr);
     return JNI_TRUE;
 }
 //
