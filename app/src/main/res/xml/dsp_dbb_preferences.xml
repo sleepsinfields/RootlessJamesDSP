@@ -12,50 +12,53 @@
         <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
             android:key="@string/key_dbb_boost_db"
             android:title="@string/dbb_boost_db"
-            android:defaultValue="6"
+            android:defaultValue="3.14159265358979323846"
             app:minValue="0"
             app:maxValue="15"
-            app:precision="0"
+            app:precision="5"
             app:unit=" dB"
             app:showSeekBarValue="true"
             app:updatesContinuously="true"
             app:iconSpaceReserved="false" />
 
-        <!-- 2. Bass width (focus) -->
-        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-            android:key="@string/key_dbb_width"
-            android:title="@string/dbb_width"
-            android:defaultValue="50"
-            app:minValue="0"
-            app:maxValue="100"
-            app:precision="0"
-            app:showSeekBarValue="false"
-            app:updatesContinuously="true"
-            app:iconSpaceReserved="false" />
+     <!-- 2. Bass width: focus frequency in Hz -->
+<me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+    android:key="@string/key_dbb_width"
+    android:title="@string/dbb_width"
+    android:defaultValue="80"
+    app:minValue="40"
+    app:maxValue="300"
+    app:precision="2"
+    app:unit=" Hz"
+    app:showSeekBarValue="true"
+    app:updatesContinuously="true"
+    app:iconSpaceReserved="false" />
 
-        <!-- 3. Dynamics speed -->
-        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-            android:key="@string/key_dbb_speed"
-            android:title="@string/dbb_speed"
-            android:defaultValue="50"
-            app:minValue="0"
-            app:maxValue="100"
-            app:precision="0"
-            app:showSeekBarValue="false"
-            app:updatesContinuously="true"
-            app:iconSpaceReserved="false" />
+<!-- 3. Dynamics speed: detector window in ms -->
+<me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+    android:key="@string/key_dbb_speed"
+    android:title="@string/dbb_speed"
+    android:defaultValue="16"
+    app:minValue="1"
+    app:maxValue="200"
+    app:precision="2"
+    app:unit=" ms"
+    app:showSeekBarValue="true"
+    app:updatesContinuously="true"
+    app:iconSpaceReserved="false" />
 
-        <!-- 4. Tracking stability -->
-        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-            android:key="@string/key_dbb_stability"
-            android:title="@string/dbb_stability"
-            android:defaultValue="50"
-            app:minValue="0"
-            app:maxValue="100"
-            app:precision="0"
-            app:showSeekBarValue="false"
-            app:updatesContinuously="true"
-            app:iconSpaceReserved="false" />
+<!-- 4. Tracking stability: gain smoothing in ms -->
+<me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+    android:key="@string/key_dbb_stability"
+    android:title="@string/dbb_stability"
+    android:defaultValue="80"
+    app:minValue="2"
+    app:maxValue="500"
+    app:precision="2"
+    app:unit=" ms"
+    app:showSeekBarValue="true"
+    app:updatesContinuously="true"
+    app:iconSpaceReserved="false" />
 
         <!-- 5. Bass type -->
         <ListPreference
