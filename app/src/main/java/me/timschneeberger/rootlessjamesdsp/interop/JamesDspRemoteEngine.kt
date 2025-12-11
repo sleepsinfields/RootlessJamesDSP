@@ -167,7 +167,7 @@ class JamesDspRemoteEngine(
         ret = effect.setParameter(112, maxGain.roundToInt().toShort()) == AudioEffect.SUCCESS
     return ret and (effect.setParameter(1201, enable.toShort()) == AudioEffect.SUCCESS)
 }
-
+/*
 override fun setBassBoostAdvanced(
     enable: Boolean,
     maxGain: Float,
@@ -179,7 +179,7 @@ override fun setBassBoostAdvanced(
     // For now, just fall back to simple BassBoost in remote mode
     return setBassBoost(enable, maxGain)
 }
-
+*/
     override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
         var ret = true
         if (enable)
