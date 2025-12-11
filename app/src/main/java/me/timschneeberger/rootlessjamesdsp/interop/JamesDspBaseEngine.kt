@@ -237,6 +237,7 @@ Log.e(
     // prefs were read earlier in the function:
     // bassEnabled, bassMaxGain, targetFs, detectMs, gainMs, resonance, dbbFreqMode
 
+/*
     setBassBoostAdvanced(
         enable     = bassEnabled,
         maxGain    = bassMaxGain,
@@ -246,8 +247,9 @@ Log.e(
         resonance  = resonance,
         freqMode   = dbbFreqMode
     )
+*/
 }
-                    
+
 Constants.PREF_GEQ -> {
     val ok = if (this is JamesDspLocalEngine) {
         // Use the LocalEngine helper that reads M/L/R from prefs
