@@ -221,24 +221,34 @@ Log.e(
                     )
 
                     Constants.PREF_BASS -> {
-    // Use BASS namespace
     cache.select(Constants.PREF_BASS)
 
     val bassEnabled = cache.get(R.string.key_bass_enable, false)
     val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
 
-    // 🔧 DBB UI params — read as Float, like other seekbars
-    val widthPctF = cache.get(R.string.key_dbb_width, 50f)
-    val speedPctF = cache.get(R.string.key_dbb_speed, 50f)
-    val stabPctF  = cache.get(R.string.key_dbb_stability, 50f)
+    // NEW: real-unit sliders
+    // Focus frequency (Hz), 40–180
+    val focusHz = cache.get(R.string.key_dbb_width, 80)
 
+    // Detector speed (ms), 1–100
+    val detectMs = cache.get(R.string.key_dbb_speed, 16)
+
+    // Gain smoothing (ms), 2–500
+    val smoothMs = cache.get(R.string.key_dbb_stability, 80)
+
+    // Bass type: 0=sub, 1=balanced, 2=punchy
     val typeStr: String = cache.get(R.string.key_dbb_type, "1")
-    val typeInt = typeStr.toIntOrNull() ?: 1   // 0=sub, 1=balanced, 2=punchy
+    val typeInt = typeStr.toIntOrNull() ?: 1
 
-    // Normalize [0–100] → [0.0–1.0]
-    val widthNorm = widthPctF.coerceIn(0f, 100f) / 100f
-    val speedNorm = speedPctF.coerceIn(0f, 100f) / 100f
-    val stabNorm  = stabPctF.coerceIn(0f, 100f) / 100f
+    // ---- Map real units → 0.0–1.0 for the advanced core ----
+    // Width: 40–180 Hz → 0.0–1.0
+    val widthNorm = ((focusHz.coerceIn(40, 180) - 40) / (180f - 40f))
+
+    // Speed: 1–100 ms → 0.0–1.0
+    val speedNorm = ((detectMs.coerceIn(1, 100) - 1) / 99f)
+
+    // Stability: 2–500 ms → 0.0–1.0
+    val stabNorm = ((smoothMs.coerceIn(2, 500) - 2) / 498f)
 
     setBassBoostAdvanced(
         enable        = bassEnabled,
