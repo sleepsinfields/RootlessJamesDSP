@@ -690,11 +690,10 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoost(JN
 }
 //
 /* ???
-extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_00024Companion_setBassBoostAdvanced(
+extern "C" JNIEXPORT jboolean JNICALL Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_00024Companion_setBassBoostAdvanced(
 */
 
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoostAdvanced(
+extern "C" JNIEXPORT jboolean JNICALL Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoostAdvanced(
     JNIEnv *env, jobject obj,
     jlong self,
     jboolean enable,
