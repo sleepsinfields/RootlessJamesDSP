@@ -136,17 +136,30 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
             )
 
             cache.select(Constants.PREF_BASS)
-
 val bassEnabled = cache.get(R.string.key_bass_enable, false)
 val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
 
-// NEW raw DBB params (no % mapping)
-val dbbTargetFs   = cache.get(R.string.key_dbb_target_fs, 432f)
-val dbbDetectMs   = cache.get(R.string.key_dbb_detect_ms, 0.618f)
-val dbbGainMs     = cache.get(R.string.key_dbb_gain_ms, 12.566f)
-val dbbResonance  = cache.get(R.string.key_dbb_resonance, 0.618f)
-val dbbFreqModeStr: String = cache.get(R.string.key_dbb_freq_mode, "0")
-val dbbFreqMode   = dbbFreqModeStr.toIntOrNull() ?: 0
+// NEW: DBB controls read as raw-ish units from the sliders
+
+// 2a) Target Fs (Hz) – stored as an Int in the slider
+val dbbTargetFsInt = cache.get(R.string.key_dbb_width, 432)   // 100..2000 Hz
+val targetFs = dbbTargetFsInt.toDouble()
+
+// 2b) Detection smoothing (ms) – 1..200
+val detectMsInt = cache.get(R.string.key_dbb_speed, 1)
+val detectMs    = detectMsInt.toDouble()
+
+// 2c) Gain smoothing (ms) – 1..500
+val gainMsInt = cache.get(R.string.key_dbb_gain_ms, 13)
+val gainMs    = gainMsInt.toDouble()
+
+// 2d) Resonance stored as 0–99 ⇒ 0.00–0.99
+val resInt    = cache.get(R.string.key_dbb_resonance, 62)
+val resonance = (resInt / 100.0).coerceIn(0.0, 0.99)
+
+// 2e) Frequency mode (enum 0/1/2)
+val dbbFreqModeStr: String = cache.get(R.string.key_dbb_type, "0")
+val dbbFreqMode = dbbFreqModeStr.toIntOrNull() ?: 0
 
             cache.select(Constants.PREF_EQ)
             val eqEnabled = cache.get(R.string.key_eq_enable, false)
@@ -230,19 +243,18 @@ Log.e(
                     )
 
                     Constants.PREF_BASS -> {
-    // 1) Apply DBB tuning first (raw values)
-    if (this is JamesDspLocalEngine) {
-        this.applyDbbTuning(
-            targetFs   = dbbTargetFs,
-            detectMs   = dbbDetectMs,
-            gainMs     = dbbGainMs,
-            resonance  = dbbResonance,
-            freqMode   = dbbFreqMode
-        )
-    }
+    // prefs were read earlier in the function:
+    // bassEnabled, bassMaxGain, targetFs, detectMs, gainMs, resonance, dbbFreqMode
 
-    // 2) Then apply enable + maxgain like before
-    setBassBoost(bassEnabled, bassMaxGain)
+    setBassBoostAdvanced(
+        enable     = bassEnabled,
+        maxGain    = bassMaxGain,
+        targetFsHz = targetFs,
+        detectMs   = detectMs,
+        gainMs     = gainMs,
+        resonance  = resonance,
+        freqMode   = dbbFreqMode
+    )
 }
                     
 Constants.PREF_GEQ -> {
@@ -563,12 +575,13 @@ fun setStereoArbEqFlags(
 open fun setBassBoostAdvanced(
     enable: Boolean,
     maxGain: Float,
-    widthNorm: Float,
-    typeInt: Int,
-    speedNorm: Float,
-    stabilityNorm: Float
+    targetFsHz: Double,   // analysis Fs (Hz)
+    detectMs: Double,     // detection smoothing (ms)
+    gainMs: Double,       // gain smoothing (ms)
+    resonance: Double,    // 0.0 .. 0.99
+    freqMode: Int         // 0 legacy, 1 log, 2 custom
 ): Boolean {
-    // Fallback: ignore the extra parameters and just do basic bass boost
+    // Default behavior for engines that don’t care: just use classic DBB
     return setBassBoost(enable, maxGain)
 }
 
