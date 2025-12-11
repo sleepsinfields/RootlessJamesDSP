@@ -136,8 +136,17 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
             )
 
             cache.select(Constants.PREF_BASS)
-            val bassEnabled = cache.get(R.string.key_bass_enable, false)
-            val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
+
+val bassEnabled = cache.get(R.string.key_bass_enable, false)
+val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
+
+// NEW raw DBB params (no % mapping)
+val dbbTargetFs   = cache.get(R.string.key_dbb_target_fs, 432f)
+val dbbDetectMs   = cache.get(R.string.key_dbb_detect_ms, 0.618f)
+val dbbGainMs     = cache.get(R.string.key_dbb_gain_ms, 12.566f)
+val dbbResonance  = cache.get(R.string.key_dbb_resonance, 0.618f)
+val dbbFreqModeStr: String = cache.get(R.string.key_dbb_freq_mode, "0")
+val dbbFreqMode   = dbbFreqModeStr.toIntOrNull() ?: 0
 
             cache.select(Constants.PREF_EQ)
             val eqEnabled = cache.get(R.string.key_eq_enable, false)
@@ -221,43 +230,19 @@ Log.e(
                     )
 
                     Constants.PREF_BASS -> {
-    cache.select(Constants.PREF_BASS)
+    // 1) Apply DBB tuning first (raw values)
+    if (this is JamesDspLocalEngine) {
+        this.applyDbbTuning(
+            targetFs   = dbbTargetFs,
+            detectMs   = dbbDetectMs,
+            gainMs     = dbbGainMs,
+            resonance  = dbbResonance,
+            freqMode   = dbbFreqMode
+        )
+    }
 
-    val bassEnabled = cache.get(R.string.key_bass_enable, false)
-    val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
-
-    // NEW: real-unit sliders
-    // Focus frequency (Hz), 40–180
-    val focusHz = cache.get(R.string.key_dbb_width, 80)
-
-    // Detector speed (ms), 1–100
-    val detectMs = cache.get(R.string.key_dbb_speed, 16)
-
-    // Gain smoothing (ms), 2–500
-    val smoothMs = cache.get(R.string.key_dbb_stability, 80)
-
-    // Bass type: 0=sub, 1=balanced, 2=punchy
-    val typeStr: String = cache.get(R.string.key_dbb_type, "1")
-    val typeInt = typeStr.toIntOrNull() ?: 1
-
-    // ---- Map real units → 0.0–1.0 for the advanced core ----
-    // Width: 40–180 Hz → 0.0–1.0
-    val widthNorm = ((focusHz.coerceIn(40, 180) - 40) / (180f - 40f))
-
-    // Speed: 1–100 ms → 0.0–1.0
-    val speedNorm = ((detectMs.coerceIn(1, 100) - 1) / 99f)
-
-    // Stability: 2–500 ms → 0.0–1.0
-    val stabNorm = ((smoothMs.coerceIn(2, 500) - 2) / 498f)
-
-    setBassBoostAdvanced(
-        enable        = bassEnabled,
-        maxGain       = bassMaxGain,
-        widthNorm     = widthNorm,
-        typeInt       = typeInt,
-        speedNorm     = speedNorm,
-        stabilityNorm = stabNorm
-    )
+    // 2) Then apply enable + maxgain like before
+    setBassBoost(bassEnabled, bassMaxGain)
 }
                     
 Constants.PREF_GEQ -> {
