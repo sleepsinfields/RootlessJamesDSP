@@ -3,79 +3,93 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup
-        android:key="@string/key_dbb_enable"
-        android:title="@string/dbb_enable"
-        android:icon="@drawable/ic_twotone_speaker_24dp"
-        app:iconSpaceReserved="false">
+    android:key="@string/key_dbb_enable"
+    android:title="@string/dbb_enable"
+    android:icon="@drawable/ic_twotone_speaker_24dp"
+    app:iconSpaceReserved="false">
 
-        <!-- 1. Bass boost level (dB) -->
-        <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-            android:key="@string/key_dbb_boost_db"
-            android:title="@string/dbb_boost_db"
-            android:defaultValue="3.14159265358979323846"
-            app:minValue="0"
-            app:maxValue="15"
-            app:precision="5"
-            app:unit=" dB"
-            app:showSeekBarValue="true"
-            app:updatesContinuously="true"
-            app:iconSpaceReserved="false" />
+    <!-- 1. Max gain (dB) – existing behavior -->
+    <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+        android:key="@string/key_dbb_boost_db"
+        android:title="@string/dbb_boost_db"
+        android:defaultValue="6"
+        app:minValue="0"
+        app:maxValue="15"
+        app:precision="5"
+        app:unit=" dB"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        app:iconSpaceReserved="false" />
 
-     <!-- 2. Bass width: focus frequency in Hz -->
-<me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-    android:key="@string/key_dbb_width"
-    android:title="@string/dbb_width"
-    android:defaultValue="80"
-    app:minValue="40"
-    app:maxValue="180"
-    app:precision="2"
-    app:unit=" Hz"
-    app:showSeekBarValue="true"
-    app:updatesContinuously="true"
-    app:iconSpaceReserved="false" />
+    <!-- 2. Analysis center frequency (Hz) -->
+    <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+        android:key="@string/key_dbb_target_fs"
+        android:title="@string/dbb_target_fs"
+        android:defaultValue="432"
+        app:minValue="100"
+        app:maxValue="2000"
+        app:precision="2"
+        app:unit=" Hz"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        app:iconSpaceReserved="false" />
 
-<!-- 3. Dynamics speed: detector window in ms -->
-<me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-    android:key="@string/key_dbb_speed"
-    android:title="@string/dbb_speed"
-    android:defaultValue="16"
-    app:minValue="1"
-    app:maxValue="100"
-    app:precision="2"
-    app:unit=" ms"
-    app:showSeekBarValue="true"
-    app:updatesContinuously="true"
-    app:iconSpaceReserved="false" />
+    <!-- 3. Detection smoothing (ms) -->
+    <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+        android:key="@string/key_dbb_detect_ms"
+        android:title="@string/dbb_detect_ms"
+        android:defaultValue="0.618"
+        app:minValue="0.05"
+        app:maxValue="200"
+        app:precision="3"
+        app:unit=" ms"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        app:iconSpaceReserved="false" />
 
-<!-- 4. Tracking stability: gain smoothing in ms -->
-<me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
-    android:key="@string/key_dbb_stability"
-    android:title="@string/dbb_stability"
-    android:defaultValue="80"
-    app:minValue="2"
-    app:maxValue="500"
-    app:precision="2"
-    app:unit=" ms"
-    app:showSeekBarValue="true"
-    app:updatesContinuously="true"
-    app:iconSpaceReserved="false" />
+    <!-- 4. Gain smoothing (ms) -->
+    <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+        android:key="@string/key_dbb_gain_ms"
+        android:title="@string/dbb_gain_ms"
+        android:defaultValue="12.566"
+        app:minValue="0.1"
+        app:maxValue="500"
+        app:precision="3"
+        app:unit=" ms"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        app:iconSpaceReserved="false" />
 
-        <!-- 5. Bass type -->
-        <ListPreference
-            android:key="@string/key_dbb_type"
-            android:title="@string/dbb_type"
-            android:defaultValue="1"
-            android:entries="@array/dbb_type_entries"
-            android:entryValues="@array/dbb_type_values"
-            app:useSimpleSummaryProvider="true"
-            app:iconSpaceReserved="false" />
+    <!-- 5. Resonance (0–0.99) -->
+    <me.timschneeberger.rootlessjamesdsp.preference.MaterialSeekbarPreference
+        android:key="@string/key_dbb_resonance"
+        android:title="@string/dbb_resonance"
+        android:defaultValue="0.618"
+        app:minValue="0.0"
+        app:maxValue="0.99"
+        app:precision="3"
+        app:unit=""
+        app:showSeekBarValue="true"
+        app:updatesContinuously="true"
+        app:iconSpaceReserved="false" />
 
-        <!-- 6. Advanced dialog entry -->
-        <Preference
-            android:key="@string/key_dbb_advanced"
-            android:title="@string/dbb_advanced_title"
-            android:summary="@string/dbb_advanced_summary"
-            app:iconSpaceReserved="false" />
+    <!-- 6. Frequency mode (safe enum) -->
+    <ListPreference
+        android:key="@string/key_dbb_freq_mode"
+        android:title="@string/dbb_freq_mode"
+        android:defaultValue="0"
+        android:entries="@array/dbb_type_entries"   <!-- 0: Legacy, 1: Log, 2: Custom -->
+        android:entryValues="@array/dbb_type_values"
+        app:useSimpleSummaryProvider="true"
+        app:iconSpaceReserved="false" />
 
-    </me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
+    <!-- 7. Advanced entry for custom bands etc. -->
+    <Preference
+        android:key="@string/key_dbb_advanced"
+        android:title="@string/dbb_advanced_title"
+        android:summary="@string/dbb_advanced_summary"
+        app:iconSpaceReserved="false" />
+
+</me.timschneeberger.rootlessjamesdsp.preference.SwitchPreferenceGroup>
+
 </PreferenceScreen>
