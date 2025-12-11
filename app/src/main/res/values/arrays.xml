@@ -419,9 +419,9 @@
     </string-array>
 
 <string-array name="dbb_type_entries">
-    <item>Sub-bass focus</item>
-    <item>Balanced</item>
-    <item>Punchy</item>
+    <item>Legacy bins (flat-ish)</item>
+    <item>Log-spaced bands</item>
+    <item>Custom band layout</item>
 </string-array>
 
 <string-array name="dbb_type_values">
