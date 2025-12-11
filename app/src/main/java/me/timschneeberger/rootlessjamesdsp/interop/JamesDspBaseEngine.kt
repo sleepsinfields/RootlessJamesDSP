@@ -236,7 +236,7 @@ Log.e(
                     Constants.PREF_BASS -> {
     val ok = when (this) {
         is JamesDspLocalEngine -> {
-            // 1) Push raw DBB tuning into the DSP (no normalization)
+            // 1) Push DBB tuning into the DSP
             this.applyDbbTuning(
                 targetFs  = dbbTargetFs,
                 detectMs  = dbbDetectMs,
@@ -245,7 +245,7 @@ Log.e(
                 freqMode  = dbbFreqMode
             )
 
-            // 2) Then apply enable + maxGain via classic BassBoost path
+            // 2) Apply enable + max gain via simple BassBoost
             setBassBoost(
                 enable  = dbbEnabled,
                 maxGain = dbbMaxGain
@@ -253,7 +253,7 @@ Log.e(
         }
 
         else -> {
-            // Remote engine / other implementations: just use simple DBB
+            // Remote engine: basic behavior
             setBassBoost(
                 enable  = dbbEnabled,
                 maxGain = dbbMaxGain
