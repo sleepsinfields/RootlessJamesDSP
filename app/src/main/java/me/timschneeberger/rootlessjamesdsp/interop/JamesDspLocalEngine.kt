@@ -139,16 +139,11 @@ fun applyDbbTuning(
     resonance: Float,
     freqMode: Int
 ) {
-    // 0) Handle safety: do NOT call into native if the handle is gone
     if (!JamesDspWrapper.isHandleValid(handle)) {
-        Log.e(
-            "DbbDebug",
-            "applyDbbTuning: invalid handle=$handle, skipping native DBB calls"
-        )
+        Log.e("DbbDebug", "applyDbbTuning: invalid handle=$handle, skipping")
         return
     }
 
-    // 1) Clamp lightly on the Kotlin side for safety
     val tf = targetFs.coerceIn(100f, 2000f)
     val dm = detectMs.coerceIn(0.05f, 200f)
     val gm = gainMs.coerceIn(0.1f, 500f)
@@ -160,18 +155,16 @@ fun applyDbbTuning(
         "applyDbbTuning: tf=$tf Hz dm=$dm ms gm=$gm ms res=$rs mode=$fm handle=$handle"
     )
 
-    // 2) Forward to JNI (all four setters)
-    JamesDspWrapper.setDbbTargetFs(handle, tf)
-    JamesDspWrapper.setDbbSmoothing(handle, dm, gm)
-    JamesDspWrapper.setDbbResonance(handle, rs)
-    JamesDspWrapper.setDbbFreqMode(handle, fm)
-}
-//
-    override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
-        return JamesDspWrapper.setStereoEnhancement(handle, enable, level)
+    try {
+        JamesDspWrapper.setDbbTargetFs(handle, tf)
+        JamesDspWrapper.setDbbSmoothing(handle, dm, gm)
+        JamesDspWrapper.setDbbResonance(handle, rs)
+        JamesDspWrapper.setDbbFreqMode(handle, fm)
+    } catch (e: UnsatisfiedLinkError) {
+        Log.e("DbbDebug", "DBB JNI functions not linked correctly yet", e)
+        // Don’t rethrow; let the app keep running
     }
-
-   // JamesDspLocalEngine.kt (inside class JamesDspLocalEngine)
+}
 
 // --------------------------------------------------------------------
 // Core vacuum tube enable / drive (already mostly present, but unified)
