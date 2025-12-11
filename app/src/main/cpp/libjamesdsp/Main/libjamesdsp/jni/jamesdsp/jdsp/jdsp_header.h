@@ -176,7 +176,7 @@ typedef struct
 {
     float maxGain;
     float originalBuf[960];
-    int downsamplerPos;
+    int   downsamplerPos;
     samplerateTool downsampler;
     float delayLine[16];
     float fftBuf[16];
@@ -191,11 +191,11 @@ typedef struct
     integerDelayLine dL[2];
 
     // 🔧 user-tunable parameters (new)
-    double targetFs;        // analysis fs (Hz), was fixed ~500
+    double targetFs;        // analysis fs (Hz)
     double detectSmoothMs;  // maxDetectionSmoothing (ms)
     double gainSmoothMs;    // gainSmoothing (ms)
-    float  resonance;       // mapped to Q via resonanceToQ()
-    int    freqMode;        // 0 = old formula, 1 = log, 2 = custom
+    float  resonance;       // mapped via resonanceToQ()
+    int    freqMode;        // 0 = legacy, 1 = log, 2 = custom
     float  freqCustom[9];   // only used if freqMode == 2
 } DBB;
 
