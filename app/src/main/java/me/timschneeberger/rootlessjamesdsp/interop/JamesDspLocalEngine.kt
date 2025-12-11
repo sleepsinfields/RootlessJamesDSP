@@ -131,19 +131,34 @@ override fun setBassBoostAdvanced(
 }
 */
 //
-open fun applyDbbTuning(
+// ---- DBB tuning: raw parameters -> native DBB struct ----
+fun applyDbbTuning(
     targetFs: Float,
     detectMs: Float,
     gainMs: Float,
     resonance: Float,
     freqMode: Int
 ) {
-    // Clamp lightly on the Kotlin side for safety
+    // If the handle is gone or invalid, bail out
+    if (!JamesDspWrapper.isHandleValid(handle)) {
+        Log.e(
+            "DbbDebug",
+            "applyDbbTuning: invalid handle=$handle, skipping native calls"
+        )
+        return
+    }
+
+    // Clamp lightly on the Kotlin side (matches C limits)
     val tf = targetFs.coerceIn(100f, 2000f)
     val dm = detectMs.coerceIn(0.05f, 200f)
     val gm = gainMs.coerceIn(0.1f, 500f)
     val rs = resonance.coerceIn(0f, 0.99f)
     val fm = freqMode.coerceIn(0, 2)
+
+    Log.e(
+        "DbbDebug",
+        "applyDbbTuning: tf=$tf Hz dm=$dm ms gm=$gm ms res=$rs mode=$fm handle=$handle"
+    )
 
     JamesDspWrapper.setDbbTargetFs(handle, tf)
     JamesDspWrapper.setDbbSmoothing(handle, dm, gm)
