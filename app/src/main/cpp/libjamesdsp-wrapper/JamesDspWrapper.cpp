@@ -695,144 +695,109 @@ extern "C" JNIEXPORT jboolean JNICALL Java_me_timschneeberger_rootlessjamesdsp_i
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoostAdvanced(
-    JNIEnv *env, jobject obj,
-    jlong self,
-    jboolean enable,
-    jfloat maxGain,
-    jfloat widthNorm,
-    jint   typeInt,
-    jfloat speedNorm,
-    jfloat stabilityNorm
-)
+    JNIEnv *env, jobject obj, jlong self,
+    jboolean enable, jfloat maxGain,
+    jfloat widthNorm, jint typeInt,
+    jfloat speedNorm, jfloat stabilityNorm)
 {
     DECLARE_DSP_B
 
-    // If DBB is off, just disable and bail
-    if (!enable) {
-        BassBoostDisable(dsp);
-        return JNI_TRUE;
+    // Clamp the UI inputs into sensible ranges
+    float w   = widthNorm;
+    float spd = speedNorm;
+    float stab= stabilityNorm;
+
+    if (w   < 0.0f) w   = 0.0f;
+    if (w   > 1.0f) w   = 1.0f;
+    if (spd < 0.0f) spd = 0.0f;
+    if (spd > 1.0f) spd = 1.0f;
+    if (stab< 0.0f) stab= 0.0f;
+    if (stab> 1.0f) stab= 1.0f;
+
+    // -----------------------------
+    // 1) Map "bass type" → a macro behavior
+    // -----------------------------
+    // 0 = Sub-bass focus: slow & boomy
+    // 1 = Balanced: medium
+    // 2 = Punchy: fast & tight
+    double baseDetectMs;
+    double baseGainMs;
+    float  baseRes;
+
+    switch (typeInt)
+    {
+    default:
+    case 1: // Balanced
+        baseDetectMs = 20.0;   // analysis attack
+        baseGainMs   = 60.0;   // gain attack
+        baseRes      = 0.75f;  // close to original
+        break;
+
+    case 0: // Sub-bass
+        baseDetectMs = 60.0;
+        baseGainMs   = 120.0;
+        baseRes      = 0.90f;
+        break;
+
+    case 2: // Punchy
+        baseDetectMs = 5.0;
+        baseGainMs   = 20.0;
+        baseRes      = 0.55f;
+        break;
     }
 
-    // --- Simple clamps (no <algorithm> needed) ---
-    auto clamp01 = [](float v) -> float {
-        if (v < 0.0f) return 0.0f;
-        if (v > 1.0f) return 1.0f;
-        return v;
-    };
-    auto clampInt = [](int v, int lo, int hi) -> int {
-        if (v < lo) return lo;
-        if (v > hi) return hi;
-        return v;
-    };
+    // -----------------------------
+    // 2) Apply speed + stability
+    // -----------------------------
+    // speedNorm: 0 → slow, 1 → very fast
+    double speedScale = 0.30 + (1.70 * (1.0 - spd)); // 0.3 .. 2.0
 
-    float w  = clamp01(widthNorm);       // 0..1
-    float sp = clamp01(speedNorm);       // 0..1
-    float st = clamp01(stabilityNorm);   // 0..1
-    int mode = clampInt(typeInt, 0, 2);  // 0,1,2
+    double detectMs = baseDetectMs * speedScale;
+    double gainMs   = baseGainMs   * speedScale;
 
-    // ----------------------------------------------------------------
-    // 1) Map "Bass type" into big behavioral differences
-    // ----------------------------------------------------------------
-    //   mode 0 = Sub-bass focus: slower, heavier, deeper, narrower
-    //   mode 1 = Balanced: close to legacy
-    //   mode 2 = Punchy: faster dynamics, higher center, wider band
-    double baseTargetFs;   // analysis fs → indirectly controls how bins are spaced
-    double baseDetectMs;   // detector smoothing
-    double baseGainMs;     // gain smoothing
-    float  baseResonance;  // resonance → Q
+    // stability: 0 → a bit more twitchy, 1 → more "glued"
+    double stabScale = 0.7 + 1.8 * stab; // ~0.7 .. ~2.5
+    detectMs *= stabScale;
 
-    switch (mode) {
-        case 0: // Sub-bass
-            baseTargetFs  = 350.0;
-            baseDetectMs  = 8.0;
-            baseGainMs    = 120.0;
-            baseResonance = 0.90f;
-            break;
+    // -----------------------------
+    // 3) Map width → resonance (Q-ish)
+    // -----------------------------
+    // widthNorm: 0 = wide / gentle, 1 = narrow / resonant
+    float resonance = (float)(0.35 + 0.55 * w); // ~0.35 .. 0.90
 
-        default:
-        case 1: // Balanced (near original)
-            baseTargetFs  = 500.0;
-            baseDetectMs  = 3.0;
-            baseGainMs    = 60.0;
-            baseResonance = 0.75f;
-            break;
-
-        case 2: // Punchy
-            baseTargetFs  = 900.0;
-            baseDetectMs  = 1.0;
-            baseGainMs    = 20.0;
-            baseResonance = 0.60f;
-            break;
+    // -----------------------------
+    // 4) Target analysis Fs: keep it sane but tie a bit to type
+    // -----------------------------
+    double targetFs = 500.0; // default / legacy
+    if (typeInt == 0) {
+        // Sub-bass: a little lower analysis rate
+        targetFs = 350.0;
+    } else if (typeInt == 2) {
+        // Punchy: a bit higher analysis rate
+        targetFs = 800.0;
     }
 
-    // ----------------------------------------------------------------
-    // 2) Width slider → resonance + targetFs swing
-    //    w=0: really focused & narrow
-    //    w=1: much wider, more upper-bass
-    // ----------------------------------------------------------------
-    // resonance: 0.40 .. 0.98 (very audible)
-    const float RES_MIN = 0.40f;
-    const float RES_MAX = 0.98f;
-
-    // For sub-bass and balanced, higher width = lower resonance (wider)
-    // For punchy, invert a bit so high width can go a bit peaky if desired
-    float res;
-    if (mode == 2) {
-        // punchy: width=0 → medium-wide, width=1 → fairly narrow
-        res = RES_MIN + (RES_MAX - RES_MIN) * (0.3f + 0.7f * w);
-    } else {
-        // sub / balanced: width=0 → very narrow, width=1 → wider
-        res = RES_MAX - (RES_MAX - RES_MIN) * w;
-    }
-
-    // TargetFs: swing ±50% with width
-    // (this changes how dense / where the analysis bins sit)
-    double targetFs =
-        baseTargetFs * (0.5 + w);   // w=0 → 0.5x, w=1 → 1.5x
-
-    // ----------------------------------------------------------------
-    // 3) Speed slider → huge swing in detector & gain time constants
-    //    sp=0: VERY slow / lazy
-    //    sp=1: VERY fast / snappy
-    // ----------------------------------------------------------------
-    // We’ll allow a 10x range around the base values.
-    const double DET_MULT_MIN = 0.1;
-    const double DET_MULT_MAX = 10.0;
-    const double GAIN_MULT_MIN = 0.1;
-    const double GAIN_MULT_MAX = 10.0;
-
-    // invert sp because UI "faster" is high value
-    double invSp = 1.0 - sp;
-
-    double detMult  = DET_MULT_MIN  + (DET_MULT_MAX  - DET_MULT_MIN)  * invSp;
-    double gainMult = GAIN_MULT_MIN + (GAIN_MULT_MAX - GAIN_MULT_MIN) * invSp;
-
-    double detectMs = baseDetectMs * detMult;
-    double gainMs   = baseGainMs   * gainMult;
-
-    // ----------------------------------------------------------------
-    // 4) Stability slider → extra damping on detector only
-    //    st=0: twitchy, oversensitive
-    //    st=1: extra stable, longer averaging
-    // ----------------------------------------------------------------
-    double stabFactor = 0.5 + 1.5 * st;    // 0.5x .. 2.0x
-    detectMs *= stabFactor;
-
-    // ----------------------------------------------------------------
-    // 5) Push these into the C core (DBBParam will use them)
-    // ----------------------------------------------------------------
+    // -----------------------------
+    // 5) Push into the C DBB struct
+    // -----------------------------
     BassBoostSetTargetFs(dsp, targetFs);
     BassBoostSetSmoothing(dsp, detectMs, gainMs);
-    BassBoostSetResonance(dsp, res);
+    BassBoostSetResonance(dsp, resonance);
 
-    // For now keep using mode 0 / 1 (legacy / log-spaced)
-    // You’ll hear type differences mainly via timing + resonance.
-    int freqMode = (mode == 1) ? 0 : 1;
-    BassBoostSetFreqMode(dsp, freqMode, nullptr);
+    int freqMode = 0;
+    if (typeInt == 2) {
+        // Punchy: try log-spacing for more mid-bass focus
+        freqMode = 1;
+    }
+    BassBoostSetFreqMode(dsp, freqMode, NULL);
 
-    // Finally apply gain & enable
-    BassBoostSetParam(dsp, maxGain);
-    BassBoostEnable(dsp);
+    // Finally, call the existing param + enable/disable
+    if (enable) {
+        BassBoostSetParam(dsp, maxGain);
+        BassBoostEnable(dsp);
+    } else {
+        BassBoostDisable(dsp);
+    }
 
     return JNI_TRUE;
 }
