@@ -141,14 +141,25 @@
 <string name="key_dbb_type">pref_dbb_type</string>
 <string name="key_dbb_advanced">pref_dbb_advanced</string>
 
-<string name="dbb_enable">Dynamic Bass Boost</string>
-<string name="dbb_boost_db">Bass boost (dB)</string>
-<string name="dbb_width">Bass width (focus)</string>
-<string name="dbb_speed">Dynamics speed</string>
-<string name="dbb_stability">Tracking stability</string>
-<string name="dbb_type">Bass type</string>
-<string name="dbb_advanced_title">Advanced bass limits</string>
-<string name="dbb_advanced_summary">Min/Max frequency range and tracking mode</string>
+<string name="dbb_enable">Dynamic Bass Boost (DBB)</string>
+<string name="dbb_boost_db">DBB max gain (dB)</string>
+
+<!-- This slider is effectively your “analysis / focus frequency” knob -->
+<string name="dbb_width">Analysis center frequency (Hz)</string>
+
+<!-- This matches dbb->detectSmoothMs -->
+<string name="dbb_speed">Max detection smoothing (ms)</string>
+
+<!-- This matches dbb->gainSmoothMs -->
+<string name="dbb_stability">Gain smoothing (ms)</string>
+
+<!-- This is dbb->freqMode under the hood -->
+<string name="dbb_type">Detector band layout</string>
+
+<string name="dbb_advanced_title">DBB internal parameters</string>
+<string name="dbb_advanced_summary">
+    Target Fs, smoothing and detector layout
+</string>
 
     <string name="reverb_enable">Virtual room effect</string>
     <string name="reverb_room_type">Room type</string>
