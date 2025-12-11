@@ -137,7 +137,7 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
 
             cache.select(Constants.PREF_BASS)
             val bassEnabled = cache.get(R.string.key_bass_enable, false)
-            val bassMaxGain = cache.get(R.string.key_bass_max_gain, 5f)
+            val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
 
             cache.select(Constants.PREF_EQ)
             val eqEnabled = cache.get(R.string.key_eq_enable, false)
@@ -181,8 +181,7 @@ Log.e(
     "syncWithPreferences(engine=${System.identityHashCode(this)}): " +
         "enabled=$tubeEnabled drive=$tubeDrive"
 )
-
-applyTubeIfChanged(tubeEnabled, tubeDrive)
+// ❌ no applyTubeIfChanged() here
 //
 
             cache.select(Constants.PREF_DDC)
@@ -222,12 +221,8 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
                     )
 
                     Constants.PREF_BASS -> {
-    // Read bass / DBB prefs from the same cache used for other sections
+    // Make sure DBB keys come from the bass namespace
     cache.select(Constants.PREF_BASS)
-
-    // These two already existed in your original logic
-    val bassEnabled = cache.get(R.string.key_bass_enable, false)
-    val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6).toFloat()
 
     // NEW: DBB UI params
     val widthPct = cache.get(R.string.key_dbb_width, 50)
@@ -237,11 +232,11 @@ applyTubeIfChanged(tubeEnabled, tubeDrive)
     val typeStr: String = cache.get(R.string.key_dbb_type, "1")
     val typeInt = typeStr.toIntOrNull() ?: 1   // 0=sub, 1=balanced, 2=punchy
 
-    // Normalize sliders [0–100] → [0.0–1.0]
     val widthNorm = (widthPct.coerceIn(0, 100) / 100f)
     val speedNorm = (speedPct.coerceIn(0, 100) / 100f)
     val stabNorm  = (stabPct.coerceIn(0, 100) / 100f)
 
+    // 👇 reuse the earlier bassEnabled / bassMaxGain
     setBassBoostAdvanced(
         enable        = bassEnabled,
         maxGain       = bassMaxGain,
