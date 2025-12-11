@@ -691,7 +691,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setBassBoost(JN
 //
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbTargetFs(
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbTargetFs(
     JNIEnv *env,
     jobject /*obj*/,
     jlong self,
@@ -713,7 +713,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbTargetFs
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbSmoothing(
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbSmoothing(
     JNIEnv *env,
     jobject /*obj*/,
     jlong self,
@@ -740,7 +740,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbSmoothin
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbResonance(
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbResonance(
     JNIEnv *env,
     jobject /*obj*/,
     jlong self,
@@ -762,7 +762,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbResonanc
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbFreqMode(
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbFreqMode(
     JNIEnv *env,
     jobject /*obj*/,
     jlong self,
@@ -779,7 +779,7 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_1setDbbFreqMode
         return JNI_FALSE;
     }
 
-    // For now, no custom bands; pass NULL
+    // No custom band array yet → pass nullptr
     BassBoostSetFreqMode(jdsp, static_cast<int>(mode), nullptr);
     return JNI_TRUE;
 }
