@@ -221,22 +221,25 @@ Log.e(
                     )
 
                     Constants.PREF_BASS -> {
-    // Make sure DBB keys come from the bass namespace
+    // Use BASS namespace
     cache.select(Constants.PREF_BASS)
 
-    // NEW: DBB UI params
-    val widthPct = cache.get(R.string.key_dbb_width, 50)
-    val speedPct = cache.get(R.string.key_dbb_speed, 50)
-    val stabPct  = cache.get(R.string.key_dbb_stability, 50)
+    val bassEnabled = cache.get(R.string.key_bass_enable, false)
+    val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
+
+    // 🔧 DBB UI params — read as Float, like other seekbars
+    val widthPctF = cache.get(R.string.key_dbb_width, 50f)
+    val speedPctF = cache.get(R.string.key_dbb_speed, 50f)
+    val stabPctF  = cache.get(R.string.key_dbb_stability, 50f)
 
     val typeStr: String = cache.get(R.string.key_dbb_type, "1")
     val typeInt = typeStr.toIntOrNull() ?: 1   // 0=sub, 1=balanced, 2=punchy
 
-    val widthNorm = (widthPct.coerceIn(0, 100) / 100f)
-    val speedNorm = (speedPct.coerceIn(0, 100) / 100f)
-    val stabNorm  = (stabPct.coerceIn(0, 100) / 100f)
+    // Normalize [0–100] → [0.0–1.0]
+    val widthNorm = widthPctF.coerceIn(0f, 100f) / 100f
+    val speedNorm = speedPctF.coerceIn(0f, 100f) / 100f
+    val stabNorm  = stabPctF.coerceIn(0f, 100f) / 100f
 
-    // 👇 reuse the earlier bassEnabled / bassMaxGain
     setBassBoostAdvanced(
         enable        = bassEnabled,
         maxGain       = bassMaxGain,
