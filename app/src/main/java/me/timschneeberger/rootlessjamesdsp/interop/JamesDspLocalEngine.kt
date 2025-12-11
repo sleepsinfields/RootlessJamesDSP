@@ -110,19 +110,22 @@ class JamesDspLocalEngine(
 override fun setBassBoostAdvanced(
     enable: Boolean,
     maxGain: Float,
-    widthNorm: Float,
-    typeInt: Int,
-    speedNorm: Float,
-    stabilityNorm: Float
+    targetFsHz: Double,
+    detectMs: Double,
+    gainMs: Double,
+    resonance: Double,
+    freqMode: Int
 ): Boolean {
+    // Forward to JNI with minimal clamping; DSP will clamp internally too
     return JamesDspWrapper.setBassBoostAdvanced(
         handle,
         enable,
         maxGain,
-        widthNorm,
-        typeInt,
-        speedNorm,
-        stabilityNorm
+        targetFsHz.toFloat(),
+        detectMs.toFloat(),
+        gainMs.toFloat(),
+        resonance.toFloat(),
+        freqMode
     )
 }
 //
