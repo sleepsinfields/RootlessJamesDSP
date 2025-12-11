@@ -107,6 +107,7 @@ class JamesDspLocalEngine(
 }
 
 // 
+/*
 override fun setBassBoostAdvanced(
     enable: Boolean,
     maxGain: Float,
@@ -128,6 +129,7 @@ override fun setBassBoostAdvanced(
         freqMode
     )
 }
+*/
 //
 open fun applyDbbTuning(
     targetFs: Float,
