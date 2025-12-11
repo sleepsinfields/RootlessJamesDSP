@@ -295,7 +295,7 @@ static inline void ProcessStateVariable2ndOrderStereo(StateVariable2ndOrder *svf
 		break;
 	}
 }
-
+//
 static void DBBParam(DBB *dbb, double fs, float maxG)
 {
     if (maxG < 0.0f)
@@ -327,7 +327,7 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     switch (dbb->freqMode)
     {
     default:
-    case 0: // legacy-ish
+    case 0: // legacy-ish (similar to original)
         for (int i = 0; i < 9; i++)
             dbb->freq[i] = (float)(i * (trueTargetFs / 16.0));
         break;
@@ -374,6 +374,8 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     integerDelayLine_setDelay(&dbb->dL[0], lagSamples);
     integerDelayLine_setDelay(&dbb->dL[1], lagSamples);
 }
+//
+
 static void DBBProcess(DBB *dbb, float *x1, float *x2, float *y1, float *y2, size_t n)
 {
 	int pos = dbb->downsamplerPos;
@@ -498,59 +500,33 @@ void BassBoostDisable(JamesDSPLib *jdsp)
 {
 	jdsp->bassBoostEnabled = 0;
 }
+
 void BassBoostConstructor(JamesDSPLib *jdsp)
 {
     InitStateVariable2ndOrder(&jdsp->dbb.svf[0]);
     InitStateVariable2ndOrder(&jdsp->dbb.svf[1]);
 
-    // Defaults that match current behavior
+    // Defaults that match original behavior
     jdsp->dbb.targetFs       = 500.0;  // was hard-coded targetFS
     jdsp->dbb.detectSmoothMs = 0.5;    // was maxDetectionSmoothing = 0.5 ms
     jdsp->dbb.gainSmoothMs   = 2.0;    // was gainSmoothing = 2.0 ms
     jdsp->dbb.resonance      = 0.75f;  // was resonanceToQ(0.75)
-    jdsp->dbb.freqMode       = 0;      // 0 = legacy freq[i] behaviour
+    jdsp->dbb.freqMode       = 0;      // 0 = legacy freq layout
 
     for (int i = 0; i < 9; ++i)
         jdsp->dbb.freqCustom[i] = 0.0f;
 }
+
 // BassBoostSetParam(context, dB [0 - 15])
 void BassBoostSetParam(JamesDSPLib *jdsp, float maxG)
 {
-	DBBParam(&jdsp->dbb, jdsp->fs, maxG);
+    DBBParam(&jdsp->dbb, jdsp->fs, maxG);
 }
-
-/* // Advanced DBB control
-void BassBoostSetAdvanced(
-    JamesDSPLib *jdsp,
-    float  maxG,
-    double targetFs,
-    double detectSmoothMs,
-    double gainSmoothMs,
-    float  resonance,
-    int    freqMode,
-    const float *freqCustom // optional, used if freqMode == 2
-)
-{
-    DBB *dbb = &jdsp->dbb;
-
-    dbb->targetFs       = targetFs;
-    dbb->detectSmoothMs = detectSmoothMs;
-    dbb->gainSmoothMs   = gainSmoothMs;
-    dbb->resonance      = resonance;
-    dbb->freqMode       = freqMode;
-
-    if (freqMode == 2 && freqCustom != NULL) {
-        for (int i = 0; i < 9; ++i)
-            dbb->freqCustom[i] = freqCustom[i];
-    }
-
-    DBBParam(dbb, jdsp->fs, maxG);
-}
-*/
 
 void BassBoostProcess(JamesDSPLib *jdsp, size_t n)
 {
-	DBBProcess(&jdsp->dbb, jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
+    DBBProcess(&jdsp->dbb, jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
+               jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
 }
 
 void BassBoostSetTargetFs(JamesDSPLib *jdsp, double targetFs)
@@ -577,82 +553,6 @@ void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCust
             jdsp->dbb.freqCustom[i] = freqCustom[i];
     }
 }
-void BassBoostSetAdvanced(
-    JamesDSPLib *jdsp,
-    float maxG,
-    float widthNorm,
-    int typeInt,
-    float speedNorm,
-    float stabilityNorm
-)
-{
-    DBB *dbb = &jdsp->dbb;
 
-    // Clamp inputs to [0, 1]
-    if (widthNorm < 0.0f)      widthNorm = 0.0f;
-    else if (widthNorm > 1.0f) widthNorm = 1.0f;
+// set bassboostadvanced not used with raw parmts
 
-    if (speedNorm < 0.0f)      speedNorm = 0.0f;
-    else if (speedNorm > 1.0f) speedNorm = 1.0f;
-
-    if (stabilityNorm < 0.0f)      stabilityNorm = 0.0f;
-    else if (stabilityNorm > 1.0f) stabilityNorm = 1.0f;
-
-    // --- Base template per "type" (sub-bass / balanced / punchy) ---
-    double baseTargetFs;
-    double baseDetectMs;
-    double baseGainMs;
-    float  baseRes;
-
-    switch (typeInt) {
-    case 0: // Sub-bass focus
-        baseTargetFs = 350.0;
-        baseDetectMs = 25.0;
-        baseGainMs   = 80.0;
-        baseRes      = 0.85f;
-        dbb->freqMode = 1; // log-ish
-        break;
-
-    case 2: // Punchy
-        baseTargetFs = 900.0;
-        baseDetectMs = 6.0;
-        baseGainMs   = 20.0;
-        baseRes      = 0.50f;
-        dbb->freqMode = 0;
-        break;
-
-    default: // Balanced
-        baseTargetFs = 500.0;
-        baseDetectMs = 12.0;
-        baseGainMs   = 40.0;
-        baseRes      = 0.70f;
-        dbb->freqMode = 0;
-        break;
-    }
-
-    // --- Speed & stability → smoothing times ---
-    // speedNorm: 0 = slow, 1 = very fast
-    double speedScale = 0.3 + (1.0 - (double)speedNorm) * 1.7; // 1 → 0.3x, 0 → 2.0x
-    // stabilityNorm: 0 = more "nervous", 1 = very stable (more smoothing)
-    double stabScale  = 0.5 + (double)stabilityNorm * 1.5;     // 0 → 0.5x, 1 → 2.0x
-
-    double detectMs = baseDetectMs * speedScale * stabScale;
-    double gainMs   = baseGainMs   * speedScale * stabScale;
-
-    // --- Width → resonance / Q ---
-    // widthNorm: 0 = very broad, 1 = very narrow/excited
-    double widthOffset = ((double)widthNorm - 0.5) * 0.4; // ±0.2
-    float res = baseRes + (float)widthOffset;
-
-    if (res < 0.20f) res = 0.20f;
-    if (res > 0.95f) res = 0.95f;
-
-    // --- Commit into DBB struct ---
-    dbb->targetFs       = baseTargetFs;
-    dbb->detectSmoothMs = detectMs;
-    dbb->gainSmoothMs   = gainMs;
-    dbb->resonance      = res;
-
-    // Finally re-run param computation with incoming maxG
-    DBBParam(dbb, jdsp->fs, maxG);
-}
