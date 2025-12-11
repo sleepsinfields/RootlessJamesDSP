@@ -134,33 +134,24 @@ private fun applyTubeIfChanged(enabled: Boolean, drive: Double) {
                 R.string.key_compander_response,
                 "95.0;200.0;400.0;800.0;1600.0;3400.0;7500.0;0;0;0;0;0;0;0"
             )
+//
 
-            cache.select(Constants.PREF_BASS)
-val bassEnabled = cache.get(R.string.key_bass_enable, false)
-val bassMaxGain = cache.get(R.string.key_bass_max_gain, 6f)
+            
+cache.select(Constants.PREF_BASS)
 
-// NEW: DBB controls read as raw-ish units from the sliders
+// New DBB data model (raw units)
+val dbbEnabled   = cache.get(R.string.key_dbb_enable, false)
+val dbbMaxGain   = cache.get(R.string.key_dbb_boost_db, 6f)
 
-// 2a) Target Fs (Hz) – stored as an Int in the slider
-val dbbTargetFsInt = cache.get(R.string.key_dbb_width, 432)   // 100..2000 Hz
-val targetFs = dbbTargetFsInt.toDouble()
+val dbbTargetFs  = cache.get(R.string.key_dbb_target_fs, 432f)
+val dbbDetectMs  = cache.get(R.string.key_dbb_detect_ms, 0.618f)
+val dbbGainMs    = cache.get(R.string.key_dbb_gain_ms, 12.566f)
+val dbbResonance = cache.get(R.string.key_dbb_resonance, 0.618f)
 
-// 2b) Detection smoothing (ms) – 1..200
-val detectMsInt = cache.get(R.string.key_dbb_speed, 1)
-val detectMs    = detectMsInt.toDouble()
+val dbbFreqModeStr: String = cache.get(R.string.key_dbb_freq_mode, "0")
+val dbbFreqMode            = dbbFreqModeStr.toIntOrNull() ?: 0
 
-// 2c) Gain smoothing (ms) – 1..500
-val gainMsInt = cache.get(R.string.key_dbb_gain_ms, 13)
-val gainMs    = gainMsInt.toDouble()
-
-// 2d) Resonance stored as 0–99 ⇒ 0.00–0.99
-val resInt    = cache.get(R.string.key_dbb_resonance, 62)
-val resonance = (resInt / 100.0).coerceIn(0.0, 0.99)
-
-// 2e) Frequency mode (enum 0/1/2)
-val dbbFreqModeStr: String = cache.get(R.string.key_dbb_type, "0")
-val dbbFreqMode = dbbFreqModeStr.toIntOrNull() ?: 0
-
+//
             cache.select(Constants.PREF_EQ)
             val eqEnabled = cache.get(R.string.key_eq_enable, false)
             val eqFilterType = cache.get(R.string.key_eq_filter_type, "0").toInt()
