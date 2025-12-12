@@ -136,8 +136,7 @@ void integerDelayLineDoubleP_clear(integerDelayLine *delayLine)
 }
 void integerDelayLineInit(integerDelayLine *delayLine, unsigned int allocateLen)
 {
-	if (allocateLen > 1024)
-		allocateLen = 1024;
+	if (allocateLen > DBB_DELAYLINE_MAX) allocateLen = DBB_DELAYLINE_MAX;
 	delayLine->allocateLen = allocateLen;
 	integerDelayLineDoubleP_clear(delayLine);
 	delayLine->inPoint = 0;
@@ -377,10 +376,16 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     integerDelayLineInit(&dbb->dL[1], 1024);
 
     int lagSamples = dbb->downsampler.factor +
-                     (int)(gainSmoothing * (dbb->fs / 1000.0));
-    integerDelayLine_setDelay(&dbb->dL[0], lagSamples);
-    integerDelayLine_setDelay(&dbb->dL[1], lagSamples);
-}
+                 (int)(gainSmoothing * (dbb->fs / 1000.0));
+
+/* ---- CLAMP HERE ---- */
+int maxLag = (int)dbb->dL[0].allocateLen - 1;
+if (lagSamples > maxLag) lagSamples = maxLag;
+if (lagSamples < 0)      lagSamples = 0;
+/* -------------------- */
+
+integerDelayLine_setDelay(&dbb->dL[0], lagSamples);
+integerDelayLine_setDelay(&dbb->dL[1], lagSamples);
 //
 
 static void DBBProcess(DBB *dbb, float *x1, float *x2, float *y1, float *y2, size_t n)
