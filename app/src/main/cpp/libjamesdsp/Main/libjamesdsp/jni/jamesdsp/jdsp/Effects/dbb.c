@@ -4,6 +4,13 @@
 #include <math.h>
 #include <float.h>
 #include "../jdsp_header.h"
+
+// Maximum delay line length for DBB in samples
+// 8192 / 48kHz ≈ 170 ms, 8192 / 192kHz ≈ 42.7 ms
+// This is a safety cap on internal delay; we clamp parameters to fit.
+#define DBB_MAX_DELAY_SAMPLES 8192
+
+
 static void fht16(float A[16])
 {
 	float alpha, beta, beta2, alpha1, alpha2, y1, y2, y3;
