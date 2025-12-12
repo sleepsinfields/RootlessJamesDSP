@@ -307,43 +307,43 @@ static inline void ProcessStateVariable2ndOrderStereo(StateVariable2ndOrder *svf
 //
 static void DBBParam(DBB *dbb, double fs, float maxG)
 {
-    if (maxG < 0.0f)
-        maxG = 0.0f;
+    if (maxG < 0.0f) maxG = 0.0f;
 
     dbb->fs      = fs;
     dbb->maxGain = maxG;
 
     // --- validate / clamp user parameters ---
     double targetFS = dbb->targetFs;
-if (targetFS < 0.001) targetFS = 0.001;   // allow "1 Hz" UI without divide-by-zero weirdness
+    if (targetFS < 0.001)  targetFS = 0.001;   // UI can type "1 Hz" without div-by-zero
     if (targetFS > 2000.0) targetFS = 2000.0;
 
     double maxDetectionSmoothing = dbb->detectSmoothMs;
-    if (maxDetectionSmoothing < 0.05) maxDetectionSmoothing = 0.05;
+    if (maxDetectionSmoothing < 0.05)  maxDetectionSmoothing = 0.05;
     if (maxDetectionSmoothing > 200.0) maxDetectionSmoothing = 200.0;
 
     double gainSmoothing = dbb->gainSmoothMs;
-    if (gainSmoothing < 0.1) gainSmoothing = 0.1;
+    if (gainSmoothing < 0.1)   gainSmoothing = 0.1;
     if (gainSmoothing > 500.0) gainSmoothing = 500.0;
 
-int factor = (int)llround(fs / targetFS);
-if (factor < 1) factor = 1;
+    // 1) analysis downsample factor (HARD safety vs originalBuf[960])
+    int factor = (int)llround(fs / targetFS);
+    if (factor < 1) factor = 1;
 
-int maxFactor = (int)(sizeof(dbb->originalBuf) / sizeof(dbb->originalBuf[0]));
-if (factor > maxFactor) factor = maxFactor;
+    const int maxFactor = (int)(sizeof(dbb->originalBuf) / sizeof(dbb->originalBuf[0])); // 960
+    if (factor > maxFactor) factor = maxFactor;
 
-// ✅ reset/clamp pos for the NEW factor
-if (dbb->downsamplerPos >= factor)
-    dbb->downsamplerPos = 0;
+    // reset/clamp pos for the NEW factor
+    if (dbb->downsamplerPos >= factor)
+        dbb->downsamplerPos = 0;
 
-oversample_makeSmp(&dbb->downsampler, factor);
-double trueTargetFs = fs / factor;
+    oversample_makeSmp(&dbb->downsampler, factor);
+    const double trueTargetFs = fs / (double)factor;
 
     // 2) analysis bin centers
     switch (dbb->freqMode)
     {
     default:
-    case 0: // legacy-ish (similar to original)
+    case 0: // legacy-ish
         for (int i = 0; i < 9; i++)
             dbb->freq[i] = (float)(i * (trueTargetFs / 16.0));
         break;
@@ -353,6 +353,7 @@ double trueTargetFs = fs / factor;
         double fMin = 20.0;
         double fMax = trueTargetFs * 0.5;
         if (fMax < fMin) fMax = fMin * 2.0;
+
         double ratio = pow(fMax / fMin, 1.0 / 8.0);
         double f = fMin;
         for (int i = 0; i < 9; i++) {
@@ -381,27 +382,25 @@ double trueTargetFs = fs / factor;
         (float)(1.0 - exp(-1.0 / (gainSmoothing / 1000.0 * dbb->fs)));
     dbb->minusgainSmoothingFactor = 1.0f - dbb->gainSmoothingFactor;
 
-    // 4) delay lines, look-ahead tied to gain smoothing
-    int lagSamples = dbb->downsampler.factor + (int)llround(gainSmoothing * (dbb->fs / 1000.0));
-if (lagSamples < 0) lagSamples = 0;
+    // 4) delay lines (bullet-proof vs fs, supports 20ms @ 384k with DBB_DELAYLINE_MAX=8192)
+    int lagSamples = dbb->downsampler.factor +
+                     (int)llround(gainSmoothing * (dbb->fs / 1000.0));
 
-int needLen = lagSamples + 1;                 // must be > lag
-if (needLen < 2) needLen = 2;
-if (needLen > (int)DBB_DELAYLINE_MAX) needLen = (int)DBB_DELAYLINE_MAX;
+    if (lagSamples < 0) lagSamples = 0;
 
-integerDelayLineInit(&dbb->dL[0], (unsigned int)needLen);
-integerDelayLineInit(&dbb->dL[1], (unsigned int)needLen);
+    // clamp lag to what the delay line can represent
+    const int maxLag = (int)DBB_DELAYLINE_MAX - 1;
+    if (lagSamples > maxLag) lagSamples = maxLag;
 
-integerDelayLine_setDelay(&dbb->dL[0], (unsigned int)lagSamples);
-integerDelayLine_setDelay(&dbb->dL[1], (unsigned int)lagSamples);
+    // allocate exactly what's needed (must be > lag)
+    unsigned int needLen = (unsigned int)(lagSamples + 1);
+    if (needLen < 2) needLen = 2;
 
-int maxLag = (int)dbb->dL[0].allocateLen - 1;
-if (lagSamples > maxLag) lagSamples = maxLag;
-if (lagSamples < 0)      lagSamples = 0;
+    integerDelayLineInit(&dbb->dL[0], needLen);
+    integerDelayLineInit(&dbb->dL[1], needLen);
 
-unsigned int uLag = (unsigned int)lagSamples;
-integerDelayLine_setDelay(&dbb->dL[0], uLag);
-integerDelayLine_setDelay(&dbb->dL[1], uLag);
+    integerDelayLine_setDelay(&dbb->dL[0], (unsigned int)lagSamples);
+    integerDelayLine_setDelay(&dbb->dL[1], (unsigned int)lagSamples);
 }
 //
 
