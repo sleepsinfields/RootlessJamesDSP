@@ -26,7 +26,7 @@
             android:key="@string/key_dbb_target_fs"
             android:title="@string/dbb_target_fs"
             android:defaultValue="432"
-            app:minValue="100"
+            app:minValue="40"
             app:maxValue="2000"
             app:precision="0"
             app:unit=" Hz"
