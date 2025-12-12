@@ -139,29 +139,26 @@ fun applyDbbTuning(
     resonance: Float,
     freqMode: Int
 ) {
-    val handle = handle ?: run {
-        Log.e("DbbDebug", "applyDbbTuning: invalid handle=$handle, skipping")
-        return
-    }
-
-    val tf = targetFs.coerceIn(100f, 2000f)
-    val dm = detectMs.coerceIn(0.05f, 200f)
-    val gm = gainMs.coerceIn(0.1f, 500f)
-    val rs = resonance.coerceIn(0f, 0.99f)
-    val fm = freqMode.coerceIn(0, 2)
+    val safeTargetFs = targetFs.coerceIn(DBB_MIN_FS_HZ, DBB_MAX_FS_HZ)
+    val safeDetectMs = detectMs.coerceIn(DBB_MIN_DETECT_MS, DBB_MAX_DETECT_MS)
+    val safeGainMs   = gainMs.coerceIn(DBB_MIN_GAIN_MS, DBB_MAX_GAIN_MS)
+    val safeRes      = resonance.coerceIn(DBB_MIN_RESONANCE, DBB_MAX_RESONANCE)
+    val safeFreqMode = freqMode.coerceIn(DBB_MIN_FREQ_MODE, DBB_MAX_FREQ_MODE)
 
     try {
         Log.e(
             "DbbDebug",
-            "applyDbbTuning: tf=$tf Hz dm=$dm ms gm=$gm ms res=$rs mode=$fm handle=$handle"
+            "applyDbbTuning (clamped): tf=$safeTargetFs Hz " +
+                "dm=$safeDetectMs ms gm=$safeGainMs ms " +
+                "res=$safeRes mode=$safeFreqMode handle=$handle"
         )
 
-        JamesDspWrapper.setDbbTargetFs(handle, tf)
-        JamesDspWrapper.setDbbSmoothing(handle, dm, gm)
-        JamesDspWrapper.setDbbResonance(handle, rs)
-        JamesDspWrapper.setDbbFreqMode(handle, fm)
-    } catch (e: UnsatisfiedLinkError) {
-        Log.e("DbbDebug", "DBB JNI functions not linked correctly yet", e)
+        JamesDspWrapper.setDbbTargetFs(handle, safeTargetFs)
+        JamesDspWrapper.setDbbSmoothing(handle, safeDetectMs, safeGainMs)
+        JamesDspWrapper.setDbbResonance(handle, safeRes)
+        JamesDspWrapper.setDbbFreqMode(handle, safeFreqMode)
+    } catch (t: Throwable) {
+        Log.e("DbbDebug", "DBB JNI failed", t)
     }
 }
 //
@@ -428,5 +425,22 @@ override fun setStereoArbEqFlagsInternal(
         private const val PREF_GEQ_NODES_MASTER = "geq_nodes_master"
         private const val PREF_GEQ_NODES_LEFT   = "geq_nodes_left"
         private const val PREF_GEQ_NODES_RIGHT  = "geq_nodes_right"
+//
+// Pick ranges that are definitely safe for the C engine.
+private const val DBB_MIN_FS_HZ      = 40f
+private const val DBB_MAX_FS_HZ      = 4000f
+
+private const val DBB_MIN_DETECT_MS  = 0.1f
+private const val DBB_MAX_DETECT_MS  = 500f   // smoothing only, doesn't touch delay size
+
+private const val DBB_MIN_GAIN_MS    = 0.5f
+private const val DBB_MAX_GAIN_MS    = 20f    // << critical: keeps delay <= ~1024 samples
+
+private const val DBB_MIN_RESONANCE  = 0.05f
+private const val DBB_MAX_RESONANCE  = 4.0f
+
+private const val DBB_MIN_FREQ_MODE  = 0
+private const val DBB_MAX_FREQ_MODE  = 15    // 16-bin FFT in dbb.c
+//
     }
 }
