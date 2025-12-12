@@ -9,9 +9,10 @@
 // 8192 / 48kHz ≈ 170 ms, 8192 / 192kHz ≈ 42.7 ms
 // This is a safety cap on internal delay; we clamp parameters to fit.
 
-//these two must match and match in header.h
+// these two must match and match in jdsp_header.h
 #define DBB_MAX_DELAY_SAMPLES 8192
 #define DBB_DELAYLINE_MAX 8192
+//
 
 static void fht16(float A[16])
 {
