@@ -9,7 +9,7 @@
 // 8192 / 48kHz ≈ 170 ms, 8192 / 192kHz ≈ 42.7 ms
 // This is a safety cap on internal delay; we clamp parameters to fit.
 #define DBB_MAX_DELAY_SAMPLES 8192
-
+#define DBB_DELAYLINE_MAX 8192
 
 static void fht16(float A[16])
 {
@@ -312,7 +312,7 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
 
     // --- validate / clamp user parameters ---
     double targetFS = dbb->targetFs;
-    if (targetFS < 100.0)  targetFS = 100.0;
+if (targetFS < 0.001) targetFS = 0.001;   // allow "1 Hz" UI without divide-by-zero weirdness
     if (targetFS > 2000.0) targetFS = 2000.0;
 
     double maxDetectionSmoothing = dbb->detectSmoothMs;
@@ -323,11 +323,18 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     if (gainSmoothing < 0.1) gainSmoothing = 0.1;
     if (gainSmoothing > 500.0) gainSmoothing = 500.0;
 
-    // 1) analysis downsample factor
-    int factor = (int)round(fs / targetFS);
-    if (factor < 1) factor = 1;
-    oversample_makeSmp(&dbb->downsampler, factor);
-    double trueTargetFs = fs / factor;
+int factor = (int)llround(fs / targetFS);
+if (factor < 1) factor = 1;
+
+int maxFactor = (int)(sizeof(dbb->originalBuf) / sizeof(dbb->originalBuf[0]));
+if (factor > maxFactor) factor = maxFactor;
+
+// ✅ reset/clamp pos for the NEW factor
+if (dbb->downsamplerPos >= factor)
+    dbb->downsamplerPos = 0;
+
+oversample_makeSmp(&dbb->downsampler, factor);
+double trueTargetFs = fs / factor;
 
     // 2) analysis bin centers
     switch (dbb->freqMode)
@@ -372,11 +379,18 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     dbb->minusgainSmoothingFactor = 1.0f - dbb->gainSmoothingFactor;
 
     // 4) delay lines, look-ahead tied to gain smoothing
-    integerDelayLineInit(&dbb->dL[0], 1024);
-    integerDelayLineInit(&dbb->dL[1], 1024);
+    int lagSamples = dbb->downsampler.factor + (int)llround(gainSmoothing * (dbb->fs / 1000.0));
+if (lagSamples < 0) lagSamples = 0;
 
-    int lagSamples = dbb->downsampler.factor +
-                 (int)lround(gainSmoothing * (dbb->fs / 1000.0));
+int needLen = lagSamples + 1;                 // must be > lag
+if (needLen < 2) needLen = 2;
+if (needLen > (int)DBB_DELAYLINE_MAX) needLen = (int)DBB_DELAYLINE_MAX;
+
+integerDelayLineInit(&dbb->dL[0], (unsigned int)needLen);
+integerDelayLineInit(&dbb->dL[1], (unsigned int)needLen);
+
+integerDelayLine_setDelay(&dbb->dL[0], (unsigned int)lagSamples);
+integerDelayLine_setDelay(&dbb->dL[1], (unsigned int)lagSamples);
 
 int maxLag = (int)dbb->dL[0].allocateLen - 1;
 if (lagSamples > maxLag) lagSamples = maxLag;
