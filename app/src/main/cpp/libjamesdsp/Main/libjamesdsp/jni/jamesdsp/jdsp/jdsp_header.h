@@ -156,13 +156,13 @@ typedef struct
     int   coreTriodesOn; // <--- NEW: 0/1: triode core on allpass or not
 } VacuumTube;
 
-typedef struct
-{
- float inputs[DBB_DELAYLINE_MAX];
-	int inPoint;
-	int outPoint;
-	int allocateLen;
+typedef struct {
+    float inputs[DBB_DELAYLINE_MAX];
+    int inPoint;
+    int outPoint;
+    unsigned int allocateLen;
 } integerDelayLine;
+
 typedef struct
 {
 	int filterType;
