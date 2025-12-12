@@ -259,7 +259,9 @@ static inline void ProcessStateVariable2ndOrderStereo(StateVariable2ndOrder *svf
 	const float APL = x1 - svf0->precomputeCoeff4 * BPL;
 	svf0->z1_A = svf0->gCoeff * HPL + BPL;
 	svf0->z2_A = svf0->gCoeff * BPL + LPL;
-	const float HPR = (x2 - svf0->precomputeCoeff1 * svf1->z1_A - svf1->z2_A) * svf0->precomputeCoeff2;
+//
+const float HPR = (x2 - svf1->precomputeCoeff1 * svf1->z1_A - svf1->z2_A) * svf1->precomputeCoeff2;
+//
 	const float BPR = HPR * svf0->gCoeff + svf1->z1_A;
 	const float LPR = BPR * svf0->gCoeff + svf1->z2_A;
 	const float UBPR = svf0->precomputeCoeff3 * BPR;
