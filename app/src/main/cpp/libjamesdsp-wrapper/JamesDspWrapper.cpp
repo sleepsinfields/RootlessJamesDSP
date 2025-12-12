@@ -741,7 +741,8 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbFreqMode(
     jint mode
 ) {
     DECLARE_DSP_B
-    BassBoostSetFreqMode(dsp, static_cast<int>(mode), nullptr);
+    LOGE("DBB JNI: setDbbFreqMode(%d) – TEMP NO-OP", (int)mode);
+    // TODO: fix BassBoostSetFreqMode signature, currently disabled
     return JNI_TRUE;
 }
 //
