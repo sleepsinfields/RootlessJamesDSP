@@ -202,6 +202,9 @@ typedef struct
     float  resonance;       // mapped via resonanceToQ()
     int    freqMode;        // 0 = legacy, 1 = log, 2 = custom
     float  freqCustom[9];   // only used if freqMode == 2
+//
+    volatile int paramDirty;   // ✅ NEW: request DBBParam() recompute on audio thread
+//
 } DBB;
 
 //   sf_reverb_state_st rv;
@@ -636,6 +639,7 @@ extern void CompressorProcess(JamesDSPLib *jdsp, size_t n);
 extern void BassBoostEnable(JamesDSPLib *jdsp);
 extern void BassBoostDisable(JamesDSPLib *jdsp);
 extern void BassBoostConstructor(JamesDSPLib *jdsp);
+
 extern void BassBoostSetParam(JamesDSPLib *jdsp, float maxG);
 extern void BassBoostProcess(JamesDSPLib *jdsp, size_t n);
 
