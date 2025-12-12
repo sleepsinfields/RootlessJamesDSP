@@ -376,16 +376,15 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     integerDelayLineInit(&dbb->dL[1], 1024);
 
     int lagSamples = dbb->downsampler.factor +
-                 (int)(gainSmoothing * (dbb->fs / 1000.0));
+                 (int)lround(gainSmoothing * (dbb->fs / 1000.0));
 
-/* ---- CLAMP HERE ---- */
 int maxLag = (int)dbb->dL[0].allocateLen - 1;
 if (lagSamples > maxLag) lagSamples = maxLag;
 if (lagSamples < 0)      lagSamples = 0;
-/* -------------------- */
 
-integerDelayLine_setDelay(&dbb->dL[0], lagSamples);
-integerDelayLine_setDelay(&dbb->dL[1], lagSamples);
+unsigned int uLag = (unsigned int)lagSamples;
+integerDelayLine_setDelay(&dbb->dL[0], uLag);
+integerDelayLine_setDelay(&dbb->dL[1], uLag);
 }
 //
 
