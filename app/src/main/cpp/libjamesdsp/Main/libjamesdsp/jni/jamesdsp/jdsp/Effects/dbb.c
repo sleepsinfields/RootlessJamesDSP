@@ -554,43 +554,58 @@ void BassBoostConstructor(JamesDSPLib *jdsp)
 
     for (int i = 0; i < 9; ++i)
         jdsp->dbb.freqCustom[i] = 0.0f;
+//
+    jdsp->dbb.paramDirty = 1; // recompute params on first process
 }
-
+// brac
 // BassBoostSetParam(context, dB [0 - 15])
 void BassBoostSetParam(JamesDSPLib *jdsp, float maxG)
 {
-    DBBParam(&jdsp->dbb, jdsp->fs, maxG);
-}
-
+  // Store only. Apply on audio thread in BassBoostProcess().
+      jdsp->dbb.maxGain = maxG;
+      jdsp->dbb.paramDirty = 1;
+ }
+//
 void BassBoostProcess(JamesDSPLib *jdsp, size_t n)
 {
+    if (jdsp->dbb.paramDirty) {
+        DBBParam(&jdsp->dbb, jdsp->fs, jdsp->dbb.maxGain);
+        jdsp->dbb.paramDirty = 0;
+    }
     DBBProcess(&jdsp->dbb, jdsp->tmpBuffer[0], jdsp->tmpBuffer[1],
                jdsp->tmpBuffer[0], jdsp->tmpBuffer[1], n);
 }
+//
 
-void BassBoostSetTargetFs(JamesDSPLib *jdsp, double targetFs)
-{
-    jdsp->dbb.targetFs = targetFs;
-}
+ void BassBoostSetTargetFs(JamesDSPLib *jdsp, double targetFs)
+ {
+     jdsp->dbb.targetFs = targetFs;
+     jdsp->dbb.paramDirty = 1;
+ }
 
-void BassBoostSetSmoothing(JamesDSPLib *jdsp, double detectMs, double gainMs)
-{
-    jdsp->dbb.detectSmoothMs = detectMs;
-    jdsp->dbb.gainSmoothMs   = gainMs;
-}
+ void BassBoostSetSmoothing(JamesDSPLib *jdsp, double detectMs, double gainMs)
+ {
+     jdsp->dbb.detectSmoothMs = detectMs;
+     jdsp->dbb.gainSmoothMs   = gainMs;
+     jdsp->dbb.paramDirty = 1;
+ }
 
-void BassBoostSetResonance(JamesDSPLib *jdsp, float resonance)
-{
-    jdsp->dbb.resonance = resonance;
-}
+ void BassBoostSetResonance(JamesDSPLib *jdsp, float resonance)
+ {
+     jdsp->dbb.resonance = resonance;
+     jdsp->dbb.paramDirty = 1;
+ }
 
-void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCustom)
-{
-    jdsp->dbb.freqMode = freqMode;
-    if (freqMode == 2 && freqCustom != NULL) {
-        for (int i = 0; i < 9; ++i)
-            jdsp->dbb.freqCustom[i] = freqCustom[i];
-    }
+ void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCustom)
+ {
+     jdsp->dbb.freqMode = freqMode;
+     if (freqMode == 2 && freqCustom != NULL) {
+         for (int i = 0; i < 9; ++i)
+             jdsp->dbb.freqCustom[i] = freqCustom[i];
+     }
+    jdsp->dbb.paramDirty = 1;
+ }
+
 }
 
 // set bassboostadvanced not used with raw parmts
