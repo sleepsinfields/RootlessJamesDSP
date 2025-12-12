@@ -49,7 +49,10 @@ typedef struct
 // number of points of pre and post padding used to set initial conditions
 #define PREPAD (200) // Max pad
 #define POSPAD (200) // Max pad
-#define DBB_DELAYLINE_MAX 8192   //16384 = 42.7ms @ 384k, 341ms @ 48k
+
+// must match in dbb.c & w/ DBB_MAX_DELAY_SAMPLES
+#define DBB_DELAYLINE_MAX 8192
+//
 
 typedef struct
 {
