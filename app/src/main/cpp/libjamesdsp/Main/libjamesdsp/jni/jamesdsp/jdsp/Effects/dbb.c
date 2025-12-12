@@ -386,6 +386,7 @@ if (lagSamples < 0)      lagSamples = 0;
 
 integerDelayLine_setDelay(&dbb->dL[0], lagSamples);
 integerDelayLine_setDelay(&dbb->dL[1], lagSamples);
+}
 //
 
 static void DBBProcess(DBB *dbb, float *x1, float *x2, float *y1, float *y2, size_t n)
