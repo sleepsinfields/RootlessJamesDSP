@@ -391,16 +391,16 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     // clamp lag to what the delay line can represent
     const int maxLag = (int)DBB_DELAYLINE_MAX - 1;
     if (lagSamples > maxLag) lagSamples = maxLag;
+//
+unsigned int needLen = (unsigned int)(lagSamples + 1);
+if (needLen < 2) needLen = 2;
 
-    // allocate exactly what's needed (must be > lag)
-    unsigned int needLen = (unsigned int)(lagSamples + 1);
-    if (needLen < 2) needLen = 2;
-
+if (dbb->dL[0].allocateLen != needLen) {
     integerDelayLineInit(&dbb->dL[0], needLen);
     integerDelayLineInit(&dbb->dL[1], needLen);
-
-    integerDelayLine_setDelay(&dbb->dL[0], (unsigned int)lagSamples);
-    integerDelayLine_setDelay(&dbb->dL[1], (unsigned int)lagSamples);
+}
+integerDelayLine_setDelay(&dbb->dL[0], (unsigned int)lagSamples);
+integerDelayLine_setDelay(&dbb->dL[1], (unsigned int)lagSamples);
 }
 //
 
@@ -497,18 +497,27 @@ static void DBBProcess(DBB *dbb, float *x1, float *x2, float *y1, float *y2, siz
 			dbb->boostdB = gainClamp * dbb->gainSmoothingFactor + dbb->boostdB * dbb->minusgainSmoothingFactor;
 			dbb->smoothMaxFreq = currentMaxFreq * dbb->maxSmoothingFactor + dbb->smoothMaxFreq * dbb->minusmaxSmoothingFactor;
 
-			double res = dbb->resonance;
-if (res < 0.0)  res = 0.0;
+// old block v of below replaced
+// Clamp resonance + cutoff, then refresh SVF (ONCE)
+double res = dbb->resonance;
+if (!(res >= 0.0)) res = 0.0;     // catches NaN too
 if (res > 0.99) res = 0.99;
+
+float fc = dbb->smoothMaxFreq;
+if (!(fc > 0.0f)) fc = 1.0f;      // catches 0, negative, NaN
+
+float nyq = (float)(0.5 * dbb->fs);
+float fcMax = nyq * 0.49f;        // keep margin under Nyquist
+if (fc > fcMax) fc = fcMax;
 
 refreshStateVariable2ndOrder(
     &dbb->svf[0],
     dbb->fs,
-    dbb->smoothMaxFreq,
+    fc,
     resonanceToQ(res),
     db2mag(dbb->boostdB)
 );
-
+//
 #ifdef DEBUG_DBB
 			fprintf(tele, "gain: %1.7f fc: %1.7f binNum: %d\n", dbb->boostdB, dbb->smoothMaxFreq, binNum + 1);
 #endif
