@@ -151,6 +151,19 @@ val dbbResonance = cache.get(R.string.key_dbb_resonance, 0.618f)
 val dbbFreqModeStr: String = cache.get(R.string.key_dbb_freq_mode, "0")
 val dbbFreqMode            = dbbFreqModeStr.toIntOrNull() ?: 0
 
+val dbbFreqCustomRaw: String =
+    cache.get(R.string.key_dbb_freq_custom, "")
+
+val dbbFreqCustom: FloatArray? =
+    if (dbbFreqMode == 2) {
+        val parts = dbbFreqCustomRaw.split(';')
+        if (parts.size == 9) {
+            FloatArray(9) { i ->
+                parts[i].toFloatOrNull() ?: 0f
+            }
+        } else null
+    } else null
+
 //
             cache.select(Constants.PREF_EQ)
             val eqEnabled = cache.get(R.string.key_eq_enable, false)
@@ -238,12 +251,17 @@ Log.e(
         is JamesDspLocalEngine -> {
             // 1) Push DBB tuning into the DSP
             this.applyDbbTuning(
-                targetFs  = dbbTargetFs,
-                detectMs  = dbbDetectMs,
-                gainMs    = dbbGainMs,
-                resonance = dbbResonance,
-                freqMode  = dbbFreqMode
-            )
+    targetFs  = dbbTargetFs,
+    detectMs  = dbbDetectMs,
+    gainMs    = dbbGainMs,
+    resonance = dbbResonance,
+    freqMode  = dbbFreqMode
+)
+
+// 🔗 custom bins go through JNI separately
+if (dbbFreqCustom != null) {
+    JamesDspWrapper.setDbbFreqCustom(handle, dbbFreqCustom)
+}
 
             // 2) Apply enable + max gain via simple BassBoost
             setBassBoost(
