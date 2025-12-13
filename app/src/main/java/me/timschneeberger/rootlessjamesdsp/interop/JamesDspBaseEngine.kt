@@ -166,17 +166,6 @@ val dbbFreqModeStr: String = cache.get(R.string.key_dbb_freq_mode, "0")
 val dbbFreqMode            = dbbFreqModeStr.toIntOrNull() ?: 0
 
 val dbbFreqCustomStr: String = cache.get(R.string.key_dbb_freq_custom, "")
-/*
-val dbbFreqCustomRaw: String = cache.get(R.string.key_dbb_freq_custom, "")
-*/
-val dbbFreqCustom: FloatArray? =
-    if (dbbFreqMode == 2) {
-        val parts = dbbFreqCustomRaw
-            .split(',', ';', ' ', '\n', '\t')
-            .mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() }?.toFloatOrNull() }
-
-        if (parts.size == 9) FloatArray(9) { i -> parts[i] } else null
-    } else null
 
 //
             cache.select(Constants.PREF_EQ)
