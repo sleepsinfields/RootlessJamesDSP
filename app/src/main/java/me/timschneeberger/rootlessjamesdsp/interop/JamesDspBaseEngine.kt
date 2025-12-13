@@ -164,8 +164,10 @@ val dbbResonance = cache.get(R.string.key_dbb_resonance, 0.618f)
 val dbbFreqModeStr: String = cache.get(R.string.key_dbb_freq_mode, "0")
 val dbbFreqMode            = dbbFreqModeStr.toIntOrNull() ?: 0
 
+val dbbFreqCustomStr: String = cache.get(R.string.key_dbb_freq_custom, "")
+/*
 val dbbFreqCustomRaw: String = cache.get(R.string.key_dbb_freq_custom, "")
-
+*/
 val dbbFreqCustom: FloatArray? =
     if (dbbFreqMode == 2) {
         val parts = dbbFreqCustomRaw
@@ -260,34 +262,26 @@ Log.e(
                     Constants.PREF_BASS -> {
     val ok = when (this) {
         is JamesDspLocalEngine -> {
-            // 1) Push DBB tuning into the DSP
-            val dbbFreqCustom9: FloatArray? =
-    if (dbbFreqMode == 2) parseDbbFreqCustom9(dbbFreqCustomStr) else null
+    // 1) Parse custom bins only when mode==2
+    val dbbFreqCustom9: FloatArray? =
+        if (dbbFreqMode == 2) parseDbbFreqCustom9(dbbFreqCustomStr) else null
 
-// 1) Push scalar DBB tuning into the DSP (includes freqMode)
-this.applyDbbTuning(
-    targetFs  = dbbTargetFs,
-    detectMs  = dbbDetectMs,
-    gainMs    = dbbGainMs,
-    resonance = dbbResonance,
-    freqMode  = dbbFreqMode
-)
+    // 2) Push DBB tuning into the DSP (freqMode + optional custom bins)
+    this.applyDbbTuning(
+        targetFs    = dbbTargetFs,
+        detectMs    = dbbDetectMs,
+        gainMs      = dbbGainMs,
+        resonance   = dbbResonance,
+        freqMode    = dbbFreqMode,
+        freqCustom9 = dbbFreqCustom9
+    )
 
-// 2) 🔗 Custom bins go through JNI separately (only when mode==2)
-val dbbFreqCustom9: FloatArray? =
-    if (dbbFreqMode == 2) parseDbbFreqCustom9(dbbFreqCustomStr) else null
-
-if (dbbFreqCustom9 != null) {
-    JamesDspWrapper.setDbbFreqCustom(handle, dbbFreqCustom9)
+    // 3) Apply enable + max gain
+    setBassBoost(
+        enable  = dbbEnabled,
+        maxGain = dbbMaxGain
+    )
 }
-
-// 3) Apply enable + max gain
-setBassBoost(
-    enable = dbbEnabled,
-    maxGain = dbbMaxGain
-)
-//
-        }
 
         else -> {
             // Remote engine: basic behavior
