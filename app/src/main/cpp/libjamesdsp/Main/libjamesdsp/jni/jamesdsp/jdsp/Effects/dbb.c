@@ -606,7 +606,5 @@ void BassBoostProcess(JamesDSPLib *jdsp, size_t n)
     jdsp->dbb.paramDirty = 1;
  }
 
-}
-
 // set bassboostadvanced not used with raw parmts
 
