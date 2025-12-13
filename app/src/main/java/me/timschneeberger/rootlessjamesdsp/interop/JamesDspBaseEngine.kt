@@ -167,6 +167,8 @@ val dbbFreqMode            = dbbFreqModeStr.toIntOrNull() ?: 0
 
 val dbbFreqCustomStr: String = cache.get(R.string.key_dbb_freq_custom, "")
 
+Log.e("DbbDebug", "prefs: mode=$dbbFreqMode custom='$dbbFreqCustomStr'")
+
 //
             cache.select(Constants.PREF_EQ)
             val eqEnabled = cache.get(R.string.key_eq_enable, false)
@@ -252,19 +254,25 @@ Log.e(
                     Constants.PREF_BASS -> {
     val ok = when (this) {
         is JamesDspLocalEngine -> {
-    // 1) Parse custom bins only when mode==2
-    val dbbFreqCustom9: FloatArray? =
-        if (dbbFreqMode == 2) parseDbbFreqCustom9(dbbFreqCustomStr) else null
+  // 1) Parse custom bins only when mode == 2
+val dbbFreqCustom9: FloatArray? =
+    if (dbbFreqMode == 2) parseDbbFreqCustom9(dbbFreqCustomStr) else null
 
-    // 2) Push DBB tuning into the DSP (freqMode + optional custom bins)
-    this.applyDbbTuning(
-        targetFs    = dbbTargetFs,
-        detectMs    = dbbDetectMs,
-        gainMs      = dbbGainMs,
-        resonance   = dbbResonance,
-        freqMode    = dbbFreqMode,
-        freqCustom9 = dbbFreqCustom9
-    )
+// 🔍 DEBUG: confirm parsing result
+Log.e(
+    "DbbDebug",
+    "parsed bins=${dbbFreqCustom9?.joinToString(";") ?: "null"}"
+)
+
+// 2) Push DBB tuning into the DSP
+this.applyDbbTuning(
+    targetFs    = dbbTargetFs,
+    detectMs    = dbbDetectMs,
+    gainMs      = dbbGainMs,
+    resonance   = dbbResonance,
+    freqMode    = dbbFreqMode,
+    freqCustom9 = dbbFreqCustom9
+)
 
     // 3) Apply enable + max gain
     setBassBoost(
