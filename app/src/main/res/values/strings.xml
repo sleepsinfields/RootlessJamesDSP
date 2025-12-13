@@ -173,6 +173,14 @@
 <string name="dbb_resonance">Resonance</string>
 <string name="dbb_freq_mode">Frequency mode</string>
 
+<!-- DBB custom bin list (9 floats, semicolon-separated) -->
+<string name="key_dbb_freq_custom">pref_dbb_freq_custom</string>
+
+<string name="dbb_freq_custom">Custom detector bins (9)</string>
+<string name="dbb_freq_custom_summary">
+Use mode "Custom". Enter 9 frequencies in Hz separated by semicolons (e.g. 20;30;45;70;110;180;300;520;900).
+</string>
+
     <string name="reverb_enable">Virtual room effect</string>
     <string name="reverb_room_type">Room type</string>
     <string name="reverb_preset_default">Default</string>
