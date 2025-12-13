@@ -734,15 +734,41 @@ Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbResonance
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbFreqMode(
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbFreqCustom(
     JNIEnv *env,
     jobject /*obj*/,
     jlong self,
-    jint mode
+    jfloatArray bins9
 ) {
     DECLARE_DSP_B
-    LOGE("DBB JNI: setDbbFreqMode(%d) – TEMP NO-OP", (int)mode);
-    // TODO: fix BassBoostSetFreqMode signature, currently disabled
+    if (!bins9) return JNI_FALSE;
+
+    jsize len = env->GetArrayLength(bins9);
+    if (len != 9) return JNI_FALSE;  // enforce exactly 9 to keep it simple
+
+    jfloat tmp[9];
+    env->GetFloatArrayRegion(bins9, 0, 9, tmp);
+
+    // optional: sanitize a little before passing
+    float safe[9];
+    for (int i = 0; i < 9; ++i) {
+        float f = tmp[i];
+        if (!(f > 0.0f)) f = 0.0f;     // let DBBParam fallback handle 0
+        safe[i] = f;
+    }
+
+    BassBoostSetFreqCustom(dsp, safe);
+    return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_me_timschneeberger_rootlessjamesdsp_interop_JamesDspWrapper_setDbbFreqMode(
+    JNIEnv *env, jobject, jlong self, jint mode
+) {
+    DECLARE_DSP_B
+    int m = (int)mode;
+    if (m == 2) m = 0;  // prevent custom mode without bins
+    BassBoostSetFreqMode(dsp, m, nullptr);
     return JNI_TRUE;
 }
 //
