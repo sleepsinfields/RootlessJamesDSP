@@ -160,10 +160,10 @@ fun applyDbbTuning(
 
 //
         if (safeFreqMode == 2 && freqCustom9 != null && freqCustom9.size == 9) {
-    // Custom bins: this also forces mode=2 on the native side
-    JamesDspWrapper.setDbbFreqCustom(handle, freqCustom9)
+    val safe = freqCustom9.copyOf()
+    for (i in 0 until 9) if (!(safe[i] > 0f)) safe[i] = 0f
+    JamesDspWrapper.setDbbFreqCustom(handle, safe)
 } else {
-    // Non-custom modes (or invalid custom string)
     JamesDspWrapper.setDbbFreqMode(handle, safeFreqMode)
 }
 //
