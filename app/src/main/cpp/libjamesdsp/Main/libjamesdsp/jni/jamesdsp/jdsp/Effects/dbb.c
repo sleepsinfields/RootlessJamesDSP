@@ -602,15 +602,30 @@ void BassBoostProcess(JamesDSPLib *jdsp, size_t n)
      jdsp->dbb.paramDirty = 1;
  }
 
- void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCustom)
- {
-     jdsp->dbb.freqMode = freqMode;
-     if (freqMode == 2 && freqCustom != NULL) {
-         for (int i = 0; i < 9; ++i)
-             jdsp->dbb.freqCustom[i] = freqCustom[i];
-     }
-    jdsp->dbb.paramDirty = 1;
- }
+//
+ static inline void DBBMarkDirty(DBB *dbb) { dbb->paramDirty = 1; }
+
+void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCustom)
+{
+    jdsp->dbb.freqMode = freqMode;
+
+    if (freqMode == 2 && freqCustom != NULL) {
+        for (int i = 0; i < 9; ++i)
+            jdsp->dbb.freqCustom[i] = freqCustom[i];
+    }
+
+    DBBMarkDirty(&jdsp->dbb);
+}
+
+void BassBoostSetFreqCustom(JamesDSPLib *jdsp, const float *freqCustom9)
+{
+    if (!freqCustom9) return;
+    for (int i = 0; i < 9; ++i)
+        jdsp->dbb.freqCustom[i] = freqCustom9[i];
+
+    jdsp->dbb.freqMode = 2;
+    DBBMarkDirty(&jdsp->dbb);
+}
 
 // set bassboostadvanced not used with raw parmts
 
