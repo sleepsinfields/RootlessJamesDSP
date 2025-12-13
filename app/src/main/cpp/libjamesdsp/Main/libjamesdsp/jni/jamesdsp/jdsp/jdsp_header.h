@@ -647,6 +647,7 @@ extern void BassBoostSetTargetFs(JamesDSPLib *jdsp, double targetFs);
 extern void BassBoostSetSmoothing(JamesDSPLib *jdsp, double detectMs, double gainMs);
 extern void BassBoostSetResonance(JamesDSPLib *jdsp, float resonance);
 extern void BassBoostSetFreqMode(JamesDSPLib *jdsp, int freqMode, const float *freqCustom);
+extern void BassBoostSetFreqCustom(JamesDSPLib *jdsp, const float *freqCustom9);
 
 // Reverb
 extern void Reverb_SetParam(JamesDSPLib *jdsp, int presets);
