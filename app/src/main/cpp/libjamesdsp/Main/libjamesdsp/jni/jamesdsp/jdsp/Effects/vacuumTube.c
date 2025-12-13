@@ -8,14 +8,16 @@
 #define VT_EVEN_GAIN 1.0   // global gain for even harmonics (2,4)
 #define VT_ODD_GAIN  1.0   // global gain for odd harmonics  (3,5)
 
-// Logging for VacuumTube
-#ifdef ANDROID
+// Logging for VacuumTube (OFF by default to avoid per-buffer spam)
+// Uncomment to enable verbose VT logs:
+// #define DEBUG_VT 1
+
+#if defined(ANDROID) && defined(DEBUG_VT)
 #include <android/log.h>
 #define VT_LOG_TAG "VacuumTube"
 #define VT_LOGI(fmt, ...) __android_log_print(ANDROID_LOG_INFO, VT_LOG_TAG, fmt, ##__VA_ARGS__)
 #else
-// Non-Android or unit-test builds: make it a no-op
-#define VT_LOGI(fmt, ...) ((void)0)
+#define VT_LOGI(...) do {} while (0)
 #endif
 //  ------------------------------------------------------------
 // Simple triode-like soft clipper, parameterized by VacuumTube
