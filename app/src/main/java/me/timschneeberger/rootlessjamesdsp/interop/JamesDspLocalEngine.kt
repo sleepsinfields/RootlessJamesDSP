@@ -157,6 +157,22 @@ fun applyDbbTuning(
         JamesDspWrapper.setDbbSmoothing(handle, safeDetectMs, safeGainMs)
         JamesDspWrapper.setDbbResonance(handle, safeRes)
         JamesDspWrapper.setDbbFreqMode(handle, safeFreqMode)
+
+        // ✅ NEW: if "custom bins" mode, also send the 9 bin centers
+        if (safeFreqMode == 2) {
+            // TODO: replace with values loaded from prefs/UI
+            val bins9 = floatArrayOf(
+                20f, 35f, 55f, 80f, 110f, 160f, 250f, 400f, 650f
+            )
+
+            // Optional safety (recommended): ensure strictly positive
+            for (i in 0 until 9) {
+                if (!(bins9[i] > 0f)) bins9[i] = 0f
+            }
+
+            val ok = JamesDspWrapper.setDbbFreqCustom(handle, bins9)
+            Log.e("DbbDebug", "setDbbFreqCustom(mode=2) ok=$ok bins=${bins9.joinToString(",")}")
+        }
     } catch (t: Throwable) {
         Log.e("DbbDebug", "DBB JNI failed", t)
     }
