@@ -59,18 +59,19 @@ abstract class JamesDspBaseEngine(
 private const val TUBE_EPS = 1e-18  // or even 1e-7 if you want it stricter
     }
 // 
-private fun parseDbbFreqCustom9(raw: String?): FloatArray? {
-    if (raw.isNullOrBlank()) return null
+private fun parseDbbFreqCustom9(raw: String): FloatArray? {
+    val s = raw.trim()
+    if (s.isEmpty()) return null
 
-    val parts = raw.split(',', ';', ' ', '\n', '\t')
-        .mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() }?.toFloatOrNull() }
-
+    val parts = s.split(';', ',').map { it.trim() }.filter { it.isNotEmpty() }
     if (parts.size != 9) return null
 
-    return FloatArray(9) { i ->
-        val v = parts[i]
-        if (v.isFinite() && v > 0f) v else 0f
+    val out = FloatArray(9)
+    for (i in 0 until 9) {
+        val v = parts[i].toFloatOrNull() ?: return null
+        out[i] = if (v > 0f) v else 0f
     }
+    return out
 }
 //
 private var lastTubeEnabled: Boolean = false
