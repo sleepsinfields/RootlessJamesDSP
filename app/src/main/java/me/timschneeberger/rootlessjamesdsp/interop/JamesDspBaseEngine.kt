@@ -59,7 +59,20 @@ abstract class JamesDspBaseEngine(
 private const val TUBE_EPS = 1e-18  // or even 1e-7 if you want it stricter
     }
 // 
+private fun parseDbbFreqCustom9(raw: String?): FloatArray? {
+    if (raw.isNullOrBlank()) return null
 
+    val parts = raw.split(',', ';', ' ', '\n', '\t')
+        .mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() }?.toFloatOrNull() }
+
+    if (parts.size != 9) return null
+
+    return FloatArray(9) { i ->
+        val v = parts[i]
+        if (v.isFinite() && v > 0f) v else 0f
+    }
+}
+//
 private var lastTubeEnabled: Boolean = false
 private var lastTubeDrive: Double = Double.NaN
 
@@ -151,17 +164,15 @@ val dbbResonance = cache.get(R.string.key_dbb_resonance, 0.618f)
 val dbbFreqModeStr: String = cache.get(R.string.key_dbb_freq_mode, "0")
 val dbbFreqMode            = dbbFreqModeStr.toIntOrNull() ?: 0
 
-val dbbFreqCustomRaw: String =
-    cache.get(R.string.key_dbb_freq_custom, "")
+val dbbFreqCustomRaw: String = cache.get(R.string.key_dbb_freq_custom, "")
 
 val dbbFreqCustom: FloatArray? =
     if (dbbFreqMode == 2) {
-        val parts = dbbFreqCustomRaw.split(';')
-        if (parts.size == 9) {
-            FloatArray(9) { i ->
-                parts[i].toFloatOrNull() ?: 0f
-            }
-        } else null
+        val parts = dbbFreqCustomRaw
+            .split(',', ';', ' ', '\n', '\t')
+            .mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() }?.toFloatOrNull() }
+
+        if (parts.size == 9) FloatArray(9) { i -> parts[i] } else null
     } else null
 
 //
@@ -250,7 +261,11 @@ Log.e(
     val ok = when (this) {
         is JamesDspLocalEngine -> {
             // 1) Push DBB tuning into the DSP
-            this.applyDbbTuning(
+            val dbbFreqCustom9: FloatArray? =
+    if (dbbFreqMode == 2) parseDbbFreqCustom9(dbbFreqCustomStr) else null
+
+// 1) Push scalar DBB tuning into the DSP (includes freqMode)
+this.applyDbbTuning(
     targetFs  = dbbTargetFs,
     detectMs  = dbbDetectMs,
     gainMs    = dbbGainMs,
@@ -258,16 +273,20 @@ Log.e(
     freqMode  = dbbFreqMode
 )
 
-// 🔗 custom bins go through JNI separately
-if (dbbFreqCustom != null) {
-    JamesDspWrapper.setDbbFreqCustom(handle, dbbFreqCustom)
+// 2) 🔗 Custom bins go through JNI separately (only when mode==2)
+val dbbFreqCustom9: FloatArray? =
+    if (dbbFreqMode == 2) parseDbbFreqCustom9(dbbFreqCustomStr) else null
+
+if (dbbFreqCustom9 != null) {
+    JamesDspWrapper.setDbbFreqCustom(handle, dbbFreqCustom9)
 }
 
-            // 2) Apply enable + max gain via simple BassBoost
-            setBassBoost(
-                enable  = dbbEnabled,
-                maxGain = dbbMaxGain
-            )
+// 3) Apply enable + max gain
+setBassBoost(
+    enable = dbbEnabled,
+    maxGain = dbbMaxGain
+)
+//
         }
 
         else -> {
