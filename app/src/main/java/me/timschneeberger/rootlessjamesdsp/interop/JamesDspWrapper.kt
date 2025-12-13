@@ -135,6 +135,8 @@ external fun setDbbFreqMode(
     mode: Int
 ): Boolean
 
+external fun setDbbFreqCustom(self: JamesDspHandle, bins9: FloatArray): Boolean
+
     external fun setStereoEnhancement(self: JamesDspHandle, enable: Boolean, level: Float): Boolean
 
 
