@@ -366,13 +366,19 @@ static void DBBParam(DBB *dbb, double fs, float maxG)
     }
 
     case 2: // explicit custom
-        for (int i = 0; i < 9; i++) {
-            float f = dbb->freqCustom[i];
-            if (f <= 0.0f)
-                f = (float)(i * (trueTargetFs / 16.0)); // fallback
-            dbb->freq[i] = f;
+    for (int i = 0; i < 9; i++) {
+        float f = dbb->freqCustom[i];          // <-- THIS is the block you're asking about
+        if (!(f > 0.0f)) {                     // catches 0, negative, NaN
+            f = (float)(i * (trueTargetFs / 16.0));  // fallback
         }
-        break;
+        // hard clamp per-bin to safe range for THIS fs
+        float nyq = (float)(0.5 * dbb->fs);
+        float fMax = nyq * 0.49f;
+        if (f > fMax) f = fMax;
+
+        dbb->freq[i] = f;
+    }
+    break;
     }
 
     // 3) smoothing coefficients
