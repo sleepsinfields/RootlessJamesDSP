@@ -97,28 +97,27 @@ class PreferenceGroupFragment : PreferenceFragmentCompat(), KoinComponent {
 //
 R.xml.dsp_dbb_preferences -> {
     val sp = preferenceManager.sharedPreferences
-    val prefsName = preferenceManager.sharedPreferencesName.orEmpty()
+    val prefsName = requireArguments().getString(BUNDLE_PREF_NAME) ?: sp?.toString().orEmpty()
 
     val keyMode = getString(R.string.key_dbb_freq_mode)
     val keyCustom = getString(R.string.key_dbb_freq_custom)
     val keyTargetFs = getString(R.string.key_dbb_target_fs)
 
-    val prefMode = findPreference<ListPreference>(keyMode)
-    val prefCustom = findPreference<Preference>(keyCustom)
+    val prefCustom = findPreference<androidx.preference.Preference>(keyCustom)
 
-    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> {
+    prefCustom?.summaryProvider = androidx.preference.Preference.SummaryProvider {
         val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
-        if (raw.isEmpty()) "Tap to edit 9 center frequencies (Hz)" else raw
+        if (raw.isEmpty()) "Tap to edit 9 center frequencies (Hz)"
+        else raw
     }
 
     prefCustom?.setOnPreferenceClickListener {
-        // force custom mode when user edits bins
+        // force mode=2 when editing custom bins (optional but nice UX)
         sp?.edit()?.putString(keyMode, "2")?.apply()
-        prefMode?.value = "2"
 
         DbbCustomBinsDialogFragment
             .newInstance(
-                prefsName = prefsName,
+                prefsName = requireArguments().getString(BUNDLE_PREF_NAME) ?: preferenceManager.sharedPreferencesName,
                 key = keyCustom,
                 targetFsKey = keyTargetFs
             )
