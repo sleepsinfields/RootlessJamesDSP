@@ -185,6 +185,7 @@
 <string name="dbb_bins_dialog_cancel">Cancel</string>
 <string name="dbb_bins_dialog_save">Save</string>
 <string name="dbb_bins_dialog_invalid">Please enter exactly 9 valid numbers.</string>
+<string name="dbb_bins_dialog_fill_default">Fill default</string>
 
     <string name="reverb_enable">Virtual room effect</string>
     <string name="reverb_room_type">Room type</string>
