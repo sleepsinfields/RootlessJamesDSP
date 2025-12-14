@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.annotation.XmlRes
+import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.PreferenceFragmentCompat
@@ -96,25 +97,24 @@ class PreferenceGroupFragment : PreferenceFragmentCompat(), KoinComponent {
 //
 R.xml.dsp_dbb_preferences -> {
     val sp = preferenceManager.sharedPreferences
+    val prefsName = preferenceManager.sharedPreferencesName.orEmpty()
 
-    val keyMode     = getString(R.string.key_dbb_freq_mode)
-    val keyCustom   = getString(R.string.key_dbb_freq_custom)
+    val keyMode = getString(R.string.key_dbb_freq_mode)
+    val keyCustom = getString(R.string.key_dbb_freq_custom)
     val keyTargetFs = getString(R.string.key_dbb_target_fs)
 
-    val prefMode   = findPreference<ListPreference>(keyMode)
+    val prefMode = findPreference<ListPreference>(keyMode)
     val prefCustom = findPreference<Preference>(keyCustom)
 
-    // Show the saved bins string (or a hint) under the "Custom bins" preference
-    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> { p ->
-        val raw = p.sharedPreferences?.getString(keyCustom, "")?.trim().orEmpty()
+    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> {
+        val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
         if (raw.isEmpty()) "Tap to edit 9 center frequencies (Hz)" else raw
     }
 
-    // Tap custom-bins row -> force mode=2 and open the 9-field dialog
     prefCustom?.setOnPreferenceClickListener {
+        // force custom mode when user edits bins
         sp?.edit()?.putString(keyMode, "2")?.apply()
-
-        val prefsName = preferenceManager.sharedPreferencesName ?: ""
+        prefMode?.value = "2"
 
         DbbCustomBinsDialogFragment
             .newInstance(
@@ -124,22 +124,6 @@ R.xml.dsp_dbb_preferences -> {
             )
             .show(parentFragmentManager, "dbb_custom_bins")
 
-        true
-    }
-
-    // Optional: if user switches to custom mode from the dropdown, open dialog immediately
-    prefMode?.setOnPreferenceChangeListener { _, newValue ->
-        val mode = (newValue as? String)?.toIntOrNull() ?: 0
-        if (mode == 2) {
-            val prefsName = preferenceManager.sharedPreferencesName ?: ""
-            DbbCustomBinsDialogFragment
-                .newInstance(
-                    prefsName = prefsName,
-                    key = keyCustom,
-                    targetFsKey = keyTargetFs
-                )
-                .show(parentFragmentManager, "dbb_custom_bins")
-        }
         true
     }
 }
