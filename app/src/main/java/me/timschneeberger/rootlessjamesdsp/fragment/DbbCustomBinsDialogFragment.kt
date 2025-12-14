@@ -1,7 +1,8 @@
 package me.timschneeberger.rootlessjamesdsp.fragment
 //
-import me.timschneeberger.rootlessjamesdsp.Constants
 import me.timschneeberger.rootlessjamesdsp.R
+import me.timschneeberger.rootlessjamesdsp.utils.Constants
+import me.timschneeberger.rootlessjamesdsp.utils.extensions.ContextExtensions.sendLocalBroadcast
 //
 import android.app.Dialog
 import android.content.Context
