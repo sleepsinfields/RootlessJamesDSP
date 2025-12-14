@@ -207,21 +207,19 @@ override fun onStart() {
             // Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
             return@setOnClickListener
         }
+//
+     prefs.edit().putString(key, arr.joinToString(";")).apply()
 
-        // 1) Save bins string ONCE
-        prefs.edit().putString(key, arr.joinToString(";")).apply()
+// Refresh UI summary
+parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
 
-        // 2) Update summary immediately
-        parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
+// Re-apply DSP immediately
+requireContext().sendLocalBroadcast(
+    Intent(Constants.ACTION_PREFERENCES_UPDATED)
+)
 
-        // 3) Re-apply DBB immediately (this is the part you asked about)
-        requireContext().sendLocalBroadcast(
-            Intent(Constants.ACTION_PREFERENCES_UPDATED).apply {
-                putExtra(Constants.EXTRA_PREF_GROUP, Constants.PREF_BASS)
-            }
-        )
-
-        dismiss()
+dismiss()
+//
     }
 }
 //
