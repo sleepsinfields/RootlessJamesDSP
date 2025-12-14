@@ -97,42 +97,49 @@ class PreferenceGroupFragment : PreferenceFragmentCompat(), KoinComponent {
 R.xml.dsp_dbb_preferences -> {
     val sp = preferenceManager.sharedPreferences
 
-    val keyMode = getString(R.string.key_dbb_freq_mode)
-    val keyCustom = getString(R.string.key_dbb_freq_custom)
+    val keyMode     = getString(R.string.key_dbb_freq_mode)
+    val keyCustom   = getString(R.string.key_dbb_freq_custom)
+    val keyTargetFs = getString(R.string.key_dbb_target_fs)
 
-    val prefMode = findPreference<ListPreference>(keyMode)
+    val prefMode   = findPreference<ListPreference>(keyMode)
     val prefCustom = findPreference<Preference>(keyCustom)
 
-    // 1) Always show the current bins string (or a helpful hint)
-    prefCustom?.summaryProvider = androidx.preference.Preference.SummaryProvider<Preference> { p ->
-        val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
-        if (raw.isEmpty()) "Tap to edit 9 center frequencies (Hz)"
-        else raw
+    // Show the saved bins string (or a hint) under the "Custom bins" preference
+    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> { p ->
+        val raw = p.sharedPreferences?.getString(keyCustom, "")?.trim().orEmpty()
+        if (raw.isEmpty()) "Tap to edit 9 center frequencies (Hz)" else raw
     }
 
-    // Optional: disable editing unless mode==2, while still showing summary
-    fun isModeCustom(): Boolean {
-        val modeStr = sp?.getString(keyMode, "0") ?: "0"
-        return modeStr.toIntOrNull() == 2
-    }
-    prefCustom?.isEnabled = true // set false here if you want hard gating
+    // Tap custom-bins row -> force mode=2 and open the 9-field dialog
+    prefCustom?.setOnPreferenceClickListener {
+        sp?.edit()?.putString(keyMode, "2")?.apply()
 
-    prefMode?.setOnPreferenceChangeListener { _, newValue ->
-        // If you want to grey out the editor unless mode==2:
-        // prefCustom?.isEnabled = (newValue as? String)?.toIntOrNull() == 2
+        val prefsName = preferenceManager.sharedPreferencesName ?: ""
+
+        DbbCustomBinsDialogFragment
+            .newInstance(
+                prefsName = prefsName,
+                key = keyCustom,
+                targetFsKey = keyTargetFs
+            )
+            .show(parentFragmentManager, "dbb_custom_bins")
+
         true
     }
 
-    // 2) Open the 9-field dialog popup
-    prefCustom?.setOnPreferenceClickListener {
-        // 3) Optional: force mode=2 when user edits custom bins
-        sp?.edit()?.putString(keyMode, "2")?.apply()
-
-        // Show your dialog
-        DbbCustomBinsDialogFragment
-            .newInstance(prefKey = keyCustom /*, optionally pass targetFs key if you want */)
-            .show(parentFragmentManager, "dbb_custom_bins")
-
+    // Optional: if user switches to custom mode from the dropdown, open dialog immediately
+    prefMode?.setOnPreferenceChangeListener { _, newValue ->
+        val mode = (newValue as? String)?.toIntOrNull() ?: 0
+        if (mode == 2) {
+            val prefsName = preferenceManager.sharedPreferencesName ?: ""
+            DbbCustomBinsDialogFragment
+                .newInstance(
+                    prefsName = prefsName,
+                    key = keyCustom,
+                    targetFsKey = keyTargetFs
+                )
+                .show(parentFragmentManager, "dbb_custom_bins")
+        }
         true
     }
 }
