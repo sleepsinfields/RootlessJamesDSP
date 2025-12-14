@@ -97,38 +97,37 @@ class PreferenceGroupFragment : PreferenceFragmentCompat(), KoinComponent {
 //
 R.xml.dsp_dbb_preferences -> {
     val sp = preferenceManager.sharedPreferences
-    val prefsName = requireArguments().getString(BUNDLE_PREF_NAME) ?: sp?.toString().orEmpty()
 
-    val keyMode = getString(R.string.key_dbb_freq_mode)
-    val keyCustom = getString(R.string.key_dbb_freq_custom)
+    val keyMode     = getString(R.string.key_dbb_freq_mode)
+    val keyCustom   = getString(R.string.key_dbb_freq_custom)
     val keyTargetFs = getString(R.string.key_dbb_target_fs)
 
-    val prefCustom = findPreference<androidx.preference.Preference>(keyCustom)
-
-    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> { p: Preference ->
-    val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
-    if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
-}
-
-    prefCustom?.setOnPreferenceClickListener {
-    // force mode=2 when editing custom bins (optional but nice UX)
-    sp?.edit()?.putString(keyMode, "2")?.apply()
-
     val prefsName =
-        arguments?.getString(BUNDLE_PREF_NAME)
+        requireArguments().getString(BUNDLE_PREF_NAME)
             ?: preferenceManager.sharedPreferencesName
             ?: "default_prefs"
 
-    DbbCustomBinsDialogFragment
-        .newInstance(
-            prefsName = prefsName,
-            key = keyCustom,
-            targetFsKey = keyTargetFs
-        )
-        .show(parentFragmentManager, "dbb_custom_bins")
+    val prefCustom = findPreference<Preference>(keyCustom)
 
-    true
-}
+    prefCustom?.summaryProvider = Preference.SummaryProvider {
+        val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
+        if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
+    }
+
+    prefCustom?.setOnPreferenceClickListener {
+        // Force custom-bin mode when editing
+        sp?.edit()?.putString(keyMode, "2")?.apply()
+
+        DbbCustomBinsDialogFragment
+            .newInstance(
+                prefsName = prefsName,
+                key = keyCustom,
+                targetFsKey = keyTargetFs
+            )
+            .show(parentFragmentManager, "dbb_custom_bins")
+
+        true
+    }
 }
 //
             R.xml.dsp_stereowide_preferences -> {
