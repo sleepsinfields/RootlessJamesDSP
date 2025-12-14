@@ -201,19 +201,25 @@ override fun onStart() {
     d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
         val prefs = prefsRef ?: return@setOnClickListener
         val key = keyRef ?: return@setOnClickListener
+
         val arr = readEditsFn?.invoke() ?: run {
-            // optional: toast your "invalid" string here
+            // Toast optional
             // Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
             return@setOnClickListener
         }
 
+        // 1) Save bins string ONCE
         prefs.edit().putString(key, arr.joinToString(";")).apply()
 
-        // ✅ refresh summary immediately
+        // 2) Update summary immediately
         parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
 
-        // ✅ (optional) re-apply DSP immediately too
-        requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
+        // 3) Re-apply DBB immediately (this is the part you asked about)
+        requireContext().sendLocalBroadcast(
+            Intent(Constants.ACTION_PREFERENCES_UPDATED).apply {
+                putExtra(Constants.EXTRA_PREF_GROUP, Constants.PREF_BASS)
+            }
+        )
 
         dismiss()
     }
