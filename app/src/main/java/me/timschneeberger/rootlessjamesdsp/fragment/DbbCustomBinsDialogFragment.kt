@@ -49,23 +49,15 @@ private var keyRef: String? = null
 private var readEditsFn: (() -> FloatArray?)? = null
 //
 //
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-    Log.e("DbbDebug", "DbbCustomBinsDialogFragment.onCreateDialog() showing")
-
+ override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
     val ctx = requireContext()
+
     val prefsName = requireArguments().getString(ARG_PREFS_NAME)!!
     val key = requireArguments().getString(ARG_KEY)!!
     val targetFsKey = requireArguments().getString(ARG_TARGET_FS_KEY)!!
-
     val prefs = ctx.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-//
-prefsRef = prefs
-keyRef = key
-//
-    val existing = parseBins9(prefs.getString(key, "").orEmpty())
 
-    val edits = ArrayList<TextInputEditText>(9)
-
+    // IMPORTANT: create NEW views here (no class-level ScrollView/container fields)
     val container = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(20), dp(16), dp(20), dp(8))
@@ -75,151 +67,45 @@ keyRef = key
         )
     }
 
-    // Template buttons row (does NOT close)
-    val btnRow = LinearLayout(ctx).apply {
-        orientation = LinearLayout.HORIZONTAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = dp(12) }
+    // ... add template button row + 9 TextInputLayouts into `container` ...
+
+    val scroll = ScrollView(ctx).apply {
+        addView(container) // attach container to scroll ONCE
     }
 
-    val btnDefault = MaterialButton(ctx).apply {
-        text = ctx.getString(R.string.dbb_bins_dialog_fill_default)
-        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-            marginEnd = dp(8)
-        }
-    }
+    // Keep refs for onStart save logic (prefs/key + readEditsFn are fine)
+    prefsRef = prefs
+    keyRef = key
+    readEditsFn = { /* return FloatArray? from your edits list */ null }
 
-    val btnLog = MaterialButton(ctx).apply {
-        text = ctx.getString(R.string.dbb_bins_dialog_fill_log)
-        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-    }
-
-    btnRow.addView(btnDefault)
-    btnRow.addView(btnLog)
-    container.addView(btnRow)
-
-    for (i in 0 until 9) {
-        val til = TextInputLayout(ctx).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(10) }
-            hint = "Bin ${i + 1} (Hz)"
-        }
-
-        val et = TextInputEditText(ctx).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            setText(existing?.get(i)?.toString() ?: "")
-        }
-
-        til.addView(et)
-        container.addView(til)
-        edits.add(et)
-    }
-
-    fun writeEdits(arr: FloatArray) {
-        for (i in 0 until 9) edits[i].setText(arr[i].toString())
-    }
-
-    fun readEdits(): FloatArray? {
-        val out = FloatArray(9)
-        for (i in 0 until 9) {
-            val v = edits[i].text?.toString()?.trim()?.toFloatOrNull() ?: return null
-            out[i] = if (v > 0f) v else 0f
-        }
-        return out
-    }
-//expose it to onStart()
-readEditsFn = { readEdits() }
-
-    btnDefault.setOnClickListener {
-        writeEdits(defaultBins9())
-    }
-
-    btnLog.setOnClickListener {
-        // Reads the *latest* TargetFs at click time (so it “tracks” when you press Fill Log)
-        val latestTargetFs = readPrefFloatCompat(prefs, targetFsKey, 432f)
-        val hi = latestTargetFs.coerceAtLeast(21f)
-        writeEdits(logSpace9(low = 20f, high = hi))
-    }
-
-    val scroll = ScrollView(ctx).apply { addView(container) }
-
-    // Bottom action row (ALWAYS visible)
-    val actionRow = LinearLayout(ctx).apply {
-        orientation = LinearLayout.HORIZONTAL
-        setPadding(dp(20), dp(8), dp(20), dp(16))
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-    }
-
-    val btnCancel = MaterialButton(ctx).apply {
-        text = ctx.getString(R.string.dbb_bins_dialog_cancel)
-        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-            marginEnd = dp(8)
-        }
-    }
-
-    val btnSave = MaterialButton(ctx).apply {
-        text = ctx.getString(R.string.dbb_bins_dialog_save)
-        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-    }
-
-    actionRow.addView(btnCancel)
-    actionRow.addView(btnSave)
-
-    val root = LinearLayout(ctx).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(scroll, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
-        ))
-        addView(actionRow)
-    }
-
-    val dialog = MaterialAlertDialogBuilder(ctx)
-    .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
-    .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
-    .setView(scroll)
-    .setNegativeButton(android.R.string.cancel, null)
-    .setPositiveButton(android.R.string.ok, null) // IMPORTANT: null here
-    .create()
-
-dialog.setCanceledOnTouchOutside(false)
-return dialog
+    return MaterialAlertDialogBuilder(ctx)
+        .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
+        .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
+        .setView(scroll) // attach scroll to dialog ONCE
+        .setNegativeButton(android.R.string.cancel, null)
+        .setPositiveButton(android.R.string.ok, null) // we override click in onStart
+        .create()
+        .apply { setCanceledOnTouchOutside(false) }
 }
 //
 override fun onStart() {
     super.onStart()
 
-    val d = dialog as? androidx.appcompat.app.AlertDialog ?: return
+    val d = dialog as? AlertDialog ?: return
     d.setCanceledOnTouchOutside(false)
 
-    d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+    d.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
         val prefs = prefsRef ?: return@setOnClickListener
         val key = keyRef ?: return@setOnClickListener
+        val arr = readEditsFn?.invoke() ?: return@setOnClickListener
 
-        val arr = readEditsFn?.invoke() ?: run {
-            // Toast optional
-            // Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
-            return@setOnClickListener
-        }
-//
-     prefs.edit().putString(key, arr.joinToString(";")).apply()
+        prefs.edit().putString(key, arr.joinToString(";")).apply()
 
-// Refresh UI summary
-parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
+        parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
 
-// Re-apply DSP immediately
-requireContext().sendLocalBroadcast(
-    Intent(Constants.ACTION_PREFERENCES_UPDATED)
-)
+        requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
 
-dismiss()
-//
+        dismiss()
     }
 }
 //
