@@ -44,6 +44,11 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
             }
     }
 //
+private var prefsRef: android.content.SharedPreferences? = null
+private var keyRef: String? = null
+private var readEditsFn: (() -> FloatArray?)? = null
+//
+//
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
     Log.e("DbbDebug", "DbbCustomBinsDialogFragment.onCreateDialog() showing")
 
@@ -53,8 +58,12 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     val targetFsKey = requireArguments().getString(ARG_TARGET_FS_KEY)!!
 
     val prefs = ctx.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-
+//
+prefsRef = prefs
+keyRef = key
+//
     val existing = parseBins9(prefs.getString(key, "").orEmpty())
+
     val edits = ArrayList<TextInputEditText>(9)
 
     val container = LinearLayout(ctx).apply {
@@ -122,6 +131,8 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
         }
         return out
     }
+//expose it to onStart()
+readEditsFn = { readEdits() }
 
     btnDefault.setOnClickListener {
         writeEdits(defaultBins9())
