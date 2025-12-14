@@ -181,32 +181,15 @@ readEditsFn = { readEdits() }
     }
 
     val dialog = MaterialAlertDialogBuilder(ctx)
-        .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
-        .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
-        .setView(root)
-        .create()
+    .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
+    .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
+    .setView(scroll)
+    .setNegativeButton(android.R.string.cancel, null)
+    .setPositiveButton(android.R.string.ok, null) // IMPORTANT: null here
+    .create()
 
-    btnCancel.setOnClickListener { dialog.dismiss() }
-
-    btnSave.setOnClickListener {
-        val arr = readEdits()
-        if (arr == null) {
-            Toast.makeText(ctx, ctx.getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
-            return@setOnClickListener
-        }
-//
-prefs.edit().putString(key, arr.joinToString(";")).apply()
-
-// Re-apply DSP immediately through the app’s existing pipeline
-requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
-//
-        dialog.dismiss()
-    }
-//
-    dialog.setCanceledOnTouchOutside(false)
-    isCancelable = true
-
-    return dialog
+dialog.setCanceledOnTouchOutside(false)
+return dialog
 }
 //
 override fun onStart() {
