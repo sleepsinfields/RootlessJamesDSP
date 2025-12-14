@@ -1,4 +1,6 @@
 package me.timschneeberger.rootlessjamesdsp.fragment
+//
+import me.timschneeberger.rootlessjamesdsp.Constants
 import me.timschneeberger.rootlessjamesdsp.R
 //
 import android.app.Dialog
@@ -13,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
 import android.view.View
 import android.util.Log
+import android.content.Intent
 import kotlin.math.exp
 import kotlin.math.ln
 //
@@ -179,10 +182,15 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
             Toast.makeText(ctx, ctx.getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
             return@setOnClickListener
         }
-        prefs.edit().putString(key, arr.joinToString(";")).apply()
+//
+prefs.edit().putString(key, arr.joinToString(";")).apply()
+
+// Re-apply DSP immediately through the app’s existing pipeline
+requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
+//
         dialog.dismiss()
     }
-
+//
     dialog.setCanceledOnTouchOutside(false)
     isCancelable = true
 
