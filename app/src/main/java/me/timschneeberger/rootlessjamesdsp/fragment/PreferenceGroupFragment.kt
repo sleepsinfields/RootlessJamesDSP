@@ -102,7 +102,6 @@ R.xml.dsp_dbb_preferences -> {
     val keyCustom   = getString(R.string.key_dbb_freq_custom)
     val keyTargetFs = getString(R.string.key_dbb_target_fs)
 
-    val prefMode   = findPreference<androidx.preference.ListPreference>(keyMode)
     val prefCustom = findPreference<androidx.preference.Preference>(keyCustom)
 
     prefCustom?.summaryProvider =
@@ -111,12 +110,12 @@ R.xml.dsp_dbb_preferences -> {
             if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
         }
 
-    prefMode?.setOnPreferenceChangeListener { _: androidx.preference.Preference, _: Any? ->
-        true
+    parentFragmentManager.setFragmentResultListener("dbb_bins_updated", this) { _, _ ->
+        val raw = prefCustom?.sharedPreferences?.getString(keyCustom, "")?.trim().orEmpty()
+        prefCustom?.summary = if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
     }
 
     prefCustom?.setOnPreferenceClickListener {
-        // force mode=2 when editing (optional UX)
         sp?.edit()?.putString(keyMode, "2")?.apply()
 
         val prefsName =
