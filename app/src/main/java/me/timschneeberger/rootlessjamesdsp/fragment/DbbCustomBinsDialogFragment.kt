@@ -7,11 +7,15 @@ import android.text.InputType
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Toast
+import androidx.fragment.app.DialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import me.timschneeberger.rootlessjamesdsp.R
+import kotlin.math.exp
+import kotlin.math.ln
 
 class DbbCustomBinsDialogFragment : DialogFragment() {
 
@@ -37,34 +41,30 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val ctx = requireContext()
-        val prefsName = requireArguments().getString(ARG_PREFS_NAME)!!
-        val key = requireArguments().getString(ARG_KEY)!!
-        val targetFsKey = requireArguments().getString(ARG_TARGET_FS_KEY)!!
+
+        val prefsName = requireArguments().getString(ARG_PREFS_NAME).orEmpty()
+        val key = requireArguments().getString(ARG_KEY).orEmpty()
+        val targetFsKey = requireArguments().getString(ARG_TARGET_FS_KEY).orEmpty()
 
         val prefs = ctx.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
-        // Current bins string: "a;b;c;...;i"
         val current = prefs.getString(key, "").orEmpty()
         val existing = parseBins9(current)
 
-        // targetFs: try String first (many prefs store as string), fallback to float
-        val targetFs: Float = run {
-            val asString = prefs.getString(targetFsKey, null)?.toFloatOrNull()
-            if (asString != null) asString else prefs.getFloat(targetFsKey, 432f)
-        }
+        val targetFs = readPrefFloatCompat(prefs, targetFsKey, 432f)
 
         val edits = ArrayList<TextInputEditText>(9)
 
         val container = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(16), dp(20), dp(4))
+            setPadding(dp(20), dp(16), dp(20), dp(8))
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
         }
 
-        // --- Template buttons row (does NOT close dialog) ---
+        // Template buttons
         val btnRow = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
@@ -74,14 +74,15 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
         }
 
         val btnDefault = MaterialButton(ctx).apply {
-            text = ctx.getString(R.string.dbb_bins_dialog_fill_default) // add string if you want
+            // If you don't want to add strings yet, keep these literals.
+            text = "Fill default"
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginEnd = dp(8)
             }
         }
 
         val btnLog = MaterialButton(ctx).apply {
-            text = ctx.getString(R.string.dbb_bins_dialog_fill_log) // you already have this string
+            text = "Fill log-spaced"
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
 
@@ -89,7 +90,7 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
         btnRow.addView(btnLog)
         container.addView(btnRow)
 
-        // 9 input fields
+        // Fields
         for (i in 0 until 9) {
             val til = TextInputLayout(ctx).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -98,16 +99,16 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
                 ).apply { bottomMargin = dp(10) }
                 hint = "Bin ${i + 1} (Hz)"
             }
+
             val et = TextInputEditText(ctx).apply {
                 inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-                setText(existing?.get(i)?.toString() ?: "")
+                setText(existing?.get(i)?.toString().orEmpty())
             }
+
             til.addView(et)
             container.addView(til)
             edits.add(et)
         }
-
-        val scroll = ScrollView(ctx).apply { addView(container) }
 
         fun writeEdits(arr: FloatArray) {
             for (i in 0 until 9) edits[i].setText(arr[i].toString())
@@ -122,30 +123,46 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
             return out
         }
 
-        fun defaultBins9(): FloatArray {
-            // Your “default template”
-            return floatArrayOf(20f, 35f, 55f, 80f, 110f, 160f, 250f, 400f, 650f)
-        }
-
         btnDefault.setOnClickListener {
             writeEdits(defaultBins9())
         }
 
         btnLog.setOnClickListener {
-            val high = targetFs.coerceAtLeast(21f)
-            writeEdits(logSpace9(20f, high))
+            val hi = targetFs.coerceAtLeast(21f)
+            writeEdits(logSpace9(low = 20f, high = hi))
         }
 
+        val scroll = ScrollView(ctx).apply { addView(container) }
+
         return MaterialAlertDialogBuilder(ctx)
-            .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
-            .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
+            .setTitle("Custom DBB bins")
+            .setMessage("Enter 9 center frequencies in Hz. Saved as: a;b;c;...;i")
             .setView(scroll)
-            .setNegativeButton(ctx.getString(R.string.dbb_bins_dialog_cancel), null)
-            .setPositiveButton(ctx.getString(R.string.dbb_bins_dialog_save)) { _, _ ->
-                val arr = readEdits() ?: return@setPositiveButton
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val arr = readEdits()
+                if (arr == null) {
+                    Toast.makeText(ctx, "Invalid bins (need 9 numbers)", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
                 prefs.edit().putString(key, arr.joinToString(";")).apply()
             }
             .create()
+    }
+
+    private fun defaultBins9(): FloatArray {
+        return floatArrayOf(20f, 35f, 55f, 80f, 110f, 160f, 250f, 400f, 650f)
+    }
+
+    private fun logSpace9(low: Float, high: Float): FloatArray {
+        val out = FloatArray(9)
+        val l0 = ln(low.toDouble())
+        val l1 = ln(high.toDouble())
+        for (i in 0 until 9) {
+            val t = i.toDouble() / 8.0
+            out[i] = exp(l0 + (l1 - l0) * t).toFloat()
+        }
+        return out
     }
 
     private fun parseBins9(raw: String): FloatArray? {
@@ -161,19 +178,15 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
         return out
     }
 
-    private fun logSpace9(low: Float, high: Float): FloatArray {
-        val out = FloatArray(9)
-        val l0 = kotlin.math.ln(low.toDouble())
-        val l1 = kotlin.math.ln(high.toDouble())
-        for (i in 0 until 9) {
-            val t = i.toDouble() / 8.0
-            out[i] = kotlin.math.exp(l0 + (l1 - l0) * t).toFloat()
-        }
-        return out
+    private fun readPrefFloatCompat(prefs: android.content.SharedPreferences, key: String, def: Float): Float {
+        // MaterialSeekbarPreference often stores as String
+        prefs.getString(key, null)?.toFloatOrNull()?.let { return it }
+        // fallback if stored as float
+        return try { prefs.getFloat(key, def) } catch (_: Throwable) { def }
     }
 
     private fun dp(v: Int): Int {
         val d = resources.displayMetrics.density
-        return (v * d + 0.5f).toInt()
+        return (v * d).toInt()
     }
 }
