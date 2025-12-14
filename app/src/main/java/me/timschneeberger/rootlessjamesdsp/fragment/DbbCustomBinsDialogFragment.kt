@@ -13,22 +13,24 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import me.timschneeberger.rootlessjamesdsp.R
 
-class DbbCustomBinsDialogFragment : androidx.fragment.app.DialogFragment() {
+class DbbCustomBinsDialogFragment : DialogFragment() {
 
     companion object {
         private const val ARG_PREFS_NAME = "prefs_name"
         private const val ARG_KEY = "key"
-        private const val ARG_TARGET_FS_KEY = "target_fs_key" // optional
+        private const val ARG_TARGET_FS_KEY = "target_fs_key"
 
         fun newInstance(
             prefsName: String,
             key: String,
             targetFsKey: String
-        ) = DbbCustomBinsDialogFragment().apply {
-            arguments = Bundle().apply {
-                putString(ARG_PREFS_NAME, prefsName)
-                putString(ARG_KEY, key)
-                putString(ARG_TARGET_FS_KEY, targetFsKey)
+        ): DbbCustomBinsDialogFragment {
+            return DbbCustomBinsDialogFragment().apply {
+                arguments = Bundle().apply {
+                    putString(ARG_PREFS_NAME, prefsName)
+                    putString(ARG_KEY, key)
+                    putString(ARG_TARGET_FS_KEY, targetFsKey)
+                }
             }
         }
     }
