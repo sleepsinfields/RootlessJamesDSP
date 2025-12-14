@@ -177,8 +177,8 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
         }
         return out
     }
-//
-private fun readPrefFloatCompat(
+
+    private fun readPrefFloatCompat(
     prefs: android.content.SharedPreferences,
     key: String,
     def: Float
@@ -205,5 +205,9 @@ private fun readPrefFloatCompat(
 
     return s?.toFloatOrNull() ?: def
 }
-    //
+
+    private fun dp(v: Int): Int {
+        val d = resources.displayMetrics.density
+        return (v * d).toInt()
+    }
 }
