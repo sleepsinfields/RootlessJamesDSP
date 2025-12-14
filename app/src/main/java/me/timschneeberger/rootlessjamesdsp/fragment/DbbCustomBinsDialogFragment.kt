@@ -216,8 +216,23 @@ override fun onStart() {
     d.setCanceledOnTouchOutside(false)
 
     d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
-        // call the same readEdits() you defined in onCreateDialog
-        // (so we need to store it as a member — see note below)
+        val prefs = prefsRef ?: return@setOnClickListener
+        val key = keyRef ?: return@setOnClickListener
+        val arr = readEditsFn?.invoke() ?: run {
+            // optional: toast your "invalid" string here
+            // Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
+            return@setOnClickListener
+        }
+
+        prefs.edit().putString(key, arr.joinToString(";")).apply()
+
+        // ✅ refresh summary immediately
+        parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
+
+        // ✅ (optional) re-apply DSP immediately too
+        requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
+
+        dismiss()
     }
 }
 //
