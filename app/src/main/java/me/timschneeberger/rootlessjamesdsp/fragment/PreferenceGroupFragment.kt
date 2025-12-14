@@ -102,20 +102,21 @@ R.xml.dsp_dbb_preferences -> {
     val keyCustom   = getString(R.string.key_dbb_freq_custom)
     val keyTargetFs = getString(R.string.key_dbb_target_fs)
 
-    val prefMode   = findPreference<ListPreference>(keyMode)
-    val prefCustom = findPreference<Preference>(keyCustom)
+    val prefMode   = findPreference<androidx.preference.ListPreference>(keyMode)
+    val prefCustom = findPreference<androidx.preference.Preference>(keyCustom)
 
-    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> { _: Preference ->
-        val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
-        if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
-    }
+    prefCustom?.summaryProvider =
+        androidx.preference.Preference.SummaryProvider<androidx.preference.Preference> { p ->
+            val raw = p.sharedPreferences?.getString(keyCustom, "")?.trim().orEmpty()
+            if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
+        }
 
-    prefMode?.setOnPreferenceChangeListener { _: Preference, _: Any? ->
+    prefMode?.setOnPreferenceChangeListener { _: androidx.preference.Preference, _: Any? ->
         true
     }
 
     prefCustom?.setOnPreferenceClickListener {
-        // force mode=2 when editing custom bins (optional but nice UX)
+        // force mode=2 when editing (optional UX)
         sp?.edit()?.putString(keyMode, "2")?.apply()
 
         val prefsName =
