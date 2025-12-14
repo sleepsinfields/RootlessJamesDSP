@@ -177,16 +177,33 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
         }
         return out
     }
+//
+private fun readPrefFloatCompat(
+    prefs: android.content.SharedPreferences,
+    key: String,
+    def: Float
+): Float {
+    if (key.isBlank()) return def
 
-    private fun readPrefFloatCompat(prefs: android.content.SharedPreferences, key: String, def: Float): Float {
-        // MaterialSeekbarPreference often stores as String
-        prefs.getString(key, null)?.toFloatOrNull()?.let { return it }
-        // fallback if stored as float
-        return try { prefs.getFloat(key, def) } catch (_: Throwable) { def }
+    // 1) Try float first (your crash indicates this is the real storage type)
+    try {
+        return prefs.getFloat(key, def)
+    } catch (_: ClassCastException) {
+        // not a float
+    } catch (_: Throwable) {
+        // ignore
     }
 
-    private fun dp(v: Int): Int {
-        val d = resources.displayMetrics.density
-        return (v * d).toInt()
+    // 2) Try string fallback (some prefs store numeric values as strings)
+    val s: String? = try {
+        prefs.getString(key, null)
+    } catch (_: ClassCastException) {
+        null
+    } catch (_: Throwable) {
+        null
     }
+
+    return s?.toFloatOrNull() ?: def
+}
+    //
 }
