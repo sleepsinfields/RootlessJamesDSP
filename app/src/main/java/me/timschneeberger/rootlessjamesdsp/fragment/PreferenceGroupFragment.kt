@@ -93,6 +93,50 @@ class PreferenceGroupFragment : PreferenceFragmentCompat(), KoinComponent {
                         }
                     }
             }
+//
+R.xml.dsp_dbb_preferences -> {
+    val sp = preferenceManager.sharedPreferences
+
+    val keyMode = getString(R.string.key_dbb_freq_mode)
+    val keyCustom = getString(R.string.key_dbb_freq_custom)
+
+    val prefMode = findPreference<ListPreference>(keyMode)
+    val prefCustom = findPreference<Preference>(keyCustom)
+
+    // 1) Always show the current bins string (or a helpful hint)
+    prefCustom?.summaryProvider = androidx.preference.Preference.SummaryProvider<Preference> { p ->
+        val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
+        if (raw.isEmpty()) "Tap to edit 9 center frequencies (Hz)"
+        else raw
+    }
+
+    // Optional: disable editing unless mode==2, while still showing summary
+    fun isModeCustom(): Boolean {
+        val modeStr = sp?.getString(keyMode, "0") ?: "0"
+        return modeStr.toIntOrNull() == 2
+    }
+    prefCustom?.isEnabled = true // set false here if you want hard gating
+
+    prefMode?.setOnPreferenceChangeListener { _, newValue ->
+        // If you want to grey out the editor unless mode==2:
+        // prefCustom?.isEnabled = (newValue as? String)?.toIntOrNull() == 2
+        true
+    }
+
+    // 2) Open the 9-field dialog popup
+    prefCustom?.setOnPreferenceClickListener {
+        // 3) Optional: force mode=2 when user edits custom bins
+        sp?.edit()?.putString(keyMode, "2")?.apply()
+
+        // Show your dialog
+        DbbCustomBinsDialogFragment
+            .newInstance(prefKey = keyCustom /*, optionally pass targetFs key if you want */)
+            .show(parentFragmentManager, "dbb_custom_bins")
+
+        true
+    }
+}
+//
             R.xml.dsp_stereowide_preferences -> {
                 findPreference<MaterialSeekbarPreference>(getString(R.string.key_stereowide_mode))?.valueLabelOverride =
                     fun(it: Float): String {
