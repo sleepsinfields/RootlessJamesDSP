@@ -105,26 +105,30 @@ R.xml.dsp_dbb_preferences -> {
 
     val prefCustom = findPreference<androidx.preference.Preference>(keyCustom)
 
-    prefCustom?.summaryProvider = androidx.preference.Preference.SummaryProvider {
-        val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
-        if (raw.isEmpty()) "Tap to edit 9 center frequencies (Hz)"
-        else raw
-    }
+    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> { p: Preference ->
+    val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
+    if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
+}
 
     prefCustom?.setOnPreferenceClickListener {
-        // force mode=2 when editing custom bins (optional but nice UX)
-        sp?.edit()?.putString(keyMode, "2")?.apply()
+    // force mode=2 when editing custom bins (optional but nice UX)
+    sp?.edit()?.putString(keyMode, "2")?.apply()
 
-        DbbCustomBinsDialogFragment
-            .newInstance(
-                prefsName = requireArguments().getString(BUNDLE_PREF_NAME) ?: preferenceManager.sharedPreferencesName,
-                key = keyCustom,
-                targetFsKey = keyTargetFs
-            )
-            .show(parentFragmentManager, "dbb_custom_bins")
+    val prefsName =
+        arguments?.getString(BUNDLE_PREF_NAME)
+            ?: preferenceManager.sharedPreferencesName
+            ?: "default_prefs"
 
-        true
-    }
+    DbbCustomBinsDialogFragment
+        .newInstance(
+            prefsName = prefsName,
+            key = keyCustom,
+            targetFsKey = keyTargetFs
+        )
+        .show(parentFragmentManager, "dbb_custom_bins")
+
+    true
+}
 }
 //
             R.xml.dsp_stereowide_preferences -> {
