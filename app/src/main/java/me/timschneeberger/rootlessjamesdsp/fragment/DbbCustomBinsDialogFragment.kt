@@ -19,6 +19,7 @@ import com.google.android.material.textfield.TextInputLayout
 import me.timschneeberger.rootlessjamesdsp.R
 import kotlin.math.exp
 import kotlin.math.ln
+import android.util.Log
 
 class DbbCustomBinsDialogFragment : DialogFragment() {
 
