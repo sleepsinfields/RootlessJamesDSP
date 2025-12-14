@@ -8,6 +8,10 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import androidx.fragment.app.DialogFragment
+//
+import androidx.appcompat.app.AlertDialog
+import android.widget.Toast
+//
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -34,6 +38,9 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+//
+Log.e("DbbDebug", "DbbCustomBinsDialogFragment.onCreateDialog() showing")
+//
         val ctx = requireContext()
         val prefsName = requireArguments().getString(ARG_PREFS_NAME)!!
         val key = requireArguments().getString(ARG_KEY)!!
@@ -122,25 +129,57 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     writeEdits(logSpace9(low = 20f, high = hi))
 }
 
-        val scroll = ScrollView(ctx).apply { addView(container) }
+        val scroll = ScrollView(ctx).apply {
+    isFillViewport = true
+    addView(container)
+}
 
-        val dialog = MaterialAlertDialogBuilder(ctx)
-            .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
-            .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
-            .setView(scroll)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val arr = readEdits() ?: return@setPositiveButton
-                prefs.edit().putString(key, arr.joinToString(";")).apply()
-            }
-            .create()
+val dialog = MaterialAlertDialogBuilder(ctx)
+    .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
+    .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
+    .setView(scroll)
+    .setNegativeButton(ctx.getString(R.string.dbb_bins_dialog_cancel), null)
+    // We'll override OK in onStart so it doesn't auto-dismiss on invalid input
+    .setPositiveButton(ctx.getString(R.string.dbb_bins_dialog_save), null)
+    .create()
 
-        dialog.setCanceledOnTouchOutside(false)
-        isCancelable = true
+dialog.setCanceledOnTouchOutside(false)
+isCancelable = true
 
-        return dialog
+// Important: override the positive click so invalid input doesn't close the dialog
+dialog.setOnShowListener {
+    val okBtn = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+    okBtn.setOnClickListener {
+        val arr = readEdits()
+        if (arr == null) {
+            android.widget.Toast.makeText(
+                ctx,
+                ctx.getString(R.string.dbb_bins_dialog_invalid),
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            return@setOnClickListener
+        }
+
+        prefs.edit().putString(key, arr.joinToString(";")).apply()
+        dialog.dismiss()
     }
+}
 
+return dialog
+    }
+//
+override fun onStart() {
+    super.onStart()
+
+    val d = dialog as? androidx.appcompat.app.AlertDialog ?: return
+    d.setCanceledOnTouchOutside(false)
+
+    d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+        // call the same readEdits() you defined in onCreateDialog
+        // (so we need to store it as a member — see note below)
+    }
+}
+//
     private fun defaultBins9(): FloatArray =
         floatArrayOf(20f, 35f, 55f, 80f, 110f, 160f, 250f, 400f, 650f)
 
