@@ -117,10 +117,10 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
         }
 
         btnLog.setOnClickListener {
-            // log-spaced template tracks targetFs (your preference)
-            val hi = targetFs.coerceAtLeast(21f)
-            writeEdits(logSpace9(low = 20f, high = hi))
-        }
+    val latestTargetFs = readPrefFloatCompat(prefs, targetFsKey, 432f)
+    val hi = latestTargetFs.coerceAtLeast(21f)
+    writeEdits(logSpace9(low = 20f, high = hi))
+}
 
         val scroll = ScrollView(ctx).apply { addView(container) }
 
