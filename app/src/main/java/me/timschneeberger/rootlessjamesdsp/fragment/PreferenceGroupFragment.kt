@@ -102,21 +102,26 @@ R.xml.dsp_dbb_preferences -> {
     val keyCustom   = getString(R.string.key_dbb_freq_custom)
     val keyTargetFs = getString(R.string.key_dbb_target_fs)
 
-    val prefsName =
-        requireArguments().getString(BUNDLE_PREF_NAME)
-            ?: preferenceManager.sharedPreferencesName
-            ?: "default_prefs"
-
+    val prefMode   = findPreference<ListPreference>(keyMode)
     val prefCustom = findPreference<Preference>(keyCustom)
 
-    prefCustom?.summaryProvider = Preference.SummaryProvider {
+    prefCustom?.summaryProvider = Preference.SummaryProvider<Preference> { _: Preference ->
         val raw = sp?.getString(keyCustom, "")?.trim().orEmpty()
         if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
     }
 
+    prefMode?.setOnPreferenceChangeListener { _: Preference, _: Any? ->
+        true
+    }
+
     prefCustom?.setOnPreferenceClickListener {
-        // Force custom-bin mode when editing
+        // force mode=2 when editing custom bins (optional but nice UX)
         sp?.edit()?.putString(keyMode, "2")?.apply()
+
+        val prefsName =
+            arguments?.getString(BUNDLE_PREF_NAME)
+                ?: preferenceManager.sharedPreferencesName
+                ?: "default_prefs"
 
         DbbCustomBinsDialogFragment
             .newInstance(
