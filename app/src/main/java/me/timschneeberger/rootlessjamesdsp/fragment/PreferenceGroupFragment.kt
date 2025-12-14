@@ -111,9 +111,10 @@ R.xml.dsp_dbb_preferences -> {
         }
 
     parentFragmentManager.setFragmentResultListener("dbb_bins_updated", this) { _, _ ->
-        val raw = prefCustom?.sharedPreferences?.getString(keyCustom, "")?.trim().orEmpty()
-        prefCustom?.summary = if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
-    }
+    val raw = prefCustom?.sharedPreferences?.getString(keyCustom, "")?.trim().orEmpty()
+    prefCustom?.summary = if (raw.isEmpty()) getString(R.string.dbb_freq_custom_summary) else raw
+    prefCustom?.notifyChanged()
+}
 
     prefCustom?.setOnPreferenceClickListener {
         sp?.edit()?.putString(keyMode, "2")?.apply()
