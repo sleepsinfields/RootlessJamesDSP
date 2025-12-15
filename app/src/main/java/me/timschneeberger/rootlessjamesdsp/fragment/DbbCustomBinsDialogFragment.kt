@@ -1,5 +1,5 @@
 package me.timschneeberger.rootlessjamesdsp.fragment
-
+import android.util.log
 import android.app.Dialog
 import android.content.Context
 import android.content.SharedPreferences
