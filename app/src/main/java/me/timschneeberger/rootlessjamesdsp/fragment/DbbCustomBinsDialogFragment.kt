@@ -150,24 +150,14 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
 override fun onStart() {
     super.onStart()
 
-val d = dialog as? AlertDialog ?: return
-Log.e("DbbDebug", "buttons: pos=${d.getButton(AlertDialog.BUTTON_POSITIVE)} neg=${d.getButton(AlertDialog.BUTTON_NEGATIVE)}")
+    val d = dialog as? AlertDialog ?: return
 
-d.setCanceledOnTouchOutside(false)
+    d.window?.decorView?.post {
+        val pos = d.getButton(AlertDialog.BUTTON_POSITIVE)
+        val neg = d.getButton(AlertDialog.BUTTON_NEGATIVE)
 
-    d.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
-        val prefs = prefsRef ?: return@setOnClickListener
-        val key = keyRef ?: return@setOnClickListener
-
-        val arr = readEdits() ?: run {
-            Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
-            return@setOnClickListener
-        }
-
-        prefs.edit().putString(key, arr.joinToString(";")).apply()
-        parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
-        requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
-        dismiss()
+        Log.e("DbbDebug", "buttons(post): pos=${pos?.width}x${pos?.height} neg=${neg?.width}x${neg?.height}")
+        Log.e("DbbDebug", "buttons(vis): pos=${pos?.visibility} neg=${neg?.visibility}")
     }
 }
 //
