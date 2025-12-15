@@ -42,6 +42,7 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     private var prefsRef: SharedPreferences? = null
     private var keyRef: String? = null
     private var targetFsKeyRef: String? = null
+private var readEditsFn: (() -> FloatArray?)? = null
 
     private val edits = ArrayList<TextInputEditText>(9)
 
@@ -51,6 +52,7 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     val prefsName = requireArguments().getString(ARG_PREFS_NAME)!!
     val key = requireArguments().getString(ARG_KEY)!!
     val targetFsKey = requireArguments().getString(ARG_TARGET_FS_KEY)!!
+edits.clear()
     val prefs = ctx.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
     prefsRef = prefs
@@ -117,7 +119,8 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     fun writeEdits(arr: FloatArray) {
         for (i in 0 until 9) edits[i].setText(arr[i].toString())
     }
-
+/* 
+// private fun vers at class level
     fun readEdits(): FloatArray? {
         val out = FloatArray(9)
         for (i in 0 until 9) {
@@ -128,7 +131,7 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     }
 
     readEditsFn = { readEdits() }
-
+*/
     btnDefault.setOnClickListener { writeEdits(defaultBins9()) }
 
     btnLog.setOnClickListener {
@@ -183,7 +186,7 @@ override fun onStart() {
         dismiss()
     }
 }
-
+//
     private fun readEdits(): FloatArray? {
         if (edits.size != 9) return null
         val out = FloatArray(9)
@@ -193,7 +196,8 @@ override fun onStart() {
         }
         return out
     }
-
+readEditsFn = { readEdits() }
+//
     private fun defaultBins9(): FloatArray =
         floatArrayOf(20f, 35f, 55f, 80f, 110f, 160f, 250f, 400f, 650f)
 
