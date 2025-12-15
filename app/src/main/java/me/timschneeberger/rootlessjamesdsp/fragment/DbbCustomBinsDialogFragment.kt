@@ -67,7 +67,7 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
 
     val container = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(dp(20), dp(16), dp(20), dp(8))
+        setPadding(dp(20), dp(16), dp(20), dp(32))
         layoutParams = ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -131,61 +131,56 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     }
 
     val scroll = ScrollView(ctx).apply {
-    isFillViewport = true
+    isFillViewport = false
     addView(container)
 }
 
-    val d = MaterialAlertDialogBuilder(ctx)
+val d = MaterialAlertDialogBuilder(ctx)
     .setTitle(getString(R.string.dbb_bins_dialog_title))
-    // consider removing setMessage for now if space is tight
     //.setMessage(getString(R.string.dbb_bins_dialog_help))
     .setView(scroll)
     .setNegativeButton(getString(R.string.dbb_bins_dialog_cancel), null)
     .setPositiveButton(getString(R.string.dbb_bins_dialog_save), null)
     .create()
 
-d.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+d.setCanceledOnTouchOutside(false)
+isCancelable = true
 
-return d
-}
+d.setOnShowListener {
+    // Force sane dialog sizing so buttons always have a visible bar
+    d.window?.setLayout(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+    )
+    d.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
-override fun onStart() {
-    super.onStart()
-
-    val d = dialog as? AlertDialog ?: return
-    d.setCanceledOnTouchOutside(false)
-
-    d.window?.decorView?.post {
     val pos = d.getButton(AlertDialog.BUTTON_POSITIVE)
     val neg = d.getButton(AlertDialog.BUTTON_NEGATIVE)
 
-    pos?.text = getString(R.string.dbb_bins_dialog_save)   // or android.R.string.ok
-    neg?.text = getString(R.string.dbb_bins_dialog_cancel) // or android.R.string.cancel
+    pos.text = getString(R.string.dbb_bins_dialog_save)
+    neg.text = getString(R.string.dbb_bins_dialog_cancel)
 
-    Log.e(
-        "DbbDebug",
-        "buttons(post): pos=${pos?.width}x${pos?.height} text='${pos?.text}' " +
-            "neg=${neg?.width}x${neg?.height} text='${neg?.text}'"
-    )
-
-    pos?.setOnClickListener {
-        val prefs = prefsRef ?: return@setOnClickListener
-        val key = keyRef ?: return@setOnClickListener
+    pos.setOnClickListener {
+        val prefs2 = prefsRef ?: return@setOnClickListener
+        val key2 = keyRef ?: return@setOnClickListener
 
         val arr = readEdits() ?: run {
             Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
             return@setOnClickListener
         }
 
-        prefs.edit().putString(key, arr.joinToString(";")).apply()
+        prefs2.edit().putString(key2, arr.joinToString(";")).apply()
         parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
         requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
         dismiss()
     }
 
-    neg?.setOnClickListener { dismiss() }
+    neg.setOnClickListener { dismiss() }
 }
+
+return d
 }
+
 //
     private fun readEdits(): FloatArray? {
         if (edits.size != 9) return null
