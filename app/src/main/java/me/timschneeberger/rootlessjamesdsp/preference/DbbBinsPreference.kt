@@ -8,37 +8,30 @@ import me.timschneeberger.rootlessjamesdsp.R
 
 class DbbBinsPreference @JvmOverloads constructor(
     context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = androidx.preference.R.attr.preferenceStyle
-) : Preference(context, attrs, defStyleAttr), SharedPreferences.OnSharedPreferenceChangeListener {
+    attrs: AttributeSet? = null
+) : Preference(context, attrs), SharedPreferences.OnSharedPreferenceChangeListener {
 
     override fun onAttached() {
         super.onAttached()
-        preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
-        refreshSummary()
+        sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
+        updateSummary()
     }
 
     override fun onDetached() {
-        preferenceManager.sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
+        sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
         super.onDetached()
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, changedKey: String) {
-        if (changedKey == key) {
-            refreshSummary()
-            notifyChanged() // ✅ allowed here (protected in Preference, but we're in subclass)
+    // IMPORTANT: key is String? (nullable) to match the platform signature
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+        if (key == this.key) {
+            updateSummary()
+            notifyChanged()
         }
     }
 
-    override fun onBindViewHolder(holder: androidx.preference.PreferenceViewHolder) {
-        refreshSummary()
-        super.onBindViewHolder(holder)
-    }
-
-    private fun refreshSummary() {
-        val sp = preferenceManager.sharedPreferences ?: return
-        val raw = sp.getString(key, "")?.trim().orEmpty()
-
+    private fun updateSummary() {
+        val raw = sharedPreferences?.getString(key, "")?.trim().orEmpty()
         summary = if (raw.isEmpty()) {
             context.getString(R.string.dbb_freq_custom_summary)
         } else {
