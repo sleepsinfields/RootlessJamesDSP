@@ -42,7 +42,7 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     private var prefsRef: SharedPreferences? = null
     private var keyRef: String? = null
     private var targetFsKeyRef: String? = null
-private var readEditsFn: (() -> FloatArray?)? = null
+    private var readEditsFn: (() -> FloatArray?)? = null
 
     private val edits = ArrayList<TextInputEditText>(9)
 
