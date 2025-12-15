@@ -155,7 +155,7 @@ edits.clear()
         .create()
 
     // If you want tap-outside to close, set TRUE here:
-    d.setCanceledOnTouchOutside(true)
+    d.setCanceledOnTouchOutside(false)
     // Also ensure the fragment itself is cancelable:
     isCancelable = true
 
