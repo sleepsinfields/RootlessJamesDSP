@@ -83,10 +83,10 @@
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
-<Preference
+<me.timschneeberger.rootlessjamesdsp.preference.DbbBinsPreference
     android:key="@string/key_dbb_freq_custom"
     android:title="@string/dbb_freq_custom"
-    android:summary="@string/dbb_freq_custom_summary"
+    android:defaultValue=""
     app:iconSpaceReserved="false" />
 
         <!-- 7. Advanced entry (for future custom bands dialog, etc.) -->
