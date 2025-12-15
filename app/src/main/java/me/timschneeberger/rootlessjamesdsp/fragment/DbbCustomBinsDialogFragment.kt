@@ -154,31 +154,35 @@ override fun onStart() {
     d.setCanceledOnTouchOutside(false)
 
     d.window?.decorView?.post {
-        val pos = d.getButton(AlertDialog.BUTTON_POSITIVE)
-        val neg = d.getButton(AlertDialog.BUTTON_NEGATIVE)
+    val pos = d.getButton(AlertDialog.BUTTON_POSITIVE)
+    val neg = d.getButton(AlertDialog.BUTTON_NEGATIVE)
 
-        Log.e("DbbDebug", "buttons(post): pos=${pos?.width}x${pos?.height} neg=${neg?.width}x${neg?.height} vis=${pos?.visibility}/${neg?.visibility}")
+    pos?.text = getString(R.string.dbb_bins_dialog_save)   // or android.R.string.ok
+    neg?.text = getString(R.string.dbb_bins_dialog_cancel) // or android.R.string.cancel
 
-        pos?.setOnClickListener {
-            val prefs = prefsRef ?: return@setOnClickListener
-            val key = keyRef ?: return@setOnClickListener
+    Log.e(
+        "DbbDebug",
+        "buttons(post): pos=${pos?.width}x${pos?.height} text='${pos?.text}' " +
+            "neg=${neg?.width}x${neg?.height} text='${neg?.text}'"
+    )
 
-            val arr = readEdits() ?: run {
-                Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+    pos?.setOnClickListener {
+        val prefs = prefsRef ?: return@setOnClickListener
+        val key = keyRef ?: return@setOnClickListener
 
-            prefs.edit().putString(key, arr.joinToString(";")).apply()
-
-            parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
-            requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
-
-            dismiss()
+        val arr = readEdits() ?: run {
+            Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
+            return@setOnClickListener
         }
 
-        // Optional: make sure cancel always works if you ever override it later
-        neg?.setOnClickListener { dismiss() }
+        prefs.edit().putString(key, arr.joinToString(";")).apply()
+        parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
+        requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
+        dismiss()
     }
+
+    neg?.setOnClickListener { dismiss() }
+}
 }
 //
     private fun readEdits(): FloatArray? {
