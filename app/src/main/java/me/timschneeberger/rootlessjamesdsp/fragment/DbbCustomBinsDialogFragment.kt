@@ -38,8 +38,12 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
                 }
             }
     }
+//
 
-    private var prefsRef: SharedPreferences? = null
+//
+
+
+    private var prefsRef: android.content.SharedPreferences? = null
     private var keyRef: String? = null
     private var targetFsKeyRef: String? = null
     private var readEditsFn: (() -> FloatArray?)? = null
