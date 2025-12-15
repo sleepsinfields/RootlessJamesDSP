@@ -150,8 +150,10 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
 override fun onStart() {
     super.onStart()
 
-    val d = dialog as? AlertDialog ?: return
-    d.setCanceledOnTouchOutside(false)
+val d = dialog as? AlertDialog ?: return
+Log.e("DbbDebug", "buttons: pos=${d.getButton(AlertDialog.BUTTON_POSITIVE)} neg=${d.getButton(AlertDialog.BUTTON_NEGATIVE)}")
+
+d.setCanceledOnTouchOutside(false)
 
     d.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
         val prefs = prefsRef ?: return@setOnClickListener
