@@ -137,7 +137,7 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
 
 val d = MaterialAlertDialogBuilder(ctx)
     .setTitle(getString(R.string.dbb_bins_dialog_title))
-    .setMessage(getString(R.string.dbb_bins_dialog_help))
+    // .setMessage(getString(R.string.dbb_bins_dialog_help))
     .setView(scroll)
     .setNegativeButton(getString(R.string.dbb_bins_dialog_cancel), null)
     .setPositiveButton(getString(R.string.dbb_bins_dialog_save), null)
