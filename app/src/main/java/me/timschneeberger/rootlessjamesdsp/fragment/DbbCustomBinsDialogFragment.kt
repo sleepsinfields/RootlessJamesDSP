@@ -55,15 +55,14 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     val prefsName = requireArguments().getString(ARG_PREFS_NAME)!!
     val key = requireArguments().getString(ARG_KEY)!!
     val targetFsKey = requireArguments().getString(ARG_TARGET_FS_KEY)!!
-edits.clear()
-    val prefs = ctx.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
+    val prefs = ctx.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     prefsRef = prefs
     keyRef = key
+    targetFsKeyRef = targetFsKey
 
-    val existing = parseBins9(prefs.getString(key, "").orEmpty())
-
-    val edits = ArrayList<TextInputEditText>(9)
+    // IMPORTANT: rebuild the view tree fresh every time
+    edits.clear()
 
     val container = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
@@ -74,7 +73,7 @@ edits.clear()
         )
     }
 
-    // --- Template buttons row ---
+    // (Optional) template buttons row
     val btnRow = LinearLayout(ctx).apply {
         orientation = LinearLayout.HORIZONTAL
         layoutParams = LinearLayout.LayoutParams(
@@ -99,14 +98,15 @@ edits.clear()
     btnRow.addView(btnLog)
     container.addView(btnRow)
 
-    // --- 9 fields ---
+    val existing = parseBins9(prefs.getString(key, "").orEmpty())
+
     for (i in 0 until 9) {
         val til = TextInputLayout(ctx).apply {
+            hint = "Bin ${i + 1} (Hz)"
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(10) }
-            hint = "Bin ${i + 1} (Hz)"
         }
 
         val et = TextInputEditText(ctx).apply {
@@ -122,44 +122,29 @@ edits.clear()
     fun writeEdits(arr: FloatArray) {
         for (i in 0 until 9) edits[i].setText(arr[i].toString())
     }
-/* 
-// private fun vers at class level
-    fun readEdits(): FloatArray? {
-        val out = FloatArray(9)
-        for (i in 0 until 9) {
-            val v = edits[i].text?.toString()?.trim()?.toFloatOrNull() ?: return null
-            out[i] = if (v > 0f) v else 0f
-        }
-        return out
-    }
 
-    
-*/
     btnDefault.setOnClickListener { writeEdits(defaultBins9()) }
-
     btnLog.setOnClickListener {
-        val latestTargetFs = readPrefFloatCompat(prefs, targetFsKey, 432f)
-        val hi = latestTargetFs.coerceAtLeast(21f)
+        val hi = readPrefFloatCompat(prefs, targetFsKey, 432f).coerceAtLeast(21f)
         writeEdits(logSpace9(low = 20f, high = hi))
     }
 
-    val scroll = ScrollView(ctx).apply { addView(container) }
+    val scroll = ScrollView(ctx).apply {
+        addView(container)
+    }
 
-    // ✅ Buttons MUST be defined here or they won’t exist to click later
-    val d = MaterialAlertDialogBuilder(ctx)
+    val dialog = MaterialAlertDialogBuilder(ctx)
         .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
         .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
         .setView(scroll)
+        // THESE TWO LINES are what makes OK/Cancel exist:
         .setNegativeButton(android.R.string.cancel, null)
-        .setPositiveButton(android.R.string.ok, null) // override in onStart
+        .setPositiveButton(android.R.string.ok, null) // override click in onStart()
         .create()
 
-    // If you want tap-outside to close, set TRUE here:
-    d.setCanceledOnTouchOutside(false)
-    // Also ensure the fragment itself is cancelable:
+    dialog.setCanceledOnTouchOutside(false)
     isCancelable = true
-
-    return d
+    return dialog
 }
 
 override fun onStart() {
@@ -172,12 +157,14 @@ override fun onStart() {
         val prefs = prefsRef ?: return@setOnClickListener
         val key = keyRef ?: return@setOnClickListener
 
-        val arr = readEdits() ?: return@setOnClickListener
+        val arr = readEdits() ?: run {
+            Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
+            return@setOnClickListener
+        }
 
         prefs.edit().putString(key, arr.joinToString(";")).apply()
         parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
         requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
-
         dismiss()
     }
 }
