@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
+import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.button.MaterialButton
@@ -130,21 +131,22 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     }
 
     val scroll = ScrollView(ctx).apply {
-        addView(container)
-    }
+    isFillViewport = true
+    addView(container)
+}
 
-    val dialog = MaterialAlertDialogBuilder(ctx)
-        .setTitle(ctx.getString(R.string.dbb_bins_dialog_title))
-        .setMessage(ctx.getString(R.string.dbb_bins_dialog_help))
-        .setView(scroll)
-        // THESE TWO LINES are what makes OK/Cancel exist:
-        .setNegativeButton(android.R.string.cancel, null)
-        .setPositiveButton(android.R.string.ok, null) // override click in onStart()
-        .create()
+    val d = MaterialAlertDialogBuilder(ctx)
+    .setTitle(getString(R.string.dbb_bins_dialog_title))
+    // consider removing setMessage for now if space is tight
+    //.setMessage(getString(R.string.dbb_bins_dialog_help))
+    .setView(scroll)
+    .setNegativeButton(getString(R.string.dbb_bins_dialog_cancel), null)
+    .setPositiveButton(getString(R.string.dbb_bins_dialog_save), null)
+    .create()
 
-    dialog.setCanceledOnTouchOutside(false)
-    isCancelable = true
-    return dialog
+d.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
+return d
 }
 
 override fun onStart() {
