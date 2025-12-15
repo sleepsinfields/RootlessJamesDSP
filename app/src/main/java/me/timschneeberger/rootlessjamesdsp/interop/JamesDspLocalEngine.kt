@@ -159,18 +159,58 @@ fun applyDbbTuning(
         JamesDspWrapper.setDbbResonance(handle, safeRes)
 
 //
-        if (safeFreqMode == 2 && freqCustom9 != null && freqCustom9.size == 9) {
-    val safe = freqCustom9.copyOf()
-    for (i in 0 until 9) if (!(safe[i] > 0f)) safe[i] = 0f
-    JamesDspWrapper.setDbbFreqCustom(handle, safe)
-} else {
-    JamesDspWrapper.setDbbFreqMode(handle, safeFreqMode)
+       // --- Frequency layout handling ---
+// Mode meanings (app-side):
+// 0 = whatever your existing preset/native behavior is
+// 1 = LOG-TRACK targetFs (audio-only: we drive it by sending custom bins)
+// 2 = CUSTOM bins from prefs (user-entered)
+
+when (safeFreqMode) {
+    1 -> {
+        // ✅ Live log-spaced bins that track targetFs
+        val hi = safeTargetFs.coerceAtLeast(21f)
+        val bins9 = logSpace9(low = 20f, high = hi)
+
+        // This forces native freqMode=2 internally, but that's fine for audio.
+        JamesDspWrapper.setDbbFreqCustom(handle, bins9)
+    }
+
+    2 -> {
+        // ✅ True custom bins (only if valid)
+        if (freqCustom9 != null && freqCustom9.size == 9) {
+            JamesDspWrapper.setDbbFreqCustom(handle, freqCustom9)
+        } else {
+            // fallback if user string invalid
+            JamesDspWrapper.setDbbFreqMode(handle, 2)
+        }
+    }
+
+    else -> {
+        // ✅ all other modes go through native selector
+        JamesDspWrapper.setDbbFreqMode(handle, safeFreqMode)
+    }
 }
 //
         
     } catch (t: Throwable) {
         Log.e("DbbDebug", "DBB JNI failed", t)
     }
+}
+//
+private fun logSpace9(low: Float, high: Float): FloatArray {
+    val out = FloatArray(9)
+
+    val lo = low.coerceAtLeast(1e-6f)
+    val hi = high.coerceAtLeast(lo + 1e-3f)
+
+    val l0 = kotlin.math.ln(lo.toDouble())
+    val l1 = kotlin.math.ln(hi.toDouble())
+
+    for (i in 0 until 9) {
+        val t = i.toDouble() / 8.0
+        out[i] = kotlin.math.exp(l0 + (l1 - l0) * t).toFloat()
+    }
+    return out
 }
 //
 override fun setStereoEnhancement(enable: Boolean, level: Float): Boolean {
