@@ -172,12 +172,12 @@ override fun onStart() {
         val key = keyRef ?: return@setOnClickListener
 
         val arr = readEditsFn?.invoke()
-        if (arr == null) {
-            Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
-            return@setOnClickListener
-        }
+if (arr == null) {
+    Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
+    return@setOnClickListener
+}
 
-        prefs.edit().putString(key, arr.joinToString(";")).apply()
+        prefs.edit().putString(key, arr.joinToString(separator = ";") { it.toString() }).apply()
 
         // Update main screen summary + re-apply DSP
         parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
