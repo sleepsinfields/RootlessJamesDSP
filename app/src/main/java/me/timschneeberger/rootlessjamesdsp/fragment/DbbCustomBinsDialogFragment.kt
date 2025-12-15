@@ -151,13 +151,33 @@ override fun onStart() {
     super.onStart()
 
     val d = dialog as? AlertDialog ?: return
+    d.setCanceledOnTouchOutside(false)
 
     d.window?.decorView?.post {
         val pos = d.getButton(AlertDialog.BUTTON_POSITIVE)
         val neg = d.getButton(AlertDialog.BUTTON_NEGATIVE)
 
-        Log.e("DbbDebug", "buttons(post): pos=${pos?.width}x${pos?.height} neg=${neg?.width}x${neg?.height}")
-        Log.e("DbbDebug", "buttons(vis): pos=${pos?.visibility} neg=${neg?.visibility}")
+        Log.e("DbbDebug", "buttons(post): pos=${pos?.width}x${pos?.height} neg=${neg?.width}x${neg?.height} vis=${pos?.visibility}/${neg?.visibility}")
+
+        pos?.setOnClickListener {
+            val prefs = prefsRef ?: return@setOnClickListener
+            val key = keyRef ?: return@setOnClickListener
+
+            val arr = readEdits() ?: run {
+                Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            prefs.edit().putString(key, arr.joinToString(";")).apply()
+
+            parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
+            requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
+
+            dismiss()
+        }
+
+        // Optional: make sure cancel always works if you ever override it later
+        neg?.setOnClickListener { dismiss() }
     }
 }
 //
