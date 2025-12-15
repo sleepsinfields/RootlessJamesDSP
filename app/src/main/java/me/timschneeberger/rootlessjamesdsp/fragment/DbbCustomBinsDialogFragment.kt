@@ -46,7 +46,6 @@ class DbbCustomBinsDialogFragment : DialogFragment() {
     private var prefsRef: android.content.SharedPreferences? = null
     private var keyRef: String? = null
     private var targetFsKeyRef: String? = null
-    private var readEditsFn: (() -> FloatArray?)? = null
 
     private val edits = ArrayList<TextInputEditText>(9)
 
@@ -134,7 +133,7 @@ edits.clear()
         return out
     }
 
-    readEditsFn = { readEdits() }
+    
 */
     btnDefault.setOnClickListener { writeEdits(defaultBins9()) }
 
@@ -167,23 +166,15 @@ override fun onStart() {
     super.onStart()
 
     val d = dialog as? AlertDialog ?: return
-
-    // If you want tap-outside to close, keep this TRUE:
-    d.setCanceledOnTouchOutside(true)
+    d.setCanceledOnTouchOutside(false)
 
     d.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
         val prefs = prefsRef ?: return@setOnClickListener
         val key = keyRef ?: return@setOnClickListener
 
-        val arr = readEditsFn?.invoke()
-if (arr == null) {
-    Toast.makeText(requireContext(), getString(R.string.dbb_bins_dialog_invalid), Toast.LENGTH_SHORT).show()
-    return@setOnClickListener
-}
+        val arr = readEdits() ?: return@setOnClickListener
 
-        prefs.edit().putString(key, arr.joinToString(separator = ";") { it.toString() }).apply()
-
-        // Update main screen summary + re-apply DSP
+        prefs.edit().putString(key, arr.joinToString(";")).apply()
         parentFragmentManager.setFragmentResult("dbb_bins_updated", Bundle.EMPTY)
         requireContext().sendLocalBroadcast(Intent(Constants.ACTION_PREFERENCES_UPDATED))
 
@@ -200,7 +191,6 @@ if (arr == null) {
         }
         return out
     }
-readEditsFn = { readEdits() }
 //
     private fun defaultBins9(): FloatArray =
         floatArrayOf(20f, 35f, 55f, 80f, 110f, 160f, 250f, 400f, 650f)
