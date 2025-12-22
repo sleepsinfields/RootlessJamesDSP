@@ -288,7 +288,7 @@ class CompanderPreference : DialogPreference {
 
         // Clamp freqs to something sane (optional)
         for (i in 0 until bandCount) {
-            if (previewFreqs[i] < 40.0) previewFreqs[i] = 40.0
+            if (previewFreqs[i] < 1.0) previewFreqs[i] = 1.0
             if (previewFreqs[i] > 20000.0) previewFreqs[i] = 20000.0
         }
 
